@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: orbitai-mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: orbitai
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - orbitai-network
+
+  # Backend Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: orbitai-server
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      MONGODB_URI: mongodb://orbitai:${MONGO_PASSWORD:-changeme}@mongodb:27017/orbitai?authSource=admin
+      JWT_SECRET: ${JWT_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+    networks:
+      - orbitai-network
+    volumes:
+      - ./server/uploads:/app/uploads
+
+  # Frontend Client (for development/testing)
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: orbitai-client
+    restart: always
+    environment:
+      VITE_API_URL: http://localhost:3002
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    networks:
+      - orbitai-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  orbitai-network:
+    driver: bridge

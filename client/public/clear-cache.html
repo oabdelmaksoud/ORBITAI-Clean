@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clearing Cache...</title>
+</head>
+<body>
+    <h1>Clearing browser cache...</h1>
+    <script>
+        (async function() {
+            try {
+                // Clear all caches
+                const cacheNames = await caches.keys();
+                for (const name of cacheNames) {
+                    await caches.delete(name);
+                    console.log('Deleted cache:', name);
+                }
+                
+                // Clear localStorage and sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                console.log('Cleared storage');
+                
+                // Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        console.log('Unregistered service worker');
+                    }
+                }
+                
+                console.log('Cache cleared! Redirecting...');
+                
+                // Redirect to main app with cache-busting parameter
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:5173/?_nocache=' + Date.now();
+                }, 500);
+            } catch (error) {
+                console.error('Error clearing cache:', error);
+                // Still redirect
+                window.location.href = 'http://localhost:5173/?_nocache=' + Date.now();
+            }
+        })();
+    </script>
+</body>
+</html>

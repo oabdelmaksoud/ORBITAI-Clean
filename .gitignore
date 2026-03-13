@@ -1,0 +1,77 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backup files
+*.bak
+*.backup
+*.bak*
+*.pid
+
+# Compiled files (should be generated, not committed)
+*.js.map
+*.d.ts.map
+constants.js
+constants.js.map
+constants.d.ts
+constants.d.ts.map
+types.js
+types.js.map
+types.d.ts
+types.d.ts.map
+
+# Temporary files
+*_extract.txt
+*.tmp
+*.temp
+
+# Archive directory (documentation backups)
+docs/archive/
+
+# Legacy project (should be archived/removed)
+MYPROJECT/
+
+# Test results
+test-results/
+playwright-report/
+# Deployment artifacts
+.vercel
+.railway
+*.log
+
+# Environment files
+.env
+.env.production
+.env.local
+
+# Keep templates
+!.env.example
+!.env.production.example

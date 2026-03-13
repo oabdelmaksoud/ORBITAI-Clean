@@ -1,0 +1,42 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "project": {
+    "name": "Project Name",
+    "description": "Description",
+    "phase": "Phase",
+    "tasks": "Tasks",
+    "artifacts": "Artifacts",
+    "create": "Create Project",
+    "save": "Save Project",
+    "delete": "Delete Project"
+  },
+  "workspace": {
+    "title": "Workspace",
+    "agents": "Agents",
+    "chat": "Chat",
+    "logs": "Logs",
+    "preview": "Preview"
+  },
+  "navigation": {
+    "hub": "Hub",
+    "workspace": "Workspace",
+    "settings": "Settings",
+    "admin": "Admin"
+  }
+}
+
+
+
+
+
+

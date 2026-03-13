@@ -1,0 +1,37 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "project": {
+    "name": "Nombre del Proyecto",
+    "description": "Descripción",
+    "phase": "Fase",
+    "tasks": "Tareas",
+    "artifacts": "Artefactos",
+    "create": "Crear Proyecto",
+    "save": "Guardar Proyecto",
+    "delete": "Eliminar Proyecto"
+  },
+  "workspace": {
+    "title": "Espacio de Trabajo",
+    "agents": "Agentes",
+    "chat": "Chat",
+    "logs": "Registros",
+    "preview": "Vista Previa"
+  },
+  "navigation": {
+    "hub": "Centro",
+    "workspace": "Espacio de Trabajo",
+    "settings": "Configuración",
+    "admin": "Administrador"
+  }
+}
+

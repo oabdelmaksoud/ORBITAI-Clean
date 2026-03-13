@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Service Worker - OrbitAI</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 6px;
+      background: #f0f0f0;
+    }
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 Clear Service Worker</h1>
+    <p>Use this page to completely clear all service workers and caches if your app is stuck reloading.</p>
+    
+    <button onclick="clearAll()">Clear All Service Workers & Caches</button>
+    <button onclick="checkStatus()">Check Status</button>
+    
+    <div id="status" class="status" style="display: none;"></div>
+  </div>
+
+  <script>
+    function showStatus(message, isError = false) {
+      const status = document.getElementById('status');
+      status.style.display = 'block';
+      status.className = 'status ' + (isError ? 'error' : 'success');
+      status.textContent = message;
+    }
+
+    async function clearAll() {
+      showStatus('Clearing service workers and caches...', false);
+      
+      try {
+        // Unregister all service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          console.log(`Found ${registrations.length} service worker(s)`);
+          
+          for (const registration of registrations) {
+            const unregistered = await registration.unregister();
+            console.log(`Unregistered: ${registration.scope} - ${unregistered}`);
+          }
+          
+          // Clear all caches
+          if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            console.log(`Found ${cacheNames.length} cache(s)`);
+            
+            for (const cacheName of cacheNames) {
+              const deleted = await caches.delete(cacheName);
+              console.log(`Deleted cache: ${cacheName} - ${deleted}`);
+            }
+          }
+          
+          // Clear localStorage and sessionStorage
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          showStatus(`✅ Cleared ${registrations.length} service worker(s) and ${cacheNames?.length || 0} cache(s). Reload the page now.`, false);
+          
+          // Auto-reload after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        } else {
+          showStatus('Service workers not supported in this browser.', true);
+        }
+      } catch (error) {
+        console.error('Error clearing service workers:', error);
+        showStatus('Error: ' + error.message, true);
+      }
+    }
+
+    async function checkStatus() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          const cacheNames = await caches.keys();
+          
+          let message = `Service Workers: ${registrations.length}\n`;
+          message += `Caches: ${cacheNames.length}\n`;
+          
+          if (registrations.length > 0) {
+            message += '\nActive Service Workers:\n';
+            registrations.forEach(reg => {
+              message += `- ${reg.scope}\n`;
+            });
+          }
+          
+          if (cacheNames.length > 0) {
+            message += '\nActive Caches:\n';
+            cacheNames.forEach(name => {
+              message += `- ${name}\n`;
+            });
+          }
+          
+          showStatus(message, false);
+        } else {
+          showStatus('Service workers not supported.', true);
+        }
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+      }
+    }
+
+    // Auto-check on load
+    window.addEventListener('load', () => {
+      checkStatus();
+    });
+  </script>
+</body>
+</html>
+

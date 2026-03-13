@@ -1,0 +1,42 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "close": "إغلاق",
+    "search": "بحث",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجاح"
+  },
+  "project": {
+    "name": "اسم المشروع",
+    "description": "الوصف",
+    "phase": "المرحلة",
+    "tasks": "المهام",
+    "artifacts": "القطع الأثرية",
+    "create": "إنشاء مشروع",
+    "save": "حفظ المشروع",
+    "delete": "حذف المشروع"
+  },
+  "workspace": {
+    "title": "مساحة العمل",
+    "agents": "الوكلاء",
+    "chat": "محادثة",
+    "logs": "السجلات",
+    "preview": "معاينة"
+  },
+  "navigation": {
+    "hub": "المركز",
+    "workspace": "مساحة العمل",
+    "settings": "الإعدادات",
+    "admin": "المسؤول"
+  }
+}
+
+
+
+
+
+

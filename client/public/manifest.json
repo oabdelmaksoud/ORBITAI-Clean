@@ -1,0 +1,51 @@
+{
+  "name": "OrbitAI - AI-Powered SDLC Platform",
+  "short_name": "OrbitAI",
+  "description": "AI-powered Software Development Lifecycle platform with intelligent agents, automated workflows, and comprehensive project management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "developer", "business"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Project",
+      "short_name": "New",
+      "description": "Create a new project",
+      "url": "/#workspace"
+    },
+    {
+      "name": "Project Hub",
+      "short_name": "Hub",
+      "description": "View all projects",
+      "url": "/#hub"
+    }
+  ],
+  "share_target": {
+    "action": "/#workspace",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
+
+
+
+
+
+
