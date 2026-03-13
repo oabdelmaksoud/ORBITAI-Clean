@@ -31,7 +31,7 @@
     "cleanup-test-users": "tsx scripts/cleanup-test-users.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.0",
+    "@anthropic-ai/sdk": "^0.78.0",
     "@e2b/code-interpreter": "^1.5.1",
     "@google/genai": "^1.30.0",
     "@langchain/community": "^1.0.5",
