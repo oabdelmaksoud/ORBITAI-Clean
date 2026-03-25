@@ -171,7 +171,7 @@ class GameMechanicsService {
 
             return result;
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[GameMechanics] Generation failed:', error);
             throw new Error(`Mechanics generation failed: ${error.message}`);
         }
@@ -201,7 +201,7 @@ class GameMechanicsService {
                 customFeatures: request.customization || []
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.warn('[GameMechanics] LLM analysis failed, falling back to patterns:', error.message);
             return this.analyzeWithPatterns(request);
         }

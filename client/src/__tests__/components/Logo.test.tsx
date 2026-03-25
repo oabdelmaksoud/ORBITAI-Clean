@@ -23,8 +23,8 @@ describe('Logo Component', () => {
 
   it('should apply size classes correctly', () => {
     const { container } = render(<Logo size="lg" />);
-    const div = container.firstChild as HTMLElement;
-    expect(div.className).toContain('w-12');
+    // The size class (w-12) is on the inner div containing the SVG
+    const innerDiv = container.querySelector('.w-12');
+    expect(innerDiv).not.toBeNull();
   });
 });
-

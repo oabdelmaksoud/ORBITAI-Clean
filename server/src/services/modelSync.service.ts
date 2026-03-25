@@ -145,7 +145,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch OpenAI models:', error);
     }
@@ -214,7 +214,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Use known models as fallback
       result.models = this.getKnownAnthropicModels();
       result.modelsFound = result.models.length;
@@ -368,7 +368,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models?.length || 0;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Use known models as fallback
       result.models = this.getKnownGeminiModels();
       result.modelsFound = result.models.length;
@@ -526,7 +526,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch Groq models:', error);
     }
@@ -601,7 +601,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch Mistral models:', error);
     }
@@ -693,7 +693,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch DeepSeek models:', error);
     }
@@ -750,7 +750,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch Cohere models:', error);
     }
@@ -818,7 +818,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch Together AI models:', error);
     }
@@ -1026,7 +1026,7 @@ class ModelSyncService {
 
       result.modelsFound = result.models.length;
       result.success = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       result.error = error.message;
       logger.error('Failed to fetch OpenRouter models:', error);
     }
@@ -1114,7 +1114,7 @@ class ModelSyncService {
 
       logger.info(`Model sync completed: ${fullResult.totalModelsFound} models found from ${fullResult.successfulProviders}/${fullResult.totalProviders} providers`);
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Model sync failed:', error);
       throw error;
     } finally {

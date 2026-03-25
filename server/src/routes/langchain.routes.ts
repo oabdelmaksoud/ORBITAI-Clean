@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'LangChain service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('LangChain initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -44,7 +44,7 @@ router.post('/chains', async (req, res, _next) => {
       success: true,
       message: 'Chain creation endpoint - use /execute endpoint with config',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Chain creation failed:', error);
     res.status(500).json({
       success: false,
@@ -77,7 +77,7 @@ router.post('/execute', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Chain execution failed:', error);
     res.status(500).json({
       success: false,
@@ -110,7 +110,7 @@ router.post('/rag', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('RAG chain execution failed:', error);
     res.status(500).json({
       success: false,
@@ -149,7 +149,7 @@ router.post('/stream', async (req, res, _next) => {
 
     res.write('data: [DONE]\n\n');
     res.end();
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Chain streaming failed:', error);
     res.status(500).json({
       success: false,
@@ -180,7 +180,7 @@ router.post('/documents', async (req, res, _next) => {
       success: true,
       message: `Added ${documents.length} documents`,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to add documents:', error);
     res.status(500).json({
       success: false,
@@ -213,7 +213,7 @@ router.post('/sequential', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Sequential chain execution failed:', error);
     res.status(500).json({
       success: false,

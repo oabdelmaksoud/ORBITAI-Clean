@@ -75,7 +75,7 @@ class ProcessImprovementAgentAssessmentService {
       logger.info(`Agent assessment complete for ${improvement.id}: ${assessment.decision} (confidence: ${assessment.confidence}%) in ${duration}ms`);
 
       return assessment;
-    } catch (error: unknown) {
+    } catch (error: any) {
       const duration = Date.now() - startTime;
       logger.error(`Agent assessment failed for ${improvement.id} after ${duration}ms:`, error);
       // Default to approval if assessment fails (fail-safe)
@@ -143,7 +143,7 @@ class ProcessImprovementAgentAssessmentService {
       logger.info(`Agent refinement complete for ${improvement.id} in ${duration}ms`);
       
       return refined;
-    } catch (error: unknown) {
+    } catch (error: any) {
       const duration = Date.now() - startTime;
       logger.error(`Agent refinement failed for ${improvement.id} after ${duration}ms:`, error);
       

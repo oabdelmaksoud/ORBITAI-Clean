@@ -33,7 +33,7 @@ router.post('/analyze', async (req: AdminRequest, res, next) => {
       success: true,
       data: analysis
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -56,7 +56,7 @@ router.post('/suggest', async (req: AdminRequest, res, next) => {
       success: true,
       data: suggestions
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -79,7 +79,7 @@ router.post('/test-variation', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -102,7 +102,7 @@ router.post('/predict', async (req: AdminRequest, res, next) => {
       success: true,
       data: prediction
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -125,7 +125,7 @@ router.post('/auto-optimize', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

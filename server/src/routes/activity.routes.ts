@@ -55,7 +55,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -123,7 +123,7 @@ router.get('/stats', async (req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

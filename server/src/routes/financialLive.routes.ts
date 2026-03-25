@@ -140,7 +140,7 @@ router.get('/live', async (_req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get live financial metrics:', error);
     next(error);
   }

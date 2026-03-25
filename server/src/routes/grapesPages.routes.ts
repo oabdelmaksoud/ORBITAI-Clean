@@ -39,7 +39,7 @@ router.get('/', async (req: Request, res: Response) => {
         offset: Number(offset),
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to fetch pages:', error);
     res.status(500).json({
       success: false,
@@ -69,7 +69,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
       success: true,
       page,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to fetch page:', error);
     res.status(500).json({
       success: false,
@@ -128,7 +128,7 @@ router.post('/', requireAdmin, async (req: AdminRequest, res: Response) => {
       success: true,
       page,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create page:', error);
     res.status(500).json({
       success: false,
@@ -179,7 +179,7 @@ router.put('/:slug', requireAdmin, async (req: AdminRequest, res: Response) => {
       success: true,
       page,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update page:', error);
     res.status(500).json({
       success: false,
@@ -219,7 +219,7 @@ router.delete('/:slug', requireAdmin, async (req: AdminRequest, res: Response) =
       success: true,
       message: 'Page deleted successfully',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to delete page:', error);
     res.status(500).json({
       success: false,
@@ -257,7 +257,7 @@ router.post('/:slug/publish', requireAdmin, async (req: AdminRequest, res: Respo
       success: true,
       page,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to publish page:', error);
     res.status(500).json({
       success: false,
@@ -294,7 +294,7 @@ router.post('/:slug/unpublish', requireAdmin, async (req: AdminRequest, res: Res
       success: true,
       page,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to unpublish page:', error);
     res.status(500).json({
       success: false,
@@ -353,7 +353,7 @@ router.post('/:slug/duplicate', requireAdmin, async (req: AdminRequest, res: Res
       success: true,
       page: duplicatePage,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to duplicate page:', error);
     res.status(500).json({
       success: false,

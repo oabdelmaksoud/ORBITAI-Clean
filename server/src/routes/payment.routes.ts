@@ -42,7 +42,7 @@ router.post('/create-checkout-session', authenticateToken, async (req: AuthReque
       sessionId: session.id,
       url: session.url
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create checkout session:', error);
     next(error);
   }
@@ -81,7 +81,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     await stripeService.handleWebhook(event);
 
     res.json({ received: true });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Webhook error:', error);
     res.status(400).send(`Webhook Error: ${error.message}`);
   }
@@ -111,7 +111,7 @@ router.post('/cancel-subscription', authenticateToken, async (req: AuthRequest, 
       success: true,
       message: 'Subscription canceled successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to cancel subscription:', error);
     next(error);
   }
@@ -150,7 +150,7 @@ router.post('/update-subscription', authenticateToken, async (req: AuthRequest, 
       success: true,
       message: 'Subscription updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update subscription:', error);
     next(error);
   }

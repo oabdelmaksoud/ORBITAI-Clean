@@ -39,7 +39,7 @@ router.get('/health', async (req, res) => {
       serviceUrl,
       message: isEnabled ? 'Pipecat service is enabled' : 'Pipecat service is disabled'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Pipecat] Health check failed:', error);
     res.status(500).json({
       success: false,

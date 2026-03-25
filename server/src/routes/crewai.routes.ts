@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'CrewAI service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('CrewAI initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -60,7 +60,7 @@ router.post('/agents', async (req, res, _next) => {
       success: true,
       data: agent,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create agent:', error);
     res.status(500).json({
       success: false,
@@ -91,7 +91,7 @@ router.get('/agents/:id', async (req, res, _next) => {
       success: true,
       data: agent,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get agent:', error);
     res.status(500).json({
       success: false,
@@ -112,7 +112,7 @@ router.get('/agents', async (req, res, _next) => {
       success: true,
       data: agents,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list agents:', error);
     res.status(500).json({
       success: false,
@@ -150,7 +150,7 @@ router.post('/crews', async (req, res, _next) => {
       success: true,
       data: crew,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create crew:', error);
     res.status(500).json({
       success: false,
@@ -181,7 +181,7 @@ router.get('/crews/:id', async (req, res, _next) => {
       success: true,
       data: crew,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get crew:', error);
     res.status(500).json({
       success: false,
@@ -202,7 +202,7 @@ router.get('/crews', async (req, res, _next) => {
       success: true,
       data: crews,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list crews:', error);
     res.status(500).json({
       success: false,
@@ -227,7 +227,7 @@ router.post('/crews/:id/execute', async (req, res, _next) => {
       success: result.success,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Crew execution failed:', error);
     res.status(500).json({
       success: false,
@@ -259,7 +259,7 @@ router.post('/crews/simple', async (req, res, _next) => {
       success: true,
       data: crew,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create simple crew:', error);
     res.status(500).json({
       success: false,

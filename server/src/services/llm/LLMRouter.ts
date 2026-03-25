@@ -264,7 +264,7 @@ class LLMRouter {
           logger.info(`[LLMRouter] Provider execution successful. Response length: ${result.text?.length || 0}`);
           break; // Success, exit retry loop
           break; // Success, exit retry loop
-        } catch (error: unknown) {
+        } catch (error: any) {
           const apiError = toApiError(error);
           logger.error(`[LLMRouter] Provider execution failed (attempt ${retries + 1}/${maxRetries + 1}):`, apiError);
           const backoffDelay = await this.handleRateLimit(
@@ -535,7 +535,7 @@ class LLMRouter {
         // Yield the full response as a single chunk
         yield result.text;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error(`[LLMRouter] Streaming failed:`, apiError);
 
@@ -1049,7 +1049,7 @@ class LLMRouter {
 
       // This point should not be reached, but TypeScript needs it
       throw new Error('Unexpected code path in executeWithProvider');
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Record failure in circuit breaker
       llmCircuitBreaker.recordFailure(provider);
 

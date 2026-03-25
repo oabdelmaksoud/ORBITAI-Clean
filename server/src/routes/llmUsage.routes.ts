@@ -57,7 +57,7 @@ userRouter.get('/project/:projectId', async (req: AuthRequest, res, next) => {
       success: true,
       data: stats
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get project LLM usage:', error);
     next(error);
   }
@@ -76,7 +76,7 @@ adminRouter.get('/live', async (_req: AdminRequest, res, next) => {
       success: true,
       data: liveUsage
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get live LLM usage:', error);
     next(error);
   }
@@ -104,7 +104,7 @@ adminRouter.get('/stats', async (req: AdminRequest, res, next) => {
       success: true,
       data: stats
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get LLM usage stats:', error);
     next(error);
   }
@@ -123,7 +123,7 @@ adminRouter.get('/cost-breakdown', async (req: AdminRequest, res, next) => {
       success: true,
       data: breakdown
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get cost breakdown:', error);
     next(error);
   }
@@ -150,7 +150,7 @@ adminRouter.get('/recent', async (req: AdminRequest, res, next) => {
         calls: recentCalls
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get recent LLM usage:', error);
     next(error);
   }

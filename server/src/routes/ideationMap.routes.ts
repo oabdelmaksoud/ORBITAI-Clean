@@ -293,7 +293,7 @@ Return ONLY valid JSON, no markdown formatting.`;
       success: true,
       data: analysis
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Ideation Map] Analysis error:', error);
     next(error);
   }
@@ -395,7 +395,7 @@ Return ONLY valid JSON.`;
       success: true,
       data: suggestions
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Ideation Map] Connection suggestion error:', error);
     next(error);
   }

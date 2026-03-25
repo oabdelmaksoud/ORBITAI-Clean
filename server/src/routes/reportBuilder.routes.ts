@@ -79,7 +79,7 @@ router.post('/generate', async (req: AdminRequest, res, next) => {
         results: reportData
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -133,7 +133,7 @@ router.get('/templates', async (_req: AdminRequest, res, next) => {
       success: true,
       data: { templates }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

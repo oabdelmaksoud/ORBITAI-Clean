@@ -65,7 +65,7 @@ router.get('/ab-tests', async (req: Request, res: Response) => {
       success: true,
       data: tests
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get A/B tests:', error);
     res.status(500).json({
       success: false,
@@ -95,7 +95,7 @@ router.get('/ab-tests/:testId', async (req: Request, res: Response) => {
       success: true,
       data: test
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,
@@ -183,7 +183,7 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
       data: test,
       message: 'A/B test created successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create A/B test:', error);
     res.status(500).json({
       success: false,
@@ -252,7 +252,7 @@ router.post('/ab-tests/:testId/complete', async (req: Request, res: Response) =>
       data: test,
       message: `A/B test completed. Winner: ${winnerId || 'No clear winner'}`
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to complete A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,
@@ -310,7 +310,7 @@ router.post('/ab-tests/:testId/apply-winner', async (req: Request, res: Response
       message: `Applied winning configuration from variant: ${winningVariant.name}`,
       appliedConfig: winningVariant.config
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to apply winner for A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,
@@ -349,7 +349,7 @@ router.delete('/ab-tests/:testId', async (req: Request, res: Response) => {
       success: true,
       message: test.status === 'cancelled' ? 'A/B test cancelled' : 'A/B test deleted'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to delete A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,
@@ -394,7 +394,7 @@ router.get('/ab-tests/:testId/metrics', async (req: Request, res: Response) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get metrics for A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,

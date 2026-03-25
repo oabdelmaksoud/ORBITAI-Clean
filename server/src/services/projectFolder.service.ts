@@ -31,7 +31,7 @@ export class ProjectFolderService {
       }
 
       return defaultFolder;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error ensuring default folder:', error);
       return null;
     }
@@ -52,7 +52,7 @@ export class ProjectFolderService {
       return await ProjectFolder.find({ userId })
         .sort({ createdAt: -1 })
         .lean();
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error getting folders by userId:', error);
       throw error;
     }
@@ -64,7 +64,7 @@ export class ProjectFolderService {
   static async getFolderById(folderId: string, userId: string): Promise<IProjectFolder | null> {
     try {
       return await ProjectFolder.findOne({ _id: folderId, userId }).lean();
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error getting folder by ID:', error);
       throw error;
     }
@@ -92,7 +92,7 @@ export class ProjectFolderService {
         conversationIds: []
       });
       return folder;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error creating folder:', error);
       throw error;
     }
@@ -123,7 +123,7 @@ export class ProjectFolderService {
         { new: true }
       );
       return folder;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error updating folder:', error);
       throw error;
     }
@@ -163,7 +163,7 @@ export class ProjectFolderService {
 
       // Delete the folder
       await ProjectFolder.findByIdAndDelete(folderId);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error deleting folder:', error);
       throw error;
     }
@@ -197,7 +197,7 @@ export class ProjectFolderService {
           { $addToSet: { conversationIds: conversationId } }
         );
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error adding conversation to folder:', error);
       throw error;
     }
@@ -229,7 +229,7 @@ export class ProjectFolderService {
         folderId,
         { $pull: { conversationIds: conversationId } }
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error removing conversation from folder:', error);
       throw error;
     }

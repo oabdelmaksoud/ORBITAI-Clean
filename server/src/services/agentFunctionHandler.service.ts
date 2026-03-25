@@ -48,7 +48,7 @@ export class AgentFunctionHandler {
             error: `Unknown function: ${functionCall.name}`
           };
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[AgentFunctionHandler] Error handling function call:`, error);
       return {
         success: false,
@@ -124,7 +124,7 @@ export class AgentFunctionHandler {
         },
         serverCreated: server
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[AgentFunctionHandler] Failed to create MCP server:`, error);
       return {
         success: false,

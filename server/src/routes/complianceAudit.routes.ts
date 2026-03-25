@@ -33,7 +33,7 @@ router.post('/check', async (req: AdminRequest, res, next) => {
       success: true,
       data: report
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -56,7 +56,7 @@ router.post('/schedule', async (req: AdminRequest, res, next) => {
       success: true,
       data: schedule
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -73,7 +73,7 @@ router.get('/regulations/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: mappings
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

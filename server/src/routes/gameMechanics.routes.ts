@@ -41,7 +41,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
             message: 'Game mechanics generated successfully'
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameMechanics API] Generation failed:', error);
         res.status(500).json({
             success: false,
@@ -76,7 +76,7 @@ router.get('/templates', authenticateToken, async (req: AuthRequest, res: Respon
             }
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameMechanics API] Failed to list templates:', error);
         res.status(500).json({
             success: false,
@@ -112,7 +112,7 @@ router.get('/templates/:templateId', authenticateToken, async (req: AuthRequest,
             }
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameMechanics API] Failed to get template:', error);
         res.status(500).json({
             success: false,

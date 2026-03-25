@@ -138,7 +138,7 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
       success: true,
       data: registry
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get block registry:', error);
     next(error);
   }
@@ -173,7 +173,7 @@ router.get('/pages', async (req: AdminRequest, res, next) => {
       success: true,
       data: { pages }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list pages:', error);
     next(error);
   }
@@ -196,7 +196,7 @@ router.get('/pages/:pageKey', async (req: AdminRequest, res, next) => {
       success: true,
       data: { page }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get page:', error);
     next(error);
   }
@@ -251,7 +251,7 @@ router.post('/pages', async (req: AdminRequest, res, next) => {
       success: true,
       data: { page: page.toObject() }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create page:', error);
     next(error);
   }
@@ -310,7 +310,7 @@ router.put('/pages/:pageKey', async (req: AdminRequest, res, next) => {
       success: true,
       data: { page: updatedPage?.toObject() }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update page:', error);
     next(error);
   }
@@ -347,7 +347,7 @@ router.post('/pages/:pageKey/publish', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to publish page:', error);
     next(error);
   }
@@ -376,7 +376,7 @@ router.get('/pages/:pageKey/revisions', async (req: AdminRequest, res, next) => 
       success: true,
       data: { revisions }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get revisions:', error);
     next(error);
   }
@@ -412,7 +412,7 @@ router.post('/pages/:pageKey/rollback/:revisionId', async (req: AdminRequest, re
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to rollback page:', error);
     next(error);
   }
@@ -432,7 +432,7 @@ router.get('/themes', async (_req: AdminRequest, res, next) => {
       success: true,
       data: { themes }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list themes:', error);
     next(error);
   }
@@ -481,7 +481,7 @@ router.post('/themes', async (req: AdminRequest, res, next) => {
       success: true,
       data: { theme: theme.toObject() }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create theme:', error);
     next(error);
   }
@@ -536,7 +536,7 @@ router.put('/themes/:themeId', async (req: AdminRequest, res, next) => {
       success: true,
       data: { theme: updatedTheme?.toObject() }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update theme:', error);
     next(error);
   }
@@ -572,7 +572,7 @@ router.delete('/themes/:themeId', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Theme deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to delete theme:', error);
     next(error);
   }
@@ -607,7 +607,7 @@ router.get('/templates', async (req: AdminRequest, res, next) => {
       success: true,
       data: { templates }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list templates:', error);
     next(error);
   }
@@ -655,7 +655,7 @@ router.post('/templates', async (req: AdminRequest, res, next) => {
       success: true,
       data: { template: template.toObject() }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create template:', error);
     next(error);
   }
@@ -719,7 +719,7 @@ router.post('/templates/:templateId/use', async (req: AdminRequest, res, next) =
       success: true,
       data: { page: page.toObject() }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to use template:', error);
     next(error);
   }

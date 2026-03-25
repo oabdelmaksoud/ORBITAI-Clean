@@ -74,7 +74,7 @@ router.get('/:projectId/coverage', authenticateToken, async (req: AuthRequest, r
       success: true,
       data: validationReport
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get requirements coverage:', error);
     res.status(500).json({
       success: false,
@@ -105,7 +105,7 @@ router.get('/:projectId/compliance', authenticateToken, async (req: AuthRequest,
       success: true,
       data: score
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get requirements compliance:', error);
     res.status(500).json({
       success: false,
@@ -178,7 +178,7 @@ router.get('/:projectId/missing', authenticateToken, async (req: AuthRequest, re
         total: missing.length + partial.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get missing requirements:', error);
     res.status(500).json({
       success: false,
@@ -263,7 +263,7 @@ router.post('/:projectId/validate', authenticateToken, async (req: AuthRequest, 
         complianceReport
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to validate requirements:', error);
     res.status(500).json({
       success: false,
@@ -294,7 +294,7 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
       success: true,
       data: report
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get compliance report:', error);
     res.status(500).json({
       success: false,
@@ -342,7 +342,7 @@ router.post('/:projectId/:requirementId/impact', authenticateToken, async (req: 
         impactScore
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to analyze requirement impact:', error);
     res.status(500).json({
       success: false,
@@ -382,7 +382,7 @@ router.get('/:projectId/aspice', authenticateToken, async (req: AuthRequest, res
       success: true,
       data: report
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get ASPICE compliance report:', error);
     res.status(500).json({
       success: false,
@@ -430,7 +430,7 @@ router.post('/:projectId/aspice/map', authenticateToken, async (req: AuthRequest
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to map requirements to ASPICE:', error);
     res.status(500).json({
       success: false,
@@ -461,7 +461,7 @@ router.get('/:projectId/dependencies', authenticateToken, async (req: AuthReques
       success: true,
       data: analysis
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get requirement dependencies:', error);
     res.status(500).json({
       success: false,
@@ -505,7 +505,7 @@ router.post('/:projectId/dependencies', authenticateToken, async (req: AuthReque
       success: true,
       message: 'Dependency added successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to add dependency:', error);
     res.status(500).json({
       success: false,
@@ -548,7 +548,7 @@ router.delete('/:projectId/dependencies', authenticateToken, async (req: AuthReq
       success: true,
       message: 'Dependency removed successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to remove dependency:', error);
     res.status(500).json({
       success: false,
@@ -579,7 +579,7 @@ router.get('/:projectId/nfr', authenticateToken, async (req: AuthRequest, res: R
       success: true,
       data: report
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get NFR trace report:', error);
     res.status(500).json({
       success: false,
@@ -610,7 +610,7 @@ router.get('/:projectId/traceability-matrix', authenticateToken, async (req: Aut
       success: true,
       data: matrix
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get traceability matrix:', error);
     res.status(500).json({
       success: false,
@@ -673,7 +673,7 @@ router.get('/:projectId/traceability-matrix/export', authenticateToken, async (r
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(content);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to export traceability matrix:', error);
     res.status(500).json({
       success: false,

@@ -46,7 +46,7 @@ router.get('/', async (_req, res, next) => {
         })
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -100,7 +100,7 @@ router.get('/:id', async (req, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

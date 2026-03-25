@@ -104,7 +104,7 @@ router.post('/generate', authenticateToken, async (req: Request, res: Response) 
     }
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Image generation route error:', error);
     res.status(500).json({
       success: false,
@@ -132,7 +132,7 @@ router.get('/models', authenticateToken, async (_req: Request, res: Response) =>
       success: true,
       models
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Get models error:', error);
     res.status(500).json({
       success: false,
@@ -160,7 +160,7 @@ router.get('/pricing', (_req: Request, res: Response) => {
       currency: 'USD',
       note: 'Prices are per image generated'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get pricing'
@@ -198,7 +198,7 @@ router.get('/status', async (_req: Request, res: Response) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get status'

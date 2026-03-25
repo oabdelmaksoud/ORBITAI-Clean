@@ -129,7 +129,7 @@ router.post(
           logs: result.logs
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Mobile deployment route error:', error);
       next(error);
     }
@@ -172,7 +172,7 @@ router.get(
           updatedAt: deployment.updatedAt
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }
@@ -284,7 +284,7 @@ router.post(
           android: platform === 'android' || platform === 'both' ? validationResults.android : undefined
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }

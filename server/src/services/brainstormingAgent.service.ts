@@ -198,7 +198,7 @@ class BrainstormingAgentService {
 
       logger.info(`[BrainstormingAgent] Generated ${result.ideas.length} ideas using ${framework} framework`);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[BrainstormingAgent] Error generating ideas (using mock fallback):', error);
 
       // Mock fallback
@@ -294,7 +294,7 @@ class BrainstormingAgentService {
         ideaId,
         ...evaluation
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[BrainstormingAgent] Error evaluating idea:', error);
       throw error;
     }
@@ -383,7 +383,7 @@ Return only valid JSON, no additional text.`;
 
       logger.info(`[BrainstormingAgent] Clustered ${ideas.length} ideas into ${result.clusters.length} clusters`);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[BrainstormingAgent] Error clustering ideas:', error);
       throw error;
     }
@@ -476,7 +476,7 @@ Return only valid JSON, no additional text.`;
 
       logger.info(`[BrainstormingAgent] Generated ${result.questions.length} HMW questions`);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[BrainstormingAgent] Error generating HMW questions:', error);
       throw error;
     }
@@ -574,7 +574,7 @@ Return only valid JSON, no additional text.`;
 
       logger.info(`[BrainstormingAgent] Generated facilitation prompt for phase ${currentPhase}`);
       return prompt;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[BrainstormingAgent] Error facilitating session:', error);
       throw error;
     }
@@ -671,7 +671,7 @@ Return only valid JSON, no additional text.`;
         status: 'ideation' as const,
         currentPhase: 0 as const
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[BrainstormingAgent] Error detecting sub-projects (using mock fallback):', error);
       // Mock fallback for testing without API keys
       return [{
@@ -1160,7 +1160,7 @@ Return only valid JSON, no additional text.`;
         frameworkUsed: framework,
         reasoning: data.reasoning
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('[BrainstormingAgent] Failed to parse idea generation response:', error);
       // Fallback: create simple ideas from text
       return {

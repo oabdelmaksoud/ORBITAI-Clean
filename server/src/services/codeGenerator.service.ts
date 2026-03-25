@@ -142,7 +142,7 @@ export class CodeGeneratorService {
         generatedAt: Date.now(),
         validationReport,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`❌ Code generation failed: ${error.message}`);
       return {
         projectId,

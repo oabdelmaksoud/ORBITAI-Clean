@@ -93,7 +93,7 @@ class AgentCollaborationService {
         conflictFrequency: Math.round(conflictFrequency * 100) / 100,
         collaborationScore: Math.round(collaborationScore)
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to calculate collaboration metrics:', error);
       throw error;
     }
@@ -163,7 +163,7 @@ class AgentCollaborationService {
         overallCollaboration: Math.round(overallCollaboration),
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate collaboration report:', error);
       throw error;
     }

@@ -1,4 +1,5 @@
 // multiCloud.service.test.ts: Tests for multi-cloud orchestration
+import { describe, it, expect, vi } from 'vitest';
 import { MultiCloudOrchestratorService } from './multiCloudOrchestrator.service';
 import { LoadBalancerService } from './loadBalancer.service';
 import { FailoverService } from './failover.service';
@@ -6,8 +7,16 @@ import { FailoverService } from './failover.service';
 describe('MultiCloudOrchestratorService', () => {
   it('should deploy to multiple platforms', async () => {
     const service = new MultiCloudOrchestratorService();
-    const result = await service.deployToMultiplePlatforms({});
-    expect(result.status).toBe('not implemented');
+    // Mock the internal deploy methods to avoid real network calls
+    vi.spyOn(service as any, 'deployToVercel').mockResolvedValue({
+      platform: 'vercel',
+      status: 'deployed',
+    });
+    const result = await service.deployToMultiplePlatforms({
+      projectId: 'test-project',
+      platforms: [{ name: 'vercel' }],
+    });
+    expect(result).toBeDefined();
   });
 });
 

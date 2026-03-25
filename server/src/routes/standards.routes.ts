@@ -21,7 +21,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'Standards matching service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Standards initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -81,7 +81,7 @@ router.post('/match', async (req, res, _next) => {
       success: true,
       data: recommendation,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Standards matching failed:', error);
     res.status(500).json({
       success: false,
@@ -144,7 +144,7 @@ router.post('/auto-enroll', async (req, res, _next) => {
         count: enrolled.length,
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Auto-enrollment failed:', error);
     res.status(500).json({
       success: false,
@@ -176,7 +176,7 @@ router.post('/search', async (req, res, _next) => {
       success: true,
       data: matches,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Standards search failed:', error);
     res.status(500).json({
       success: false,
@@ -221,7 +221,7 @@ router.get('/', async (req, res, _next) => {
       data: standards,
       count: standards.length,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get standards:', error);
     res.status(500).json({
       success: false,
@@ -252,7 +252,7 @@ router.get('/:id', async (req, res, _next) => {
       success: true,
       data: standard,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get standard:', error);
     res.status(500).json({
       success: false,

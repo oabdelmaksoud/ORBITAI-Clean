@@ -75,7 +75,7 @@ class SecretsScanningService {
       const uniqueFindings = this.deduplicateFindings(allFindings);
 
       return uniqueFindings;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to scan for secrets:', error);
       return [];
     }
@@ -202,7 +202,7 @@ Return as JSON array.`;
           implementation: this.generateImplementation(finding.secureMethod, language)
         }
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('LLM secret scanning failed:', error.message);
       return [];
     }

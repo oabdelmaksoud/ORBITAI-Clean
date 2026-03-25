@@ -90,7 +90,7 @@ class LangChainService {
 
       this.initialized = true;
       logger.info('✅ LangChain service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize LangChain service:', error);
       throw error;
     }
@@ -177,7 +177,7 @@ class LangChainService {
           total: 0,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Chain execution failed:', error);
       throw new Error(`Chain execution failed: ${error.message}`);
     }
@@ -265,7 +265,7 @@ class LangChainService {
         });
       }
       logger.debug(`Added ${documents.length} documents to vector search service`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to add documents:', error);
       throw error;
     }
@@ -331,7 +331,7 @@ class LangChainService {
           : JSON.stringify(chunk.content);
         yield content;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Chain streaming failed:', error);
       throw new Error(`Chain streaming failed: ${error.message}`);
     }

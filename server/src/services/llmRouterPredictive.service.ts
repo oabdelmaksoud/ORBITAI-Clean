@@ -135,7 +135,7 @@ class PredictiveRoutingService {
         predictedSuccessRate: bestModel.predictedSuccessRate,
         reasoning: `Predicted based on ${bestModel.totalCalls} historical calls: ${(bestModel.predictedSuccessRate * 100).toFixed(1)}% success rate, ${bestModel.predictedLatency.toFixed(0)}ms avg latency, $${bestModel.predictedCost.toFixed(6)} avg cost. ${model?.name || bestModel.modelId}`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to predict optimal model:', error);
       return null;
     }
@@ -216,7 +216,7 @@ class PredictiveRoutingService {
       this.lastCacheUpdate = now;
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get historical performance:', error);
       return [];
     }

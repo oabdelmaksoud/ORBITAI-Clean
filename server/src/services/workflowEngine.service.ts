@@ -136,7 +136,7 @@ class WorkflowEngineService {
       await this.updateWorkflowStatistics(workflow, execution);
 
       return execution;
-    } catch (error: unknown) {
+    } catch (error: any) {
       execution.status = 'failed';
       execution.error = error.message;
       execution.endTime = new Date();
@@ -260,7 +260,7 @@ class WorkflowEngineService {
         if (conditionMet) {
           return workflow.bpmnDefinition.nodes.find(n => n.id === edge.target) || null;
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn(`Failed to evaluate condition: ${edge.condition}`, error);
       }
     }

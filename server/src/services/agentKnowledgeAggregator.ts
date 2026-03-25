@@ -93,7 +93,7 @@ export class AgentKnowledgeAggregator {
       }
 
       logger.info('Agent knowledge aggregation completed successfully');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Agent knowledge aggregation failed:', error);
     } finally {
       this.isRunning = false;
@@ -149,7 +149,7 @@ export class AgentKnowledgeAggregator {
             });
 
             totalTasksProcessed++;
-          } catch (error: unknown) {
+          } catch (error: any) {
             logger.debug(`Failed to learn from task ${task.id}:`, error);
             // Continue with next task
           }
@@ -157,7 +157,7 @@ export class AgentKnowledgeAggregator {
       }
 
       logger.info(`Processed ${totalTasksProcessed} completed tasks for knowledge learning`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to learn from completed tasks:', error);
     }
   }

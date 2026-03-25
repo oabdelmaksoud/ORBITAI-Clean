@@ -38,7 +38,7 @@ class LLMRouterSettingsService {
         .populate('routingRules')
         .lean();
       return settings;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get global router settings:', error);
       throw error;
     }
@@ -61,7 +61,7 @@ class LLMRouterSettingsService {
         .populate('routingRules')
         .lean();
       return settings;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to get user router settings for ${userId}:`, error);
       throw error;
     }
@@ -162,7 +162,7 @@ class LLMRouterSettingsService {
       }
 
       return effective;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get effective router settings:', error);
       throw error;
     }
@@ -210,7 +210,7 @@ class LLMRouterSettingsService {
         scoringMode: updated?.metadata?.aiRuleConfigurator?.scoringMode
       });
       return updated;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to update global router settings:', error);
       throw error;
     }
@@ -229,7 +229,7 @@ class LLMRouterSettingsService {
 
       logger.info(`User router settings updated for ${userId}`);
       return updated;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to update user router settings for ${userId}:`, error);
       throw error;
     }
@@ -245,7 +245,7 @@ class LLMRouterSettingsService {
         userId: new mongoose.Types.ObjectId(userId)
       });
       logger.info(`User router settings reset to global defaults for ${userId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to reset user router settings for ${userId}:`, error);
       throw error;
     }
@@ -364,7 +364,7 @@ class LLMRouterSettingsService {
         matches,
         reason: matches ? 'Rule matches' : reasons.join('; ')
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to test routing rule:', error);
       throw error;
     }
@@ -400,7 +400,7 @@ class LLMRouterSettingsService {
 
       await LLMRouterSettings.create(defaultSettings);
       logger.info('Default global router settings initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize default router settings:', error);
       throw error;
     }

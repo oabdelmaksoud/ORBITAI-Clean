@@ -59,7 +59,7 @@ class LangGraphService {
     try {
       this.initialized = true;
       logger.info('✅ LangGraph service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize LangGraph service:', error);
       throw error;
     }
@@ -229,7 +229,7 @@ class LangGraphService {
         executionTime,
         success: true,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Workflow ${workflowId} execution failed:`, error);
       return {
         workflowId,
@@ -257,7 +257,7 @@ class LangGraphService {
         executionPath.push(Object.keys(state)[0] || 'unknown');
         yield state as GraphState;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Workflow streaming failed:', error);
       throw error;
     }

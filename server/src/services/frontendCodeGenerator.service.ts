@@ -118,7 +118,7 @@ class FrontendCodeGeneratorService {
         success: true,
         generatedAt: Date.now(),
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`❌ Frontend generation failed: ${error.message}`);
       return {
         projectId,

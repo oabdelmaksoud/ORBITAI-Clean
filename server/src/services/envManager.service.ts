@@ -112,7 +112,7 @@ async function readEnvFile(): Promise<Record<string, string>> {
     }
     
     return env;
-  } catch (error: unknown) {
+  } catch (error: any) {
     if (error.code === 'ENOENT') {
       // File doesn't exist, return empty object
       logger.warn('.env file not found, returning empty config');
@@ -130,7 +130,7 @@ async function writeEnvFile(env: Record<string, string>): Promise<void> {
   let existingContent = '';
   try {
     existingContent = await fs.readFile(ENV_FILE_PATH, 'utf-8');
-  } catch (error: unknown) {
+  } catch (error: any) {
     if (error.code !== 'ENOENT') {
       throw error;
     }

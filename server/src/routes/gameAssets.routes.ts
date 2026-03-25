@@ -56,7 +56,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
             totalAssets: job.totalAssets
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] Generation failed:', error);
         res.status(500).json({
             error: 'Failed to start asset generation',
@@ -99,7 +99,7 @@ router.get('/status/:jobId', authenticateToken, async (req: AuthRequest, res: Re
             estimatedTimeRemaining: job.estimatedTimeRemaining
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] Status check failed:', error);
         res.status(500).json({
             error: 'Failed to get job status',
@@ -144,7 +144,7 @@ router.get('/:assetId', authenticateToken, async (req: AuthRequest, res: Respons
             updatedAt: asset.updatedAt
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] Get asset failed:', error);
         res.status(500).json({
             error: 'Failed to get asset',
@@ -205,7 +205,7 @@ router.get('/download/:assetId', authenticateToken, async (req: AuthRequest, res
         const fileStream = require('fs').createReadStream(asset.fileUrl);
         fileStream.pipe(res);
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] Download failed:', error);
         res.status(500).json({
             error: 'Failed to download asset',
@@ -257,7 +257,7 @@ router.get('/list/:projectId', authenticateToken, async (req: AuthRequest, res: 
             total: formattedAssets.length
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] List assets failed:', error);
         res.status(500).json({
             error: 'Failed to list assets',
@@ -293,7 +293,7 @@ router.delete('/:assetId', authenticateToken, async (req: AuthRequest, res: Resp
             message: 'Asset deleted successfully'
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] Delete failed:', error);
         res.status(500).json({
             error: 'Failed to delete asset',
@@ -331,7 +331,7 @@ router.post('/:assetId/regenerate', authenticateToken, async (req: AuthRequest, 
             originalAssetId: assetId
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[GameAssets] Regenerate failed:', error);
         res.status(500).json({
             error: 'Failed to regenerate asset',

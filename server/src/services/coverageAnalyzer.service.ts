@@ -199,7 +199,7 @@ Return ONLY valid JSON in this exact format:
                 analysisMethod: 'ai'
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.warn(`[CoverageAnalyzer] AI analysis failed, falling back to keyword matching:`, error.message);
             // Fall back to keyword-based analysis
             return this.analyzePrototypeCoverage(htmlContent, selectedIdeas);

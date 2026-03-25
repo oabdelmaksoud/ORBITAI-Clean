@@ -92,7 +92,7 @@ class QueueService {
 
       this.isInitialized = true;
       logger.info('Queue service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Queue service initialization failed, continuing without queues:', error.message);
       this.isInitialized = false;
     }
@@ -146,7 +146,7 @@ class QueueService {
       const job = await queue.add(jobData, options);
       logger.debug(`Job ${job.id} added to queue ${queueName}`);
       return job;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to add job to queue ${queueName}:`, error);
       return null;
     }

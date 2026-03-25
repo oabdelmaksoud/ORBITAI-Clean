@@ -53,7 +53,7 @@ class AgentRollbackService {
 
       await execution.save();
       return execution;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to create execution snapshot:', error);
       throw error;
     }
@@ -121,7 +121,7 @@ class AgentRollbackService {
             }
             artifactsReverted++;
           }
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn(`Failed to revert artifact ${artifactInfo.artifactId}:`, error.message);
         }
       }
@@ -138,7 +138,7 @@ class AgentRollbackService {
             }
           }
           restoredState = true;
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn('Failed to restore state from snapshot:', error.message);
         }
       }
@@ -167,7 +167,7 @@ class AgentRollbackService {
         dependentAgentsNotified,
         restoredState
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Rollback failed:', error);
       return {
         executionId,

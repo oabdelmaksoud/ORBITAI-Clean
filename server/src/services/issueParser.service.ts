@@ -62,7 +62,7 @@ class IssueParserService {
 
       // Remove duplicates
       return this.deduplicateIssues(issues);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to parse issues from output:', error);
       return [];
     }

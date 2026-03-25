@@ -174,7 +174,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
         createdAt: server.createdAt
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     if (error.code === 11000) {
       // Duplicate key error
       throw new AppError('MCP server with this ID already exists', 409);
@@ -322,7 +322,7 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
             message: health.status === 'healthy' ? 'Server connection successful' : health.message || 'Server connection failed'
           }
         });
-      } catch (error: unknown) {
+      } catch (error: any) {
         return res.json({
           success: false,
           data: {
@@ -369,7 +369,7 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
           message: 'Server connection successful'
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       res.json({
         success: false,
         data: {

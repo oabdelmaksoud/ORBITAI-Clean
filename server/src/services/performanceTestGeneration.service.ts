@@ -93,7 +93,7 @@ class PerformanceTestGenerationService {
         },
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate performance test suite:', error);
       throw error;
     }
@@ -203,7 +203,7 @@ Return the complete k6 test code.`;
           errorRate: 0.01 // 1% error rate target
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn(`Failed to generate load test for ${endpoint.path}:`, error.message);
       return null;
     }

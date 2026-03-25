@@ -82,7 +82,7 @@ export class VLLMService {
 
       const data = await response.json();
       return (data.data || []).map((model: any) => model.id || model.name);
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Failed to fetch vLLM models:', apiError);
       throw new Error(`Failed to fetch vLLM models: ${apiError.message}`);
@@ -187,7 +187,7 @@ export class VLLMService {
       }
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('vLLM API error:', apiError);
       throw new Error(`vLLM API error: ${apiError.message || 'Unknown error'}`);
@@ -261,7 +261,7 @@ export class VLLMService {
 
       const models = await this.getAvailableModels();
       return { success: true, models };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       return { success: false, error: apiError.message };
     }

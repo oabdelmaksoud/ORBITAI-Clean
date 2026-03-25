@@ -47,7 +47,7 @@ router.get('/:pageKey', async (req, res, next) => {
         sections: sectionsMap
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get public page content:', error);
     next(error);
   }

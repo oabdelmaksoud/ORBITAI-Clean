@@ -153,7 +153,7 @@ class QualityGateService {
         warnings,
         recommendations
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Quality gate check failed:', error);
       return {
         passed: false,
@@ -217,7 +217,7 @@ class QualityGateService {
           ? `Code quality meets threshold (${Math.round(avgScore)}/100)`
           : `Code quality (${Math.round(avgScore)}/100) below threshold (${threshold}/100)`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         name: 'Code Quality',
         status: 'fail',
@@ -268,7 +268,7 @@ class QualityGateService {
           ? `Test coverage estimated at ${Math.round(estimatedCoverage)}%`
           : `Test coverage (${Math.round(estimatedCoverage)}%) below threshold (${threshold}%)`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         name: 'Test Coverage',
         status: 'fail',
@@ -326,7 +326,7 @@ class QualityGateService {
           criticalIssues: review.securityIssues.filter(i => i.severity === 'critical' || i.severity === 'high')
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         name: 'Security Scan',
         status: 'warning',
@@ -375,7 +375,7 @@ class QualityGateService {
           ? 'Documentation is complete'
           : `Documentation incomplete (${score}%). Missing: ${!hasReadme ? 'README, ' : ''}${!hasUserGuide ? 'User Guide, ' : ''}${!hasAPIDocs ? 'API Docs' : ''}`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         name: 'Documentation',
         status: 'warning',
@@ -408,7 +408,7 @@ class QualityGateService {
           ? 'Build configuration present'
           : 'Build configuration missing. Project may not build successfully.'
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         name: 'Build Success',
         status: 'warning',
@@ -454,7 +454,7 @@ class QualityGateService {
           ? `Standards compliance: ${Math.round(complianceRate)}%`
           : `Standards compliance (${Math.round(complianceRate)}%) below threshold (80%)`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         name: 'Standards Compliance',
         status: 'warning',
@@ -503,7 +503,7 @@ class QualityGateService {
           ? `Requirements coverage: ${Math.round(complianceScore.coverageScore)}% (${complianceScore.breakdown.implemented}/${complianceScore.breakdown.total} implemented)`
           : `Requirements coverage (${Math.round(complianceScore.coverageScore)}%) below threshold (${minCoverage}%). ${complianceScore.breakdown.missing} requirements missing, ${complianceScore.breakdown.partial} partial.`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Requirements compliance check failed:', error);
       return {
         name: 'Requirements Compliance',

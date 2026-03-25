@@ -141,7 +141,7 @@ class RequirementsImpactAnalysisService {
         dependencyGraph,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze requirement change impact:', error);
       throw error;
     }
@@ -287,7 +287,7 @@ class RequirementsImpactAnalysisService {
           }
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.debug('Knowledge Graph not available, using traceRefs for dependencies:', error.message);
       
       // Fallback: use traceRefs to infer dependencies

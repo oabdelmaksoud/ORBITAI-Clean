@@ -37,7 +37,7 @@ router.get('/registry', async (req: express.Request, res) => {
         totalModels: registry.models.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get model registry:', error);
     res.status(500).json({
       success: false,
@@ -57,7 +57,7 @@ router.get('/discover', async (req: express.Request, res) => {
       success: true,
       data: discovery
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to discover providers:', error);
     res.status(500).json({
       success: false,
@@ -78,7 +78,7 @@ router.get('/with-fallback/:provider', async (req: express.Request, res) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get models with fallback for ${provider}:`, error);
     res.status(500).json({
       success: false,
@@ -102,7 +102,7 @@ router.get('/sync/status', async (req: AdminRequest, res) => {
       success: true,
       data: status
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get sync status:', error);
     res.status(500).json({
       success: false,
@@ -122,7 +122,7 @@ router.get('/sync/results', async (req: AdminRequest, res) => {
       success: true,
       data: results
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get sync results:', error);
     res.status(500).json({
       success: false,
@@ -148,7 +148,7 @@ router.post('/sync', async (req: AdminRequest, res) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Model sync failed:', error);
     res.status(500).json({
       success: false,
@@ -209,7 +209,7 @@ router.post('/sync/:provider', async (req: AdminRequest, res) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Model sync for ${provider} failed:`, error);
     res.status(500).json({
       success: false,
@@ -246,7 +246,7 @@ router.get('/', async (req: AdminRequest, res) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get models:', error);
     res.status(500).json({
       success: false,
@@ -276,7 +276,7 @@ router.get('/:id', async (req: AdminRequest, res) => {
       success: true,
       data: model
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get model ${id}:`, error);
     res.status(500).json({
       success: false,
@@ -310,7 +310,7 @@ router.put('/:id/enable', async (req: AdminRequest, res) => {
       success: true,
       message: `Model ${id} enabled`
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to enable model ${id}:`, error);
     res.status(500).json({
       success: false,
@@ -344,7 +344,7 @@ router.put('/:id/disable', async (req: AdminRequest, res) => {
       success: true,
       message: `Model ${id} disabled`
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to disable model ${id}:`, error);
     res.status(500).json({
       success: false,
@@ -378,7 +378,7 @@ router.delete('/:id', async (req: AdminRequest, res) => {
       success: true,
       message: `Model ${id} removed`
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to remove model ${id}:`, error);
     res.status(500).json({
       success: false,
@@ -401,7 +401,7 @@ router.post('/scheduler/start', async (req: AdminRequest, res) => {
       success: true,
       message: 'Monthly sync scheduler started'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to start scheduler:', error);
     res.status(500).json({
       success: false,
@@ -424,7 +424,7 @@ router.post('/scheduler/stop', async (req: AdminRequest, res) => {
       success: true,
       message: 'Monthly sync scheduler stopped'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to stop scheduler:', error);
     res.status(500).json({
       success: false,

@@ -59,7 +59,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         unreadCount
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -84,7 +84,7 @@ router.get('/unread-count', async (req: AdminRequest, res, next) => {
       success: true,
       data: { count }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -109,7 +109,7 @@ router.put('/:id/read', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Notification marked as read'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -142,7 +142,7 @@ router.put('/read-all', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'All notifications marked as read'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -163,7 +163,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Notification deleted'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

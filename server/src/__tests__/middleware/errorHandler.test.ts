@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { errorHandler, AppError } from '../../middleware/errorHandler.js';
 import { logger } from '../../utils/logger.js';
@@ -8,6 +8,11 @@ vi.mock('../../utils/logger.js', () => ({
   logger: {
     error: vi.fn()
   }
+}));
+
+// Mock error tracking dynamic import
+vi.mock('../../services/errorTracking.service.js', () => ({
+  captureException: vi.fn()
 }));
 
 describe('Error Handler Middleware', () => {
@@ -27,16 +32,17 @@ describe('Error Handler Middleware', () => {
 
     res = {
       status: statusMock,
-      json: jsonMock
+      json: jsonMock,
+      setHeader: vi.fn(),
     };
 
     vi.clearAllMocks();
   });
 
-  it('should handle AppError with status code', () => {
+  it('should handle AppError with status code', async () => {
     const error = new AppError('Test error', 400);
 
-    errorHandler(error, req as Request, res as Response, () => {});
+    await errorHandler(error, req as Request, res as Response, () => {});
 
     expect(statusMock).toHaveBeenCalledWith(400);
     expect(jsonMock).toHaveBeenCalledWith({
@@ -48,10 +54,10 @@ describe('Error Handler Middleware', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 
-  it('should handle generic Error with 500 status', () => {
+  it('should handle generic Error with 500 status', async () => {
     const error = new Error('Generic error');
 
-    errorHandler(error, req as Request, res as Response, () => {});
+    await errorHandler(error, req as Request, res as Response, () => {});
 
     expect(statusMock).toHaveBeenCalledWith(500);
     expect(jsonMock).toHaveBeenCalledWith({
@@ -62,13 +68,13 @@ describe('Error Handler Middleware', () => {
     });
   });
 
-  it('should include stack trace in development mode', () => {
+  it('should include stack trace in development mode', async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
 
     const error = new AppError('Test error', 400);
 
-    errorHandler(error, req as Request, res as Response, () => {});
+    await errorHandler(error, req as Request, res as Response, () => {});
 
     expect(jsonMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -81,13 +87,13 @@ describe('Error Handler Middleware', () => {
     process.env.NODE_ENV = originalEnv;
   });
 
-  it('should not include stack trace in production mode', () => {
+  it('should not include stack trace in production mode', async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
     const error = new AppError('Test error', 400);
 
-    errorHandler(error, req as Request, res as Response, () => {});
+    await errorHandler(error, req as Request, res as Response, () => {});
 
     expect(jsonMock).toHaveBeenCalledWith({
       success: false,

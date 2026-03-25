@@ -77,7 +77,7 @@ export class GrokService {
           totalTokens: response.usage?.total_tokens || 0
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Grok API error:', apiError);
       throw new Error(`Grok API error: ${apiError.message || 'Unknown error'}`);

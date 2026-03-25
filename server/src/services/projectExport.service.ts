@@ -198,7 +198,7 @@ class ProjectExportService {
         validation,
         generatedAt: new Date(),
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`❌ Project export failed: ${error.message}`);
       throw error;
     }

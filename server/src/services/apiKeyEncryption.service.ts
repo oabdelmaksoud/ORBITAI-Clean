@@ -81,7 +81,7 @@ class ApiKeyEncryptionService {
       decrypted += decipher.final('utf8');
 
       return decrypted;
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new Error(`Decryption failed: ${error.message}`);
     }
   }

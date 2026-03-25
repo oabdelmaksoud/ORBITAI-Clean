@@ -152,7 +152,7 @@ export async function generatePDFReport(data: ProjectReportData, options: Report
       );
 
       doc.end();
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Error generating PDF report:', error);
       reject(error);
     }
@@ -382,7 +382,7 @@ export async function generateWordReport(data: ProjectReportData, options: Repor
 
     const buffer = await Packer.toBuffer(doc);
     return buffer;
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error generating Word report:', error);
     throw error;
   }

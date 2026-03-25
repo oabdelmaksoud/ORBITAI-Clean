@@ -47,7 +47,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
             success: true,
             embedding
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Embedding generation failed:', error);
         res.status(500).json({
             success: false,
@@ -93,7 +93,7 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
             modelUsed: result.modelUsed,
             provider: result.provider
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Prompt enhancement failed:', error);
         res.status(500).json({
             success: false,
@@ -260,7 +260,7 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
             modelUsed: result.modelUsed,
             provider: result.provider
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Task execution failed:', error);
         res.status(500).json({
             success: false,
@@ -363,7 +363,7 @@ Be specific to the project context and role.`;
             modelUsed: result.modelUsed,
             provider: result.provider
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Agent profile generation failed:', error);
         res.status(500).json({
             success: false,
@@ -489,7 +489,7 @@ Return a JSON array with label (short 2-4 words) and prompt (enhanced descriptio
             data: suggestions,
             latency: latency
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Quick suggestions failed:', error);
         // Don't fail - return empty array so UI doesn't break
         res.json({
@@ -704,7 +704,7 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
             data: finalTheme,
             latency: latency
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Theme generation failed:', error);
         res.status(500).json({
             success: false,
@@ -859,7 +859,7 @@ Keep the research concise and focused on actionable insights for task generation
 
                 modelUsed = llmResult.modelUsed;
                 break; // Success - exit retry loop
-            } catch (error: unknown) {
+            } catch (error: any) {
                 attempt++;
                 const isLastAttempt = attempt > maxRetries;
                 const errMap = error instanceof Error ? error : new Error(String(error));
@@ -920,7 +920,7 @@ Keep the research concise and focused on actionable insights for task generation
                 attempt: attempt + 1
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Orchestration failed:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         const userMessage = errorMessage.includes('timeout')
@@ -982,7 +982,7 @@ Provide a clear, concise answer based on your role and expertise.`;
                 text: result.text
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('Failed to interrogate agent:', error);
         res.status(500).json({
             success: false,
@@ -1079,7 +1079,7 @@ Only include fields that should be modified. Keep other fields unchanged.`;
                 task: modifiedTask
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('Failed to modify task:', error);
         res.status(500).json({
             success: false,

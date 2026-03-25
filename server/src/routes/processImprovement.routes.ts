@@ -57,7 +57,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         offset: parseInt(offset as string)
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -77,7 +77,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: improvement
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -142,7 +142,7 @@ router.get('/knowledge-base', async (req: AdminRequest, res, next) => {
         offset: offsetNum
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -168,7 +168,7 @@ router.get('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: entry
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -188,7 +188,7 @@ router.post('/knowledge-base', async (req: AdminRequest, res, next) => {
       success: true,
       data: entry
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -235,7 +235,7 @@ router.put('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: entry
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -260,7 +260,7 @@ router.delete('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Knowledge base entry archived'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -279,7 +279,7 @@ router.get('/agent/:agentRole', async (req: AdminRequest, res, next) => {
       success: true,
       data: improvements
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -303,7 +303,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: improvement
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -326,7 +326,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: improvement
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -351,7 +351,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Process improvement archived'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -385,7 +385,7 @@ router.post('/:id/approve', async (req: AdminRequest, res, next) => {
       success: true,
       data: improvement
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -415,7 +415,7 @@ router.post('/:id/reject', async (req: AdminRequest, res, next) => {
       success: true,
       data: improvement
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -433,7 +433,7 @@ router.post('/:id/usage', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Usage recorded'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -453,7 +453,7 @@ router.post('/assess-pending', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Agent assessment initiated for all pending improvements. This will run in the background.'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -480,7 +480,7 @@ router.post('/:id/assess', async (req: AdminRequest, res, next) => {
       message: 'Agent assessment initiated. This will run in the background.',
       data: improvement
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -502,7 +502,7 @@ router.post('/cleanup-stuck', async (req: AdminRequest, res, next) => {
       message: `Cleaned up ${result.cleaned} stuck improvements`,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -529,7 +529,7 @@ router.get('/stuck', async (req: AdminRequest, res, next) => {
         cutoffTime: cutoffTime.toISOString()
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

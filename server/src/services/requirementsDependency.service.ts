@@ -125,7 +125,7 @@ class RequirementsDependencyService {
         orphanedRequirements,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze requirement dependencies:', error);
       throw error;
     }
@@ -436,7 +436,7 @@ class RequirementsDependencyService {
       }
 
       logger.info(`Added dependency: ${requirementId} ${dependencyType} ${targetRequirementId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to add dependency:', error);
       throw error;
     }
@@ -486,7 +486,7 @@ class RequirementsDependencyService {
       }
 
       logger.info(`Removed dependency: ${requirementId} -> ${targetRequirementId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to remove dependency:', error);
       throw error;
     }

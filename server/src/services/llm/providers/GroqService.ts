@@ -122,7 +122,7 @@ class GroqService {
           totalTokens: usage.totalTokens
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('[Groq] Generation failed:', apiError);
       throw apiError;

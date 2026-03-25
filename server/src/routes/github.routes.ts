@@ -50,7 +50,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
         state
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to initiate GitHub OAuth:', error);
     res.status(500).json({
       success: false,
@@ -128,7 +128,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
         email: userData.email
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle GitHub OAuth callback:', error);
     res.status(500).json({
       success: false,
@@ -172,7 +172,7 @@ router.get('/repos', authenticateToken, async (req: AuthRequest, res) => {
         repos: data || []
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list GitHub repositories:', error);
     res.status(500).json({
       success: false,
@@ -232,7 +232,7 @@ router.post('/create-repo', authenticateToken, async (req: AuthRequest, res) => 
         repo: data
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create GitHub repository:', error);
     res.status(500).json({
       success: false,
@@ -288,7 +288,7 @@ router.post('/create-workflow', authenticateToken, async (req: AuthRequest, res)
         message: `Workflow created at ${result.path}`
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create GitHub workflow:', error);
     res.status(500).json({
       success: false,
@@ -398,7 +398,7 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
         branch: branch || 'main'
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to push project to GitHub:', error);
     res.status(500).json({
       success: false,

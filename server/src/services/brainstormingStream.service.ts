@@ -74,7 +74,7 @@ export async function emitIdea(
     });
 
     logger.debug(`[BrainstormingStream] Emitted idea ${currentIndex + 1}/${totalCount}: ${idea.label}`);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.warn(`[BrainstormingStream] Failed to emit idea:`, error);
   }
 }

@@ -72,7 +72,7 @@ class SecurityScanningService {
 
         result.scanDuration = Date.now() - startTime;
         results.push(result);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn(`Security scan with ${tool} failed:`, error.message);
         // Continue with other tools
       }
@@ -141,7 +141,7 @@ class SecurityScanningService {
         // Cleanup
         await fs.rm(tempDir, { recursive: true, force: true });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Snyk scan failed, using LLM fallback:', error.message);
       return this.scanWithLLM(code, language);
     }
@@ -184,7 +184,7 @@ class SecurityScanningService {
       } finally {
         await fs.rm(tempDir, { recursive: true, force: true });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Trivy scan failed, using LLM fallback:', error.message);
       return this.scanWithLLM(code, language);
     }
@@ -273,7 +273,7 @@ Return a JSON object with security issues array.`;
         scanDuration: 0,
         timestamp: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('LLM security scan failed:', error);
       return {
         tool: 'llm',

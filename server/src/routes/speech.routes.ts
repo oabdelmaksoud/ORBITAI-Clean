@@ -68,7 +68,7 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
         req.file.path,
         req.file.mimetype
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Clean up uploaded file
       await fs.unlink(req.file.path).catch(() => {});
       
@@ -98,7 +98,7 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
       text: transcription.text,
       language: transcription.language || 'en',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     // Clean up uploaded file on error
     if (req.file) {
       await fs.unlink(req.file.path).catch(() => {});
@@ -147,7 +147,7 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
         voice,
         language
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Provide helpful error message
       const errorMessage = error.message || 'Text-to-speech service not configured.';
       const isQuotaError = error?.status === 429 || error?.message?.includes('quota');
@@ -170,7 +170,7 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
 
     res.send(synthesisResult.audioBuffer);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Speech] Synthesis error:', error);
     res.status(500).json({
       success: false,
@@ -201,7 +201,7 @@ router.get('/voices', async (req: AuthRequest, res) => {
       success: true,
       voices,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Speech] Error getting voices:', error);
     res.status(500).json({
       success: false,
@@ -224,7 +224,7 @@ router.get('/providers', async (req: AuthRequest, res) => {
       providers,
       preferred,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Speech] Error getting providers:', error);
     res.status(500).json({
       success: false,

@@ -28,7 +28,7 @@ export async function embedArtifact(artifact: IArtifact): Promise<void> {
     await artifact.save();
     
     logger.debug(`Generated embedding for artifact: ${artifact.id}`);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.warn(`Failed to generate embedding for artifact ${artifact.id}:`, error);
     // Don't fail artifact save - embedding is optional
   }
@@ -56,14 +56,14 @@ export async function embedAllArtifacts(limit: number = 100): Promise<number> {
         
         embedded++;
         logger.debug(`Embedded artifact: ${artifact._id}`);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn(`Failed to embed artifact ${artifact._id}:`, error);
       }
     }
 
     logger.info(`Embedded ${embedded}/${artifacts.length} artifacts`);
     return embedded;
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to batch embed artifacts:', error);
     return 0;
   }
@@ -108,7 +108,7 @@ export async function searchArtifacts(
     scored.sort((a, b) => b.score - a.score);
 
     return scored;
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Artifact search failed:', error);
     return [];
   }

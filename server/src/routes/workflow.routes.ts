@@ -40,7 +40,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: workflows
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -61,7 +61,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: workflow
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -89,7 +89,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: workflow
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -116,7 +116,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: workflow
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -139,7 +139,7 @@ router.post('/:id/execute', async (req: AdminRequest, res, next) => {
       success: true,
       data: execution
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -157,7 +157,7 @@ router.get('/:id/executions', async (req: AdminRequest, res, next) => {
       success: true,
       data: workflowExecutions
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -173,7 +173,7 @@ router.get('/:id/export/bpmn', async (req: AdminRequest, res, next) => {
     res.setHeader('Content-Type', 'application/xml');
     res.setHeader('Content-Disposition', `attachment; filename="workflow-${req.params.id}.bpmn"`);
     res.send(bpmnXml);
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

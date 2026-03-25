@@ -37,7 +37,7 @@ router.get('/conversations/:conversationId', authenticateToken, async (req: Auth
       transcripts,
       isVoiceConversation: conversation.metadata?.isVoiceConversation || false
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error fetching transcriptions:', error);
     res.status(500).json({ error: error.message });
   }
@@ -91,7 +91,7 @@ router.post('/conversations/:conversationId', authenticateToken, async (req: Aut
       success: true,
       transcript: conversation.metadata.voiceTranscripts[conversation.metadata.voiceTranscripts.length - 1]
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error adding transcription:', error);
     res.status(500).json({ error: error.message });
   }
@@ -174,7 +174,7 @@ router.get('/search', authenticateToken, async (req: AuthRequest, res: Response)
       results,
       count: results.length
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error searching transcriptions:', error);
     res.status(500).json({ error: error.message });
   }
@@ -215,7 +215,7 @@ router.get('/conversations/:conversationId/export', authenticateToken, async (re
       res.setHeader('Content-Disposition', `attachment; filename="transcription-${conversationId}.txt"`);
       res.send(textContent);
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error exporting transcriptions:', error);
     res.status(500).json({ error: error.message });
   }

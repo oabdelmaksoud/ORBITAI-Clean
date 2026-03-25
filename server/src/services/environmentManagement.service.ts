@@ -48,7 +48,7 @@ class EnvironmentManagementService {
       );
 
       return environment;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to create environment:', error);
       throw error;
     }
@@ -82,7 +82,7 @@ class EnvironmentManagementService {
 
       logger.info(`Promoted environment from ${from} to ${to}`);
       return targetEnv;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to promote environment:', error);
       throw error;
     }

@@ -74,7 +74,7 @@ export class MCPService {
               lastChecked: new Date()
             };
           }
-        } catch (error: unknown) {
+        } catch (error: any) {
           health = {
             serverId,
             name: 'User Server',
@@ -85,7 +85,7 @@ export class MCPService {
           };
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       health = {
         serverId,
         name: 'Unknown',
@@ -142,7 +142,7 @@ export class MCPService {
           serviceAvailable: true
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         serverId,
         name: 'E2B Sandbox',
@@ -214,7 +214,7 @@ export class MCPService {
           }
         };
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         serverId,
         name: 'Knowledge Graph',
@@ -289,7 +289,7 @@ export class MCPService {
             }
           };
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         return {
           serverId,
           name: 'Google Search',
@@ -454,7 +454,7 @@ export class MCPService {
 
         logger.warn(`No tools available for MCP server: ${server.id}`);
         return [];
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`Failed to load MCP server tools from database: ${server.id}`, error);
         return [];
       }
@@ -654,7 +654,7 @@ export class MCPService {
         default:
           throw new Error(`Unknown E2B tool: ${toolName}`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`E2B tool execution failed: ${toolName}`, error);
       throw new Error(`E2B tool execution failed: ${error.message}`);
     }
@@ -689,7 +689,7 @@ export class MCPService {
         default:
           throw new Error(`Unknown Knowledge Graph tool: ${toolName}`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Knowledge Graph tool execution failed: ${toolName}`, error);
       throw new Error(`Knowledge Graph tool execution failed: ${error.message}`);
     }
@@ -725,7 +725,7 @@ export class MCPService {
           query: args.query,
           source: 'google_custom_search_api'
         };
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error('Google Custom Search API failed:', error);
         return {
           success: false,
@@ -835,7 +835,7 @@ export class MCPService {
         default:
           throw new Error(`Unknown MCP server type: ${dbServer.config.type}`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`User MCP server tool execution failed: ${serverId}/${toolName}`, error);
       throw error;
     }
@@ -908,7 +908,7 @@ export class MCPService {
         // Close connection
         await client.close();
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`HTTP/WebSocket MCP tool execution failed: ${serverId}/${toolName}`, error);
       throw new Error(`MCP tool execution failed: ${error.message}`);
     }
@@ -975,7 +975,7 @@ export class MCPService {
             } finally {
               await client.close();
             }
-          } catch (error: unknown) {
+          } catch (error: any) {
             health.status = 'unhealthy';
             health.message = `Connection failed: ${error.message}`;
           }
@@ -1004,7 +1004,7 @@ export class MCPService {
 
             health.status = 'healthy';
             health.message = 'Command is executable';
-          } catch (error: unknown) {
+          } catch (error: any) {
             health.status = 'unhealthy';
             health.message = `Command execution failed: ${error.message}`;
           }
@@ -1018,7 +1018,7 @@ export class MCPService {
           health.status = 'unknown';
           health.message = `Unknown server type: ${dbServer.config.type}`;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       health.status = 'unhealthy';
       health.message = `Health check error: ${error.message}`;
     }
@@ -1080,7 +1080,7 @@ export class MCPService {
         // Close connection (transport will handle process cleanup)
         await client.close();
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Stdio MCP tool execution failed: ${serverId}/${toolName}`, error);
       throw new Error(`MCP tool execution failed: ${error.message}`);
     }

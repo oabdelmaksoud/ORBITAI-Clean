@@ -381,7 +381,7 @@ router.get('/slow-queries', async (req: AdminRequest, res, next) => {
         } : null,
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[slow-queries] Error fetching slow queries:', error);
     // Return error but don't fail the request
     res.json({
@@ -532,7 +532,7 @@ router.get('/profiling-status', async (req: AdminRequest, res, next) => {
           : `Profiling is enabled at level ${profilingStatus.was} with slowms=${profilingStatus.slowms || 100}`,
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -585,7 +585,7 @@ router.post('/enable-profiling', async (req: AdminRequest, res, next) => {
         hint: 'This may require admin privileges. Try running: db.setProfilingLevel(1, { slowms: 100 }) in MongoDB shell',
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

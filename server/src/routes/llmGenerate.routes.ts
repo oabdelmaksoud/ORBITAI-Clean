@@ -47,7 +47,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
                 model
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Embedding] Error:', errorMessage);
         res.status(500).json({
@@ -103,7 +103,7 @@ Return only the enhanced prompt, no explanations.`;
                 originalPrompt: prompt
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Enhance Prompt] Error:', errorMessage);
         res.status(500).json({
@@ -183,7 +183,7 @@ Return a JSON object with:
                 modelUsed: result.modelUsed
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Generate Agent Profile] Error:', errorMessage);
         res.status(500).json({
@@ -251,7 +251,7 @@ Keep suggestions concise and actionable.`;
                 count: suggestions.length
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Quick Suggestions] Error:', errorMessage);
         res.status(500).json({
@@ -340,7 +340,7 @@ Return a JSON theme object with:
                 modelUsed: result.modelUsed
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Generate Theme] Error:', errorMessage);
         res.status(500).json({

@@ -59,7 +59,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
         state
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to initiate Microsoft Teams OAuth:', error);
     res.status(500).json({
       success: false,
@@ -127,7 +127,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
         expiresIn: tokenData.expires_in
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle Microsoft Teams OAuth callback:', error);
     res.status(500).json({
       success: false,
@@ -185,7 +185,7 @@ router.post('/share-room', authenticateToken, async (req: AuthRequest, res) => {
         message: message || `Join our brainstorming session: ${room.name}`
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to share room via Teams:', error);
     res.status(500).json({
       success: false,
@@ -227,7 +227,7 @@ router.post('/send-notification', authenticateToken, async (req: AuthRequest, re
       success: true,
       message: 'Notification sent successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to send Teams notification:', error);
     res.status(500).json({
       success: false,

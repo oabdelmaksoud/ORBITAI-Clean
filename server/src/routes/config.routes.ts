@@ -67,7 +67,7 @@ router.get('/gemini-api-key', authenticateTokenOptional, async (req: AuthRequest
       success: true,
       apiKey
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

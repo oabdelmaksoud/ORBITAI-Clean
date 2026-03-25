@@ -60,7 +60,7 @@ class AutogenService {
     try {
       this.initialized = true;
       logger.info('✅ Autogen service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize Autogen service:', error);
       throw error;
     }
@@ -210,7 +210,7 @@ class AutogenService {
 
               const reply = await Promise.race([replyPromise, timeoutPromise]);
               return { agentId: agent.id, agentName: agent.name, reply, success: true };
-            } catch (error: unknown) {
+            } catch (error: any) {
               logger.error(`Agent ${agent.id} failed in parallel round:`, error);
               return { agentId: agent.id, agentName: agent.name, reply: `Error: ${error.message}`, success: false };
             }
@@ -269,7 +269,7 @@ class AutogenService {
             logger.info(`[Autogen] Early termination: ${meaningfulReplies.length}/${agents.length} agents provided sufficient value`);
           }
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error('[Autogen] Parallel first round failed:', error);
         // Fall through to sequential mode
       }
@@ -360,7 +360,7 @@ class AutogenService {
           terminated = true;
           terminationReason = 'Agent indicated completion';
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         // Handle timeout or other errors
         const errorMessage = error.message || 'Unknown error';
         logger.warn(`[Autogen] Agent ${currentAgent.name} error: ${errorMessage}`);

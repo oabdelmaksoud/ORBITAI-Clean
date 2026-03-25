@@ -522,7 +522,7 @@ class CUAService {
                 } else {
                     logger.debug(`[CUA] Skipping scenario "${scenario.target}" - selector not found: ${scenario.selector}`);
                 }
-            } catch (error: unknown) {
+            } catch (error: any) {
                 logger.debug(`[CUA] Selector validation failed for "${scenario.target}": ${error.message}`);
             }
         }
@@ -710,7 +710,7 @@ Generate 8-15 tests with CORRECT dependencies. Setup tests MUST come first!`;
             logger.info(`[CUA] Generated ${scenarios.length} AI-powered test scenarios (sorted by phase)`);
             return scenarios;
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.warn(`[CUA] AI analysis failed, falling back to rule-based: ${error.message}`);
             return null;
         }
@@ -1245,7 +1245,7 @@ Generate 8-15 tests with CORRECT dependencies. Setup tests MUST come first!`;
             await page.waitForTimeout(600);
             return true;
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             await this.hideActionIndicator(page);
             scenario.status = 'failed';
             scenario.error = error.message;
@@ -1673,7 +1673,7 @@ Generate 8-15 tests with CORRECT dependencies. Setup tests MUST come first!`;
                 logger.info(`[CUA] Video saved: ${result.videoUrl}`);
             }
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA] Test error:', error);
             this.stopFrameStreaming();
 

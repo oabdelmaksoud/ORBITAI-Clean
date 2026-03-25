@@ -15,7 +15,7 @@ try {
       port: parseInt(process.env.REDIS_PORT || '6379', 10)
     }
   });
-} catch (error: unknown) {
+} catch (error: any) {
   logger.debug('Bull queue not available (Redis may not be configured)');
 }
 
@@ -72,12 +72,12 @@ class AgentCommunicationService {
             }
           });
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.debug('WebSocket service not available for agent messaging');
       }
 
       return message;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to send agent message:', error);
       throw error;
     }

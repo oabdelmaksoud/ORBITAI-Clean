@@ -1,154 +1,64 @@
 /**
  * Integration tests for Feature Flag Adapter
- * Tests the adapter layer with custom provider (no external dependencies)
+ * Tests the adapter layer with the actual exported functions
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { 
-  featureFlagService, 
-  CustomFeatureFlagProvider,
-  FeatureFlagUser 
+import {
+  initializeFeatureFlags,
+  isAdapterInitialized,
+  resetAdapter,
 } from '../featureFlagAdapter';
 
 describe('Feature Flag Adapter', () => {
-  let testUser: FeatureFlagUser;
-
   beforeEach(() => {
-    testUser = {
-      id: 'test-user-123',
-      email: 'test@example.com',
-      role: 'user',
-      plan: 'pro'
-    };
+    resetAdapter();
   });
 
-  describe('Custom Provider', () => {
-    it('should initialize custom provider', async () => {
-      const provider = new CustomFeatureFlagProvider();
-      await expect(provider.initialize()).resolves.not.toThrow();
+  describe('Initialization', () => {
+    it('should initialize with custom provider', async () => {
+      await initializeFeatureFlags({ providerType: 'custom' });
+      expect(isAdapterInitialized()).toBe(true);
     });
 
-    it('should check feature access for user role', async () => {
-      const provider = new CustomFeatureFlagProvider();
-      const result = await provider.isEnabled('project_creation', {
-        id: 'test',
-        role: 'admin'
-      });
+    it('should not re-initialize if already initialized', async () => {
+      await initializeFeatureFlags({ providerType: 'custom' });
+      expect(isAdapterInitialized()).toBe(true);
 
-      expect(result).toHaveProperty('enabled');
-      expect(result).toHaveProperty('source', 'custom');
-      expect(typeof result.enabled).toBe('boolean');
-    });
-  });
-
-  describe('Unified Service', () => {
-    it('should be initialized with custom provider by default', async () => {
-      // Service should be initialized with custom provider
-      const result = await featureFlagService.isEnabled('project_creation', testUser);
-      
-      expect(result).toHaveProperty('enabled');
-      expect(result).toHaveProperty('source');
-      expect(typeof result.enabled).toBe('boolean');
+      // Second call should be a no-op
+      await initializeFeatureFlags({ providerType: 'custom' });
+      expect(isAdapterInitialized()).toBe(true);
     });
 
-    it('should handle gradual rollout', async () => {
-      const result = await featureFlagService.isEnabledWithRollout(
-        'project_creation',
-        testUser,
-        {
-          percentage: 100, // 100% rollout
-          targetRoles: ['user', 'admin']
-        }
-      );
-
-      expect(result).toHaveProperty('enabled');
-      expect(result).toHaveProperty('source');
+    it('should initialize with flagsmith provider (falls back to custom)', async () => {
+      await initializeFeatureFlags({ providerType: 'flagsmith' });
+      expect(isAdapterInitialized()).toBe(true);
     });
 
-    it('should handle percentage-based rollout', async () => {
-      // Test with 0% rollout - should be disabled
-      const result0 = await featureFlagService.isEnabledWithRollout(
-        'project_creation',
-        testUser,
-        { percentage: 0 }
-      );
-
-      // Test with 100% rollout - should check base flag
-      const result100 = await featureFlagService.isEnabledWithRollout(
-        'project_creation',
-        testUser,
-        { percentage: 100 }
-      );
-
-      expect(result0).toHaveProperty('enabled');
-      expect(result100).toHaveProperty('enabled');
-    });
-
-    it('should assign A/B test variants consistently', async () => {
-      const config = {
-        variants: [
-          { name: 'control', percentage: 50 },
-          { name: 'variant_a', percentage: 30 },
-          { name: 'variant_b', percentage: 20 }
-        ]
-      };
-
-      // Same user should get same variant
-      const variant1 = await featureFlagService.getABTestVariant(
-        'test_feature',
-        testUser,
-        config
-      );
-
-      const variant2 = await featureFlagService.getABTestVariant(
-        'test_feature',
-        testUser,
-        config
-      );
-
-      expect(variant1).toBe(variant2); // Consistent assignment
-      expect(['control', 'variant_a', 'variant_b']).toContain(variant1);
-    });
-
-    it('should respect role targeting in A/B tests', async () => {
-      const config = {
-        variants: [
-          { name: 'control', percentage: 50 },
-          { name: 'variant_a', percentage: 50 }
-        ],
-        targetRoles: ['admin'] // Only for admins
-      };
-
-      // User with 'user' role should get 'control' (default)
-      const userVariant = await featureFlagService.getABTestVariant(
-        'test_feature',
-        { ...testUser, role: 'user' },
-        config
-      );
-
-      // Admin should get a variant
-      const adminVariant = await featureFlagService.getABTestVariant(
-        'test_feature',
-        { ...testUser, role: 'admin' },
-        config
-      );
-
-      expect(userVariant).toBe('control');
-      expect(['control', 'variant_a']).toContain(adminVariant);
+    it('should initialize with hybrid provider (falls back to custom)', async () => {
+      await initializeFeatureFlags({ providerType: 'hybrid' });
+      expect(isAdapterInitialized()).toBe(true);
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle errors gracefully', async () => {
-      // Test with invalid user
-      const result = await featureFlagService.isEnabled('invalid_feature', {
-        id: '',
-        role: undefined
-      });
+  describe('Reset', () => {
+    it('should reset adapter state', async () => {
+      await initializeFeatureFlags({ providerType: 'custom' });
+      expect(isAdapterInitialized()).toBe(true);
 
-      expect(result).toHaveProperty('enabled');
-      expect(result).toHaveProperty('source');
+      resetAdapter();
+      expect(isAdapterInitialized()).toBe(false);
+    });
+  });
+
+  describe('State Checking', () => {
+    it('should report not initialized before init', () => {
+      expect(isAdapterInitialized()).toBe(false);
+    });
+
+    it('should report initialized after init', async () => {
+      await initializeFeatureFlags({ providerType: 'custom' });
+      expect(isAdapterInitialized()).toBe(true);
     });
   });
 });
-

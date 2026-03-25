@@ -55,7 +55,7 @@ router.post('/learn/task', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Knowledge updated from task execution'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to learn from task:', error);
     next(error);
   }
@@ -96,7 +96,7 @@ router.post('/learn/audit', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Knowledge updated from audit'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to learn from audit:', error);
     next(error);
   }
@@ -114,7 +114,7 @@ router.post('/aggregate', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Platform learning aggregation completed'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to aggregate platform learning:', error);
     next(error);
   }

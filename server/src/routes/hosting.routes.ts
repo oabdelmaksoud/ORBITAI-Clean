@@ -30,7 +30,7 @@ router.get('/plans', async (req: AuthRequest, res, next) => {
       success: true,
       plans
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get hosting plans:', error);
     next(error);
   }
@@ -60,7 +60,7 @@ router.post('/create', async (req: AuthRequest, res, next) => {
       success: true,
       hostedProject
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create hosting:', error);
     next(error);
   }
@@ -79,7 +79,7 @@ router.get('/projects', async (req: AuthRequest, res, next) => {
       success: true,
       hostedProjects
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get hosted projects:', error);
     next(error);
   }
@@ -100,7 +100,7 @@ router.post('/:id/suspend', async (req: AuthRequest, res, next) => {
       success: true,
       message: 'Hosting suspended'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to suspend hosting:', error);
     next(error);
   }
@@ -121,7 +121,7 @@ router.post('/:id/terminate', async (req: AuthRequest, res, next) => {
       success: true,
       message: 'Hosting terminated'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to terminate hosting:', error);
     next(error);
   }

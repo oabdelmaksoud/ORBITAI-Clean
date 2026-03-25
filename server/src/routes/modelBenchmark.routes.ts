@@ -48,7 +48,7 @@ router.post('/benchmark/run', async (req: Request, res: Response) => {
       data: result,
       message: 'Benchmark completed successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to run benchmark:', error);
     res.status(500).json({
       success: false,
@@ -74,7 +74,7 @@ router.get('/benchmark/results', async (req: Request, res: Response) => {
       success: true,
       data: results
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get benchmark results:', error);
     res.status(500).json({
       success: false,
@@ -99,7 +99,7 @@ router.get('/benchmark/summary/:modelId', async (req: Request, res: Response) =>
       success: true,
       data: summary
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get benchmark summary for ${req.params.modelId}:`, error);
     res.status(500).json({
       success: false,
@@ -123,7 +123,7 @@ router.get('/benchmark/compare/:taskType', async (req: Request, res: Response) =
       success: true,
       data: comparison
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to compare models for ${req.params.taskType}:`, error);
     res.status(500).json({
       success: false,
@@ -148,7 +148,7 @@ router.get('/benchmark/trends/:modelId/:taskType', async (req: Request, res: Res
       success: true,
       data: trends
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get trends for ${req.params.modelId}:`, error);
     res.status(500).json({
       success: false,
@@ -170,7 +170,7 @@ router.get('/benchmark/task-types', async (req: Request, res: Response) => {
       success: true,
       data: taskTypes
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get task types:', error);
     res.status(500).json({
       success: false,

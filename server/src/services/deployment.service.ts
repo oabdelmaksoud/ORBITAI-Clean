@@ -248,7 +248,7 @@ class DeploymentService {
           status
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Vercel deployment failed:', error);
       return {
         success: false,
@@ -319,7 +319,7 @@ class DeploymentService {
           deploymentUrl: `https://vercel.com/dashboard`
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Vercel deployment failed:', error);
       return {
         success: false,
@@ -409,7 +409,7 @@ class DeploymentService {
           projectId = createData.data?.projectCreate?.id;
           logs.push('[Railway] Project created');
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn('Failed to get/create Railway project:', error);
         // Continue with deployment attempt
       }
@@ -432,7 +432,7 @@ class DeploymentService {
           serviceId: `service-${Date.now()}`
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Railway deployment failed:', error);
       return {
         success: false,
@@ -522,7 +522,7 @@ class DeploymentService {
       } else {
         throw new Error(`Unsupported AWS service type: ${service}`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('AWS deployment failed:', error);
       return {
         success: false,
@@ -566,7 +566,7 @@ class DeploymentService {
           serviceId: `service-${Date.now()}`
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Render deployment failed:', error);
       return {
         success: false,
@@ -644,7 +644,7 @@ class DeploymentService {
           status: 'building'
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('GCP deployment failed:', error);
       return {
         success: false,
@@ -714,7 +714,7 @@ class DeploymentService {
           status: 'deploying'
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Azure deployment failed:', error);
       return {
         success: false,
@@ -759,7 +759,7 @@ class DeploymentService {
           appId: `app-${Date.now()}`
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Heroku deployment failed:', error);
       return {
         success: false,
@@ -803,7 +803,7 @@ class DeploymentService {
           siteId: `site-${Date.now()}`
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Netlify deployment failed:', error);
       return {
         success: false,
@@ -864,7 +864,7 @@ class DeploymentService {
       }
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Project deployment failed:', error);
       return {
         success: false,

@@ -437,7 +437,7 @@ Use this architecture analysis to inform your project preview generation, ensuri
 
                 // Cache the result (omitted details for brevity)
 
-            } catch (error: unknown) {
+            } catch (error: any) {
                 logger.error('Preview generation failed:', error);
                 throw new Error(`Preview generation failed: ${error instanceof Error ? error.message : 'Model unavailable'}`);
             }
@@ -483,7 +483,7 @@ Use this architecture analysis to inform your project preview generation, ensuri
             latency: latency
         });
         return;
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Generate preview failed:', error);
         res.status(500).json({
             success: false,

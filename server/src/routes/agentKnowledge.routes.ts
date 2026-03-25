@@ -123,7 +123,7 @@ router.get('/', async (_req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get agent knowledge matrix:', error);
     next(error);
   }
@@ -150,7 +150,7 @@ router.get('/:agentRole', async (req: AdminRequest, res, next) => {
       success: true,
       data: { agent }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get agent knowledge:', error);
     next(error);
   }
@@ -259,7 +259,7 @@ router.get('/matrix/global', async (_req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get global knowledge matrix:', error);
     next(error);
   }

@@ -74,7 +74,7 @@ router.post(
           results
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Code validation error:', error);
       next(error);
     }
@@ -105,7 +105,7 @@ router.post(
           ...validation
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }
@@ -130,7 +130,7 @@ router.post(
         success: true,
         data: lintResults
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }
@@ -155,7 +155,7 @@ router.post(
         success: true,
         data: practiceCheck
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }
@@ -201,7 +201,7 @@ router.post(
         success: true,
         data: securityResults
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }

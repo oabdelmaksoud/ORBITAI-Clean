@@ -189,7 +189,7 @@ User's latest message: ${message}`;
       modelUsed: result.modelUsed,
       provider: result.provider
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Chat failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -325,7 +325,7 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
       res.write(`data: ${JSON.stringify({ error: apiError.message || 'Streaming failed' })}\n\n`);
       res.end();
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Streaming chat setup failed:', apiError);
     if (!res.headersSent) {
@@ -363,7 +363,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
       success: true,
       embedding
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Embedding generation failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -410,7 +410,7 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
       modelUsed: result.modelUsed,
       provider: result.provider
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Prompt enhancement failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -583,7 +583,7 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
       modelUsed: result.modelUsed,
       provider: result.provider
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Task execution failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -687,7 +687,7 @@ Be specific to the project context and role.`;
       modelUsed: result.modelUsed,
       provider: result.provider
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Agent profile generation failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -814,7 +814,7 @@ Return a JSON array with label (short 2-4 words) and prompt (enhanced descriptio
       data: suggestions,
       latency: latency
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Quick suggestions failed:', apiError);
     // Don't fail - return empty array so UI doesn't break
@@ -972,7 +972,7 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
       data: finalTheme,
       latency: latency
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Theme generation failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -1128,7 +1128,7 @@ Keep the research concise and focused on actionable insights for task generation
 
         modelUsed = llmResult.modelUsed;
         break; // Success - exit retry loop
-      } catch (error: unknown) {
+      } catch (error: any) {
         attempt++;
         const isLastAttempt = attempt > maxRetries;
         const apiError = toApiError(error);
@@ -1189,7 +1189,7 @@ Keep the research concise and focused on actionable insights for task generation
         attempt: attempt + 1
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Orchestration failed:', apiError);
     const errorMessage = apiError.message || 'Unknown error';
@@ -1254,7 +1254,7 @@ Provide a clear, concise answer based on your role and expertise.`;
         text: result.text
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to interrogate agent:', apiError);
     res.status(apiError.statusCode).json({
@@ -1353,7 +1353,7 @@ Only include fields that should be modified. Keep other fields unchanged.`;
         task: modifiedTask
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to modify task:', apiError);
     res.status(apiError.statusCode).json({
@@ -1515,7 +1515,7 @@ router.post('/generate-research', async (req: AuthRequest, res) => {
       data: researchData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Error generating research:', apiError);
     res.status(apiError.statusCode).json({
@@ -1616,7 +1616,7 @@ Use clear, professional technical language. Include specific technologies with v
       },
       latency: latency
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Deep research failed:', apiError);
     res.status(apiError.statusCode).json({
@@ -1666,7 +1666,7 @@ router.post('/full-architecture-analysis', routeTimeout(120000), async (req: Aut
       },
       latency: latency
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('[LLMRouter] Full architecture analysis failed:', apiError);
     res.status(apiError.statusCode).json({

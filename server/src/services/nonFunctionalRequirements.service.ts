@@ -120,7 +120,7 @@ class NonFunctionalRequirementsService {
         gaps,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to trace NFRs:', error);
       throw error;
     }

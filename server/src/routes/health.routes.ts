@@ -107,7 +107,7 @@ router.get('/detailed', async (_req, res) => {
         healthStatus.status = 'degraded';
       }
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Health check error:', error);
     healthStatus.dependencies.database = {
       status: 'error',
@@ -208,7 +208,7 @@ router.get('/ready', async (_req, res) => {
       status: 'ready',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Readiness check failed:', error);
     res.status(503).json({
       status: 'not ready',

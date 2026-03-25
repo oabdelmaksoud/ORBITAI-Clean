@@ -73,7 +73,7 @@ class Neo4jService {
 
       this.initialized = true;
       logger.info('✅ Neo4j service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize Neo4j service:', error);
       this.initialized = false;
       throw error;
@@ -96,7 +96,7 @@ class Neo4jService {
       await session.run('CREATE INDEX IF NOT EXISTS FOR (n:Project) ON (n.id)');
 
       logger.debug('Neo4j indexes created');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Failed to create Neo4j indexes:', error.message);
     } finally {
       await session.close();

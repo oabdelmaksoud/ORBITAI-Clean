@@ -50,7 +50,7 @@ router.post('/discover', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -76,7 +76,7 @@ router.post('/suggest-improvements', async (req: AdminRequest, res, next) => {
       success: true,
       data: suggestions
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

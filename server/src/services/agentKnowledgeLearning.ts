@@ -264,7 +264,7 @@ export class AgentKnowledgeLearningService {
           logger.debug('Process improvement generation skipped (non-critical):', improvementError.message);
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to learn from task execution for ${data.agentRole}:`, error);
       // Don't throw - learning failures shouldn't break task execution
     }
@@ -324,7 +324,7 @@ export class AgentKnowledgeLearningService {
       await agentKnowledge.save();
       
       logger.info(`Updated knowledge for agent ${audit.agentRole} from audit: ${audit.auditType}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to learn from audit for ${audit.agentRole}:`, error);
     }
   }
@@ -428,7 +428,7 @@ export class AgentKnowledgeLearningService {
       }
 
       logger.info(`Aggregated learning for ${usageStats.length} agents`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to aggregate platform learning:', error);
     }
   }

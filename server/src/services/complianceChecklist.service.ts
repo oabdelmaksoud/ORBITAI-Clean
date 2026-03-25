@@ -170,7 +170,7 @@ class ComplianceChecklistService {
       );
 
       return checklist;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate compliance checklist:', error);
       throw error;
     }
@@ -298,7 +298,7 @@ class ComplianceChecklistService {
         gaps,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to validate compliance:', error);
       throw error;
     }

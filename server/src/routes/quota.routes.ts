@@ -28,7 +28,7 @@ router.get('/', async (req: AdminRequest, res: Response) => {
       success: true,
       data: quotas
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get quotas:', error);
     res.status(500).json({
       success: false,
@@ -83,7 +83,7 @@ router.get('/:quotaId', async (req: AdminRequest, res: Response) => {
       success: true,
       data: quota
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get quota ${req.params.quotaId}:`, error);
     res.status(500).json({
       success: false,
@@ -126,7 +126,7 @@ router.post('/', async (req: AdminRequest, res: Response) => {
       data: quota,
       message: 'Quota created/updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create/update quota:', error);
     res.status(500).json({
       success: false,
@@ -174,7 +174,7 @@ router.put('/:quotaId', async (req: AdminRequest, res: Response) => {
       data: updated,
       message: 'Quota updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to update quota ${req.params.quotaId}:`, error);
     res.status(500).json({
       success: false,
@@ -212,7 +212,7 @@ router.delete('/:quotaId', async (req: AdminRequest, res: Response) => {
       success: true,
       message: 'Quota deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to delete quota ${req.params.quotaId}:`, error);
     res.status(500).json({
       success: false,
@@ -247,7 +247,7 @@ router.post('/:quotaId/reset', async (req: AdminRequest, res: Response) => {
       success: true,
       message: `Quota usage reset for ${resetPeriod} period`
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to reset quota ${req.params.quotaId}:`, error);
     res.status(500).json({
       success: false,
@@ -288,7 +288,7 @@ router.get('/target/:targetType/:targetId', async (req: AdminRequest, res: Respo
       success: true,
       data: quota
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to get quota for ${req.params.targetType}:${req.params.targetId}:`, error);
     res.status(500).json({
       success: false,

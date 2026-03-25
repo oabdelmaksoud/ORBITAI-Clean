@@ -134,7 +134,7 @@ class CodeRefinementService {
           improvements.push(`Target score (${targetScore}) achieved!`);
           break;
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`Refinement iteration ${iteration} failed:`, error);
         improvements.push(`Iteration ${iteration} failed: ${error.message}`);
         break;
@@ -300,7 +300,7 @@ Return only the refined code.`;
       });
 
       return this.extractCodeFromResponse(response.content, language);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Quick refinement failed:', error);
       return code; // Return original on failure
     }

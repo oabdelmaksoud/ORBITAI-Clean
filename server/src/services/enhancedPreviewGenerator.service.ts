@@ -725,7 +725,7 @@ Return JSON with these fields.`;
         targetPlatforms: extracted.targetPlatforms || [],
         projectType: extracted.projectType || 'unknown'
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('[EnhancedPreview] Requirements extraction failed, using fallback:', error.message);
       // Fallback: simple detection
       // Be MORE SPECIFIC - don't mark as mobile just because it says "app"
@@ -799,7 +799,7 @@ Create a 2-3 sentence executive summary that captures the project's purpose, key
       });
 
       return result.text || 'No summary generated.';
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('[EnhancedPreview] Summary generation failed:', error.message);
       return `${userGoal.substring(0, 200)}...`;
     }
@@ -859,7 +859,7 @@ Focus on modern, industry-standard tools appropriate for the project type.`;
 
       const parsed = JSON.parse(this.cleanJsonResponse(result.text || '{}'));
       return parsed.techStack || ['React', 'Node.js'];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('[EnhancedPreview] Tech stack generation failed:', error.message);
       return ['React', 'Node.js', 'PostgreSQL'];
     }
@@ -1022,7 +1022,7 @@ Return ONLY the raw Mermaid code. No markdown blocks.`;
 
       logger.info(`[EnhancedPreview] Successfully generated architecture diagram (${diagram.length} chars)`);
       return diagram;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[EnhancedPreview] Architecture generation failed:', error.message);
       // Re-throw the error instead of using fallback
       throw error;
@@ -2057,7 +2057,7 @@ Apply ${designInspiration.trends.slice(0, 3).join(', ')} design patterns.`
       logger.info(`[EnhancedPreview] ${isGame ? 'GAME' : 'WEB APP'} wireframe generated successfully via Router (${htmlContent.length} chars)`);
       return htmlContent;
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[EnhancedPreview] Wireframe generation failed: ${error.message}`);
 
       // Detailed logging for debugging
@@ -2643,7 +2643,7 @@ Start with <!DOCTYPE html>.
       logger.info(`[EnhancedPreview] ✅ Admin wireframe generated successfully (${extractedHtml.length} chars)`);
       return extractedHtml;
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       const elapsed = Date.now() - startTime;
       logger.error(`[EnhancedPreview] ❌ Admin generation FAILED: ${error.message}`, {
         errorName: error.name,
@@ -3135,7 +3135,7 @@ Keep the research concise and focused on actionable insights.`;
           });
 
           return (researchResult.text || '').substring(0, 2000);
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn('[EnhancedPreview] Research failed:', error.message);
           return '';
         }
@@ -3169,7 +3169,7 @@ Keep the research concise and focused on actionable insights.`;
             methodology: this.mapToSupportedMethodology(sdlcRecommendation.methodology),
             reasoning: sdlcRecommendation.reasoning
           };
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn('SDLC matching failed:', error.message);
           return null;
         }
@@ -3188,7 +3188,7 @@ Keep the research concise and focused on actionable insights.`;
             maxStandards: 5
           });
           return enrolledStandards.length > 0 ? enrolledStandards : null;
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn('Standards matching failed:', error.message);
           return null;
         }
@@ -3769,7 +3769,7 @@ title System Architecture for ${userGoal.substring(0, 30)}...
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await fn();
-      } catch (error: unknown) {
+      } catch (error: any) {
         if (attempt === maxRetries) {
           logger.error(`[EnhancedPreview] ${operationName} failed after ${maxRetries} attempts: `, error.message);
           throw error;
@@ -3956,7 +3956,7 @@ ${learningsSection}
       logger.info(`[EnhancedPreview] Wireframe generated successfully via Router V2(${htmlContent.length} chars)`);
       return htmlContent;
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[EnhancedPreview] Wireframe V2 generation failed: ${error.message}`);
 
       if (error.lastModel) {
@@ -4130,7 +4130,7 @@ ${featuresList}
       logger.info(`[EnhancedPreview] Admin Console generated successfully (${html.length} chars)`);
       return html;
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[EnhancedPreview] Admin Console generation failed:', error);
 
       // 6. ROBUST FALLBACK
@@ -4214,7 +4214,7 @@ NO Markdown. NO explanations.
       logger.info(`[EnhancedPreview] Wireframe generated for ${viewType} (${wireframe.length} chars)`);
       return wireframe;
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[EnhancedPreview] Wireframe generation failed for ${viewType}:`, error);
       // Return simplified grayscale version as fallback
       return this.createSimpleWireframeFallback(viewType, userGoal);

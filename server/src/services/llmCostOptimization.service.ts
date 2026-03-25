@@ -82,7 +82,7 @@ class LLMCostOptimizationService {
         trends,
         forecast
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Cost analysis failed:', error);
       throw error;
     }

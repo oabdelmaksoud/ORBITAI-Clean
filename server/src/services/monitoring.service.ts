@@ -102,7 +102,7 @@ export class MonitoringService {
         lastActivity: session.lastActivity,
         expiresAt: session.expiresAt
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get active sessions: ${error.message}`, 500);
     }
   }
@@ -133,7 +133,7 @@ export class MonitoringService {
         userAgent: 'admin-console',
         success: true
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to kill session: ${error.message}`, 500);
     }
   }
@@ -172,7 +172,7 @@ export class MonitoringService {
         available: true,
         ...stats
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get queue status:', error);
       return {
         available: false,
@@ -202,7 +202,7 @@ export class MonitoringService {
         userAgent: 'admin-console',
         success: true
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to clear queue: ${error.message}`, 500);
     }
   }
@@ -230,7 +230,7 @@ export class MonitoringService {
         uptime: process.uptime(),
         timestamp: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get system metrics: ${error.message}`, 500);
     }
   }

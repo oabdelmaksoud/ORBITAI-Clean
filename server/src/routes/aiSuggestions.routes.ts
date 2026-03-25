@@ -80,7 +80,7 @@ router.post('/suggestions', authenticateToken, rateLimiter, checkFeatureAccess('
       success: true,
       suggestions: savedSuggestions,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to generate AI suggestions:', error);
     // Return mock suggestions on error instead of failing
     try {
@@ -130,7 +130,7 @@ router.get('/suggestions', authenticateToken, rateLimiter, checkFeatureAccess('a
       success: true,
       suggestions,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     // Return empty array on error instead of failing
     res.json({
       success: true,
@@ -185,7 +185,7 @@ router.post('/suggestions/:id/apply', authenticateToken, rateLimiter, checkFeatu
       message: 'Suggestion applied successfully',
       suggestion,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -222,7 +222,7 @@ router.post('/suggestions/:id/dismiss', authenticateToken, rateLimiter, checkFea
       success: true,
       message: 'Suggestion dismissed',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -446,7 +446,7 @@ async function learnFromSuggestion(suggestion: any): Promise<void> {
         );
       }
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to learn from suggestion:', error);
   }
 }
@@ -599,7 +599,7 @@ Respond with ONLY valid JSON (no markdown, no explanation):
         }
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[AI Scope Detection] Error:', error);
     next(error);
   }

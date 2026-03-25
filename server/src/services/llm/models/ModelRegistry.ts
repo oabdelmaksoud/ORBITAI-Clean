@@ -1241,7 +1241,7 @@ export class ModelRegistry {
           status: result.status,
           updatedAt: result.updatedAt
         });
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`Failed to persist model update for ${modelId}:`, {
           error: toApiError(error).message,
           name: (error as Error).name,
@@ -1319,7 +1319,7 @@ export class ModelRegistry {
       } else {
         logger.warn(`Database not connected when registering model ${model.id}. Model added to memory only.`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to persist model ${model.id} to database:`, {
         error: toApiError(error).message,
         stack: (error as Error).stack
@@ -1429,7 +1429,7 @@ export class ModelRegistry {
 
       logger.info(`Successfully loaded ${loadedCount} default model configurations and ${syncedCount} synced models from database`);
       this.initialized = true;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to load LLM model configurations from database:', {
         error: toApiError(error).message,
         stack: (error as Error).stack
@@ -1588,7 +1588,7 @@ export class ModelRegistry {
         const openAIService = new OpenAICompatibleService(baseUrl);
         return await openAIService.getAvailableModels();
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to discover models for ${provider} at ${baseUrl}:`, toApiError(error));
       throw new Error(`Model discovery failed: ${toApiError(error).message}`);
     }

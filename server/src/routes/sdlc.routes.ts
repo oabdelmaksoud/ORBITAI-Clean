@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'SDLC matching service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('SDLC initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -74,7 +74,7 @@ router.post('/recommend', async (req, res, _next) => {
       success: true,
       data: recommendation,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('SDLC recommendation failed:', error);
     res.status(500).json({
       success: false,
@@ -143,7 +143,7 @@ router.post('/estimate-sprints', async (req, res, _next) => {
       success: true,
       data: estimation,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Sprint estimation failed:', error);
     res.status(500).json({
       success: false,
@@ -197,7 +197,7 @@ router.post('/auto-configure', async (req, res, _next) => {
       success: true,
       data: config,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('SDLC auto-configuration failed:', error);
     res.status(500).json({
       success: false,

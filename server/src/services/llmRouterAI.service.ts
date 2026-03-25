@@ -150,7 +150,7 @@ class LLMRouterAIService {
 
       // Sort by performance score descending
       return patterns.sort((a, b) => b.performanceScore - a.performanceScore);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze usage patterns:', error);
       throw error;
     }
@@ -312,7 +312,7 @@ class LLMRouterAIService {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
         return priorityOrder[b.priority] - priorityOrder[a.priority];
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate recommendations:', error);
       throw error;
     }
@@ -448,7 +448,7 @@ class LLMRouterAIService {
         const severityOrder = { critical: 3, warning: 2, info: 1 };
         return severityOrder[b.severity] - severityOrder[a.severity];
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect anomalies:', error);
       throw error;
     }
@@ -555,7 +555,7 @@ class LLMRouterAIService {
         reasoning: `Based on ${bestModel.totalRequests} historical requests: ${bestModel.performanceScore.toFixed(2)} performance score, ${bestModel.avgLatency.toFixed(0)}ms avg latency, $${bestModel.avgCost.toFixed(4)} avg cost`,
         alternatives
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to predict optimal model:', error);
       throw error;
     }
@@ -605,7 +605,7 @@ class LLMRouterAIService {
       }
 
       return suggestions;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to suggest auto-tuning:', error);
       throw error;
     }
@@ -688,7 +688,7 @@ class LLMRouterAIService {
         topAgentRoles,
         costTrend
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get insights:', error);
       throw error;
     }

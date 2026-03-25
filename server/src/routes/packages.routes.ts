@@ -41,7 +41,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         })
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -74,7 +74,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -127,7 +127,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'package.create',
       entityType: 'package',
@@ -200,7 +200,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'package.update',
       entityType: 'package',
@@ -253,7 +253,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Package deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'package.delete',
       entityType: 'package',
@@ -292,7 +292,7 @@ router.get('/public/list', async (_req, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

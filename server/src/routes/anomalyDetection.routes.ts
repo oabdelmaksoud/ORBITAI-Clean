@@ -41,7 +41,7 @@ userRouter.get('/', async (req: AuthRequest, res, next) => {
         count: anomalies.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get anomalies:', error);
     next(error);
   }
@@ -70,7 +70,7 @@ adminRouter.get('/', async (req: AdminRequest, res, next) => {
         count: anomalies.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get anomalies:', error);
     next(error);
   }

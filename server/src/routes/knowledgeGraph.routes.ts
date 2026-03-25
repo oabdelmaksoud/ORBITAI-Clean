@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'Knowledge Graph service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Knowledge Graph initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -58,7 +58,7 @@ router.post('/entities', async (req, res, _next) => {
       success: true,
       message: 'Entity added',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to add entity:', error);
     res.status(500).json({
       success: false,
@@ -97,7 +97,7 @@ router.post('/relationships', async (req, res, _next) => {
       success: true,
       message: 'Relationship added',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to add relationship:', error);
     res.status(500).json({
       success: false,
@@ -128,7 +128,7 @@ router.post('/entities/search', async (req, res, _next) => {
       success: true,
       data: entities,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Entity search failed:', error);
     res.status(500).json({
       success: false,
@@ -159,7 +159,7 @@ router.get('/entities/:id', async (req, res, _next) => {
       success: true,
       data: entity,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get entity:', error);
     res.status(500).json({
       success: false,
@@ -187,7 +187,7 @@ router.get('/entities/:id/relationships', async (req, res, _next) => {
       success: true,
       data: relationships,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get relationships:', error);
     res.status(500).json({
       success: false,
@@ -231,7 +231,7 @@ router.get('/path', async (req, res, _next) => {
       success: true,
       data: path,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Path finding failed:', error);
     res.status(500).json({
       success: false,
@@ -262,7 +262,7 @@ router.post('/extract', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Extraction failed:', error);
     res.status(500).json({
       success: false,
@@ -283,7 +283,7 @@ router.get('/stats', async (req, res, _next) => {
       success: true,
       data: stats,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get graph stats:', error);
     res.status(500).json({
       success: false,

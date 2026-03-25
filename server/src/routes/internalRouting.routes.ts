@@ -27,7 +27,7 @@ router.get('/config', async (req: AdminRequest, res) => {
       success: true,
       data: config
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get internal routing config:', error);
     res.status(500).json({
       success: false,
@@ -70,7 +70,7 @@ router.put('/config', async (req: AdminRequest, res) => {
       success: true,
       data: config
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update internal routing config:', error);
     res.status(500).json({
       success: false,
@@ -125,7 +125,7 @@ router.post('/test', async (req: AdminRequest, res) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to test routing:', error);
     res.status(500).json({
       success: false,
@@ -163,7 +163,7 @@ router.get('/statistics', async (req: AdminRequest, res) => {
         ...statistics
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get routing statistics:', error);
     res.status(500).json({
       success: false,
@@ -223,7 +223,7 @@ router.get('/history', async (req: AdminRequest, res) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get routing history:', error);
     res.status(500).json({
       success: false,
@@ -389,7 +389,7 @@ router.get('/analytics', async (req: AdminRequest, res) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get routing analytics:', error);
     res.status(500).json({
       success: false,
@@ -412,7 +412,7 @@ router.post('/clear-cache', async (req: AdminRequest, res) => {
       success: true,
       message: 'Cache cleared successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to clear cache:', error);
     res.status(500).json({
       success: false,
@@ -444,7 +444,7 @@ router.delete('/history', async (req: AdminRequest, res) => {
         deletedCount: result.deletedCount
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to delete history:', error);
     res.status(500).json({
       success: false,

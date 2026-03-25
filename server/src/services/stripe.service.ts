@@ -32,7 +32,7 @@ async function getStripe() {
     });
     
     return stripeInstance;
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.warn('Stripe package not installed. Run: npm install stripe');
     return null;
   }
@@ -118,7 +118,7 @@ class StripeService {
 
       logger.info(`Created Stripe checkout session: ${session.id} for user: ${params.userId}`);
       return session;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to create Stripe checkout session:', error);
       throw error;
     }
@@ -154,7 +154,7 @@ class StripeService {
         default:
           logger.debug(`Unhandled Stripe webhook event: ${event.type}`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to handle Stripe webhook ${event.type}:`, error);
       throw error;
     }
@@ -266,7 +266,7 @@ class StripeService {
       const subscription = await stripe.subscriptions.cancel(subscriptionId);
       logger.info(`Canceled Stripe subscription: ${subscriptionId}`);
       return subscription;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to cancel subscription ${subscriptionId}:`, error);
       throw error;
     }
@@ -317,7 +317,7 @@ class StripeService {
 
       logger.info(`Updated subscription ${params.subscriptionId} to package ${params.newPackageId}`);
       return updated;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to update subscription:`, error);
       throw error;
     }

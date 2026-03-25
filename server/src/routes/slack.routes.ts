@@ -51,7 +51,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
         state
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to initiate Slack OAuth:', error);
     res.status(500).json({
       success: false,
@@ -118,7 +118,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
         teamName: tokenData.team?.name
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle Slack OAuth callback:', error);
     res.status(500).json({
       success: false,
@@ -147,7 +147,7 @@ router.post('/webhook', async (req, res) => {
     }
 
     res.json({ success: true });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle Slack webhook:', error);
     res.status(500).json({
       success: false,
@@ -206,7 +206,7 @@ router.post('/send-message', authenticateToken, async (req: AuthRequest, res) =>
         channel: data.channel
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to send Slack message:', error);
     res.status(500).json({
       success: false,

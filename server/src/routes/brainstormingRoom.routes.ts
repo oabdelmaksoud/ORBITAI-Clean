@@ -39,7 +39,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       .limit(100);
 
     res.json({ rooms });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error fetching brainstorming rooms:', error);
     res.status(500).json({ error: error.message });
   }
@@ -65,7 +65,7 @@ router.get('/:roomId', authenticateToken, async (req: Request, res: Response) =>
     }
 
     res.json({ room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error fetching room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -149,7 +149,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
     await room.save();
 
     res.status(201).json({ room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error creating room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -209,7 +209,7 @@ router.put('/:roomId', authenticateToken, async (req: Request, res: Response) =>
     await room.save();
 
     res.json({ room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error updating room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -273,7 +273,7 @@ router.post('/:roomId/join', authenticateToken, async (req: Request, res: Respon
     await room.save();
 
     res.json({ room, joined: true });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error joining room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -300,7 +300,7 @@ router.post('/:roomId/leave', authenticateToken, async (req: Request, res: Respo
     await room.save();
 
     res.json({ success: true });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error leaving room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -365,7 +365,7 @@ router.post('/:roomId/ideas', authenticateToken, async (req: Request, res: Respo
     await room.save();
 
     res.json({ idea: newIdea, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error adding idea:', error);
     res.status(500).json({ error: error.message });
   }
@@ -404,7 +404,7 @@ router.post('/:roomId/hmw-questions', authenticateToken, async (req: Request, re
     await room.save();
 
     res.json({ question: newQuestion, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error adding HMW question:', error);
     res.status(500).json({ error: error.message });
   }
@@ -427,7 +427,7 @@ router.get('/:roomId/versions', authenticateToken, async (req: Request, res: Res
     }
 
     res.json({ versions: room.versions });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error fetching versions:', error);
     res.status(500).json({ error: error.message });
   }
@@ -479,7 +479,7 @@ router.post('/:roomId/versions/:versionNumber/restore', authenticateToken, async
     await room.save();
 
     res.json({ room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error restoring version:', error);
     res.status(500).json({ error: error.message });
   }
@@ -536,7 +536,7 @@ router.post('/:roomId/convert-to-project', authenticateToken, async (req: Reques
     await room.save();
 
     res.json({ project, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error converting room to project:', error);
     res.status(500).json({ error: error.message });
   }
@@ -562,7 +562,7 @@ router.delete('/:roomId', authenticateToken, async (req: Request, res: Response)
     await room.save();
 
     res.json({ success: true });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error deleting room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -623,7 +623,7 @@ router.post('/auto-create', authenticateToken, async (req: Request, res: Respons
     await room.save();
 
     res.status(201).json({ room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error auto-creating room:', error);
     res.status(500).json({ error: error.message });
   }
@@ -651,7 +651,7 @@ router.post('/:roomId/detect-sub-projects', authenticateToken, async (req: Reque
     });
 
     res.json({ subProjects: detected });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error detecting sub-projects:', error);
     res.status(500).json({ error: error.message });
   }
@@ -697,7 +697,7 @@ router.post('/:roomId/sub-projects', authenticateToken, async (req: Request, res
     await room.save();
 
     res.json({ subProject, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error creating sub-project:', error);
     res.status(500).json({ error: error.message });
   }
@@ -737,7 +737,7 @@ router.put('/:roomId/sub-projects/:subProjectId', authenticateToken, async (req:
     await room.save();
 
     res.json({ subProject, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error updating sub-project:', error);
     res.status(500).json({ error: error.message });
   }
@@ -774,7 +774,7 @@ router.post('/:roomId/sub-projects/:subProjectId/convert-to-prototype', authenti
     await room.save();
 
     res.json({ subProject, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error converting sub-project to prototype:', error);
     res.status(500).json({ error: error.message });
   }
@@ -832,7 +832,7 @@ router.post('/:roomId/sub-projects/:subProjectId/launch-to-workspace', authentic
     await room.save();
 
     res.json({ project, subProject, room });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error launching sub-project to workspace:', error);
     res.status(500).json({ error: error.message });
   }
@@ -871,7 +871,7 @@ router.post('/:roomId/agent/generate-ideas', authenticateToken, async (req: Requ
     );
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error generating ideas with agent:', error);
     res.status(500).json({ error: error.message });
   }
@@ -916,7 +916,7 @@ router.post('/:roomId/agent/evaluate-ideas', authenticateToken, async (req: Requ
     );
 
     res.json({ evaluations });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error evaluating ideas:', error);
     res.status(500).json({ error: error.message });
   }
@@ -953,7 +953,7 @@ router.post('/:roomId/agent/cluster', authenticateToken, async (req: Request, re
     );
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error clustering ideas:', error);
     res.status(500).json({ error: error.message });
   }
@@ -991,7 +991,7 @@ router.post('/:roomId/agent/generate-hmw', authenticateToken, async (req: Reques
     );
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error generating HMW questions:', error);
     res.status(500).json({ error: error.message });
   }
@@ -1022,7 +1022,7 @@ router.post('/:roomId/agent/facilitate', authenticateToken, async (req: Request,
     const prompt = await brainstormingAgentService.facilitateSession(roomId);
 
     res.json(prompt);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error generating facilitation prompt:', error);
     res.status(500).json({ error: error.message });
   }
@@ -1060,7 +1060,7 @@ router.post('/:roomId/agent/auto-facilitate', authenticateToken, async (req: Req
     );
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error in auto-facilitation:', error);
     res.status(500).json({ error: error.message });
   }
@@ -1102,7 +1102,7 @@ router.post('/:roomId/export/project', authenticateToken, async (req: Request, r
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error exporting to project:', error);
     res.status(500).json({ error: error.message });
   }
@@ -1146,7 +1146,7 @@ router.post('/:roomId/export/ideas', authenticateToken, async (req: Request, res
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error exporting ideas:', error);
     res.status(500).json({ error: error.message });
   }

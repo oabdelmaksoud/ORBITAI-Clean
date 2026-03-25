@@ -1179,7 +1179,7 @@ router.post('/:id/package', authenticateToken, async (req: AuthRequest, res, nex
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${packageResult.metadata.projectName.replace(/\s+/g, '-')}-package.zip"`);
     res.send(packageResult.zipBuffer);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Project packaging failed:', error);
     next(error);
   }
@@ -1234,7 +1234,7 @@ router.post('/:id/complete', authenticateToken, async (req: AuthRequest, res, ne
         ? 'Project completed successfully and ready for deployment'
         : 'Project completion finished with warnings'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Project completion failed:', error);
     next(error);
   }

@@ -219,7 +219,7 @@ Provide a thoughtful, accurate assessment based on the actual content quality, n
 
       return aiAssessment;
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[Maturity Assessment] Error generating AI assessment (using mock fallback):', error);
       // Mock fallback for testing without API keys - Return passing score!
       return {

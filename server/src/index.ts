@@ -41,7 +41,7 @@ const __dirname = path.dirname(__filename);
 try {
   const { initSentry } = await import('./services/monitoring/sentry.js');
   initSentry();
-} catch (error: unknown) {
+} catch (error: any) {
   logger.warn('Sentry initialization failed (optional):', toApiError(error).message);
 }
 
@@ -359,7 +359,7 @@ async function startServer() {
           const { neo4jService } = await import('./services/neo4j.service.js');
           await neo4jService.initialize();
           logger.info('✅ Neo4j Knowledge Graph service initialized');
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.debug('Neo4j service skipped: ' + toApiError(error).message);
         }
       } else {
@@ -378,7 +378,7 @@ async function startServer() {
         });
 
         mcpService.startHealthChecks(5 * 60 * 1000);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn('MCP health check failed:', toApiError(error).message);
       }
 
@@ -419,7 +419,7 @@ async function startServer() {
 
     }, 100); // Small delay to let server start accepting connections first
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to start server:', toApiError(error));
     process.exit(1);
   }

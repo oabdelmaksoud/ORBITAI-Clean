@@ -63,7 +63,7 @@ class CrewAIService {
     try {
       this.initialized = true;
       logger.info('✅ CrewAI service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize CrewAI service:', error);
       throw error;
     }
@@ -206,7 +206,7 @@ Provide your response:`;
         status: 'completed',
         executionTime,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Task ${task.id} execution failed:`, error);
       return {
         output: `Error: ${error.message}`,

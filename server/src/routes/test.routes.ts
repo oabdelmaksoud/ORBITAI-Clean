@@ -46,7 +46,7 @@ router.get('/gemini', async (_req, res, _next): Promise<void> => {
       },
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Gemini API test failed:', error);
     
     res.status(500).json({
@@ -105,7 +105,7 @@ router.get('/e2b', async (_req, res, _next): Promise<void> => {
     
     // Clean up
     await e2bService.close();
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('E2B API test failed:', error);
     
     res.status(500).json({
@@ -146,7 +146,7 @@ router.get('/mcp', async (_req, res, _next): Promise<void> => {
       },
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('MCP test failed:', error);
     
     res.status(500).json({
@@ -194,7 +194,7 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
         const geminiTest = await geminiService.generateContent('Say "OK"', 'gemini-2.5-flash');
         results.gemini.status = 'working';
         results.gemini.response = geminiTest.text.substring(0, 50);
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.gemini.status = 'error';
         results.gemini.error = error.message;
       }
@@ -214,7 +214,7 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
         } catch (closeError) {
           // Ignore close errors - sandbox may auto-close or not have close method
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.e2b.status = 'error';
         results.e2b.error = error.message;
       }
@@ -228,7 +228,7 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
       const allTools = await mcpService.getAllTools(activeServers);
       results.mcp.status = 'working';
       results.mcp.tools = Array.from(allTools.values()).reduce((sum, tools) => sum + tools.length, 0);
-    } catch (error: unknown) {
+    } catch (error: any) {
       results.mcp.status = 'error';
       results.mcp.error = error.message;
     }
@@ -243,7 +243,7 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
       results,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Comprehensive test failed:', error);
     
     res.status(500).json({
@@ -299,7 +299,7 @@ router.get('/gemini/structured', async (_req, res, _next): Promise<void> => {
       },
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Gemini structured output test failed:', error);
     
     res.status(500).json({
@@ -382,7 +382,7 @@ router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
         timestamp: new Date().toISOString()
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('MCP Google Search test setup failed:', error);
     
     res.status(500).json({
@@ -423,7 +423,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.gemini.latency = `${latency}ms`;
         results.gemini.response = result.text.substring(0, 50);
         results.gemini.tokensUsed = result.usage?.totalTokenCount || 0;
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.gemini.status = 'error';
         results.gemini.error = error.message || 'Unknown error';
       }
@@ -451,7 +451,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.openai.latency = `${latency}ms`;
         results.openai.response = result.text.substring(0, 50);
         results.openai.tokensUsed = result.usage.totalTokens;
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.openai.status = 'error';
         results.openai.error = error.message || 'Unknown error';
       }
@@ -479,7 +479,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.anthropic.latency = `${latency}ms`;
         results.anthropic.response = result.text.substring(0, 50);
         results.anthropic.tokensUsed = result.usage.totalTokens;
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.anthropic.status = 'error';
         results.anthropic.error = error.message || 'Unknown error';
       }
@@ -507,7 +507,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.deepseek.latency = `${latency}ms`;
         results.deepseek.response = result.text.substring(0, 50);
         results.deepseek.tokensUsed = result.usage.totalTokens;
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.deepseek.status = 'error';
         results.deepseek.error = error.message || 'Unknown error';
       }
@@ -535,7 +535,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.grok.latency = `${latency}ms`;
         results.grok.response = result.text.substring(0, 50);
         results.grok.tokensUsed = result.usage.totalTokens;
-      } catch (error: unknown) {
+      } catch (error: any) {
         results.grok.status = 'error';
         results.grok.error = error.message || 'Unknown error';
       }
@@ -561,7 +561,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       results,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('LLM providers test failed:', error);
     
     res.status(500).json({

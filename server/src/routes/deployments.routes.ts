@@ -35,7 +35,7 @@ router.get('/', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest,
       success: true,
       deployments,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -113,7 +113,7 @@ router.post('/', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest
       deployments: deployments.length === 1 ? deployments[0] : deployments,
       count: deployments.length,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create deployment:', error);
     next(error);
   }
@@ -147,7 +147,7 @@ router.get('/:id', checkFeatureAccess('cloud_deployment'), async (req: AuthReque
       success: true,
       deployment,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -194,7 +194,7 @@ router.post('/:id/stop', checkFeatureAccess('cloud_deployment'), async (req: Aut
       message: 'Deployment stopped',
       deployment,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -227,7 +227,7 @@ router.get('/:id/logs', checkFeatureAccess('cloud_deployment'), async (req: Auth
       success: true,
       logs: deployment.logs || [],
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -300,7 +300,7 @@ async function startDeployment(deploymentId: string): Promise<void> {
         logs: deployment.logs
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to start deployment ${deploymentId}:`, error);
   }
 }

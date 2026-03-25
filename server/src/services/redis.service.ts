@@ -38,7 +38,7 @@ class RedisService {
 
       await this.client.connect();
       logger.info('Redis service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Redis connection failed, continuing without cache:', error.message);
       this.client = null;
       this.connected = false;

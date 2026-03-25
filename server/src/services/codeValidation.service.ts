@@ -120,7 +120,7 @@ class CodeValidationService {
       logger.info(`✅ Validation complete. Score: ${result.qualityScore}/100`);
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Validation failed: ${error.message}`);
       return {
         valid: false,

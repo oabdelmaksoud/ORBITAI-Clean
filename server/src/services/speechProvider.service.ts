@@ -282,7 +282,7 @@ class SpeechProviderService {
         }
         
         return result;
-      } catch (error: unknown) {
+      } catch (error: any) {
         lastError = error;
         
         // Update circuit breaker
@@ -393,7 +393,7 @@ class SpeechProviderService {
           default:
             continue; // Skip unsupported providers
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         lastError = error;
         const isQuotaError = error?.status === 429 || 
                             error?.message?.includes('quota') || 
@@ -485,7 +485,7 @@ Transcribe ONLY what you actually hear with proper punctuation, capitalization, 
           confidence: seg.avg_logprob ? Math.exp(seg.avg_logprob) : undefined,
         })),
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Re-throw with more context
       if (error?.status === 429 || error?.message?.includes('quota')) {
         const enhancedError = new Error(`OpenAI quota exceeded: ${error.message}`);
@@ -524,7 +524,7 @@ Transcribe ONLY what you actually hear with proper punctuation, capitalization, 
         audioBuffer: buffer,
         mimeType: 'audio/mpeg',
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Re-throw with more context for quota errors
       if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('billing')) {
         const enhancedError = new Error(`OpenAI quota exceeded: ${error.message}`);
@@ -632,7 +632,7 @@ Return ONLY the transcribed text. If the audio is unclear, silent, or contains o
             }
           }
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error('[Speech] Error extracting transcription from Gemini response:', error);
         throw new Error(`Failed to extract transcription from Gemini response: ${error.message}`);
       }
@@ -666,7 +666,7 @@ Return ONLY the transcribed text. If the audio is unclear, silent, or contains o
         language: 'en', // Gemini auto-detects, but defaulting to English
         confidence: confidence,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Re-throw with more context
       if (error?.status === 429 || error?.message?.includes('quota')) {
         const enhancedError = new Error(`Gemini quota exceeded: ${error.message}`);
@@ -766,7 +766,7 @@ Return ONLY the transcribed text. If the audio is unclear, silent, or contains o
         audioBuffer,
         mimeType: 'audio/mpeg',
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Re-throw with more context
       if (error?.status === 429 || error?.message?.includes('quota')) {
         const enhancedError = new Error(`Gemini quota exceeded: ${error.message}`);

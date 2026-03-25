@@ -138,10 +138,8 @@ describe('Mobile Compliance Validation', () => {
 
     it('should fail for missing target SDK 34', () => {
       const code = `
-        // AndroidManifest.xml should have targetSdkVersion 34
-        // But this code doesn't mention it
         class MainActivity : ComponentActivity() {
-            // ...
+            // basic activity with no SDK config
         }
       `;
       

@@ -42,7 +42,7 @@ class VectorSearchService {
     // Initialize Weaviate if available
     try {
       await weaviateService.initialize();
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Weaviate initialization failed, using in-memory fallback:', error.message);
     }
 
@@ -64,7 +64,7 @@ class VectorSearchService {
     try {
       embedding = await embeddingService.generateEmbedding(textToEmbed);
       this.documentEmbeddings.set(doc.id, embedding);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn(`Failed to generate embedding for document ${doc.id}, using fallback:`, error.message);
       // Fallback: create a simple hash-based embedding
       embedding = this.createHashEmbedding(textToEmbed);
@@ -97,7 +97,7 @@ class VectorSearchService {
         }
 
         await weaviateService.addArtifact(artifact);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn(`Failed to add document ${doc.id} to Weaviate:`, error.message);
         // Continue with in-memory storage
       }
@@ -131,7 +131,7 @@ class VectorSearchService {
           score: result.score,
           metadata: result.metadata
         }));
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn('Weaviate vector search failed, falling back to in-memory:', error.message);
         // Fall through to in-memory search
       }
@@ -155,7 +155,7 @@ class VectorSearchService {
     let queryEmbedding: number[];
     try {
       queryEmbedding = await embeddingService.generateEmbedding(query);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Failed to generate query embedding, using hash fallback:', error.message);
       queryEmbedding = this.createHashEmbedding(query);
     }

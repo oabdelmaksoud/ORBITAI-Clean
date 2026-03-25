@@ -182,7 +182,7 @@ class BackgroundPrototypeGenerationService {
         throw new Error('Non-enhanced generation not supported in background mode');
       }
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[BackgroundPrototype] Job ${jobId} failed:`, error);
 
       job.status = 'failed';

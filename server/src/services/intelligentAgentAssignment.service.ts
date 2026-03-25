@@ -174,7 +174,7 @@ IMPORTANT:
     });
 
     return analysis.agentNeeds || [];
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Intelligent Assignment] Error analyzing project needs:', error);
     throw error;
   }
@@ -295,7 +295,7 @@ export async function assignOrCreateAgents(
       assignedExistingAgents: assignedExistingCount,
       reasoning
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Intelligent Assignment] Error assigning/creating agents:', error);
     throw error;
   }
@@ -423,7 +423,7 @@ export async function intelligentlyAssignAgentsToProject(
     const result = await assignOrCreateAgents(projectId, userId, agentNeeds);
 
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Intelligent Assignment] Error in intelligent assignment:', error);
     throw error;
   }

@@ -130,7 +130,7 @@ class AgentHealthMonitoringService {
         lastExecuted: executions[0]?.startedAt || new Date(0),
         trends
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to calculate agent health metrics:', error);
       throw error;
     }
@@ -261,7 +261,7 @@ class AgentHealthMonitoringService {
         unhealthyAgents,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate health report:', error);
       throw error;
     }

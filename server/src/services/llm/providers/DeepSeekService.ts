@@ -77,7 +77,7 @@ export class DeepSeekService {
           totalTokens: response.usage?.total_tokens || 0
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('DeepSeek API error:', apiError);
       throw new Error(`DeepSeek API error: ${apiError.message || 'Unknown error'}`);

@@ -93,7 +93,7 @@ class SecurityTestGenerationService {
         coverage,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate security test suite:', error);
       throw error;
     }
@@ -160,7 +160,7 @@ class SecurityTestGenerationService {
         targetEndpoint: test.targetEndpoint,
         targetParameter: test.targetParameter
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn(`Failed to generate ${vulnType} tests:`, error.message);
       return [];
     }

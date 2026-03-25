@@ -46,7 +46,7 @@ router.get('/', checkFeatureAccess('template_use'), async (req: FeatureRequest, 
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -92,7 +92,7 @@ router.get('/:id', checkFeatureAccess('template_use'), async (req: FeatureReques
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -163,7 +163,7 @@ router.post('/', checkFeatureAccess('template_creation'), async (req: FeatureReq
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -231,7 +231,7 @@ router.put('/:id', checkFeatureAccess('template_creation'), async (req: FeatureR
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -255,7 +255,7 @@ router.delete('/:id', checkFeatureAccess('template_creation'), async (req: Featu
       success: true,
       message: 'Template deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -290,7 +290,7 @@ router.put('/:id/share', checkFeatureAccess('template_sharing'), async (req: Fea
       },
       message: template.isPublic ? 'Template is now public' : 'Template is now private'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

@@ -225,7 +225,7 @@ class AgentConflictResolutionService {
         confidence,
         resolvedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Conflict resolution failed:', error);
       throw error;
     }
@@ -323,7 +323,7 @@ Return as JSON.`;
         suggestion: parsed.resolution,
         confidence: parsed.confidence || 70
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('LLM conflict resolution failed:', error.message);
       // Fallback to priority-based
       const result = this.resolveByPriority(conflict);

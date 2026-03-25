@@ -128,7 +128,7 @@ export class OpenAIService {
       }
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('OpenAI API error:', apiError);
       throw new Error(`OpenAI API error: ${apiError.message || 'Unknown error'}`);
@@ -209,7 +209,7 @@ export class OpenAIService {
           yield content;
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('OpenAI streaming error:', apiError);
       throw new Error(`OpenAI streaming error: ${apiError.message || 'Unknown error'}`);

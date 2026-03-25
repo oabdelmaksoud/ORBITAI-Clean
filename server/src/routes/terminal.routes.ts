@@ -45,7 +45,7 @@ router.post('/execute', checkFeatureAccess('terminal_access'), async (req: Featu
         executionTime: result.executionTime,
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Terminal] Error executing command:', error);
     next(error);
   }
@@ -63,7 +63,7 @@ router.get('/info', checkFeatureAccess('terminal_access'), async (req: FeatureRe
       success: true,
       data: info,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Terminal] Error getting terminal info:', error);
     next(error);
   }

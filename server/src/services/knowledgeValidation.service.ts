@@ -94,7 +94,7 @@ class KnowledgeValidationService {
         testedOnProjects,
         successRate
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Knowledge validation failed:', error);
       throw error;
     }

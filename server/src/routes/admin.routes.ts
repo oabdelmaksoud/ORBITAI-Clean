@@ -95,7 +95,7 @@ router.get('/dashboard', checkFeatureAccess('admin_console'), async (_req: Admin
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -156,7 +156,7 @@ router.get('/users', checkFeatureAccess('user_management'), async (req: AdminReq
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -214,7 +214,7 @@ router.post('/users', checkFeatureAccess('user_management'), async (req: AdminRe
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -263,7 +263,7 @@ router.get('/users/:id', checkFeatureAccess('user_management'), async (req: Admi
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -394,7 +394,7 @@ router.put('/users/:id', checkFeatureAccess('user_management'), async (req: Admi
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -424,7 +424,7 @@ router.delete('/users/:id', requireSuperAdmin, checkFeatureAccess('user_manageme
       success: true,
       message: 'User and all associated projects deleted'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -495,7 +495,7 @@ router.get('/projects', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -543,7 +543,7 @@ router.get('/projects/:id', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -586,7 +586,7 @@ router.put('/projects/:id', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -609,7 +609,7 @@ router.delete('/projects/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Project deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -643,7 +643,7 @@ router.post('/projects/:id/mark-as-sample', async (req: AdminRequest, res, next)
       message: 'Project marked as sample',
       data: { project }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -677,7 +677,7 @@ router.post('/projects/:id/unmark-as-sample', async (req: AdminRequest, res, nex
       message: 'Project unmarked as sample',
       data: { project }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -785,7 +785,7 @@ router.get('/system/config', async (_req: AdminRequest, res, next) => {
       success: true,
       data: config
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -828,7 +828,7 @@ router.get('/system/stats', async (_req: AdminRequest, res, next) => {
         } : null
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -850,7 +850,7 @@ router.get('/environment', requireSuperAdmin, async (req: AdminRequest, res, nex
         editable: editableVars
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -892,7 +892,7 @@ router.put('/environment', requireSuperAdmin, async (req: AdminRequest, res, nex
         updated: Object.keys(updates)
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -1013,7 +1013,7 @@ router.get('/system-artifacts', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to fetch system artifacts:', error);
     next(error);
   }

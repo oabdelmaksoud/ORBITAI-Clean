@@ -50,7 +50,7 @@ router.post('/:projectId/:standard/generate', authenticateToken, async (req: Aut
       success: true,
       data: checklist
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to generate compliance checklist:', error);
     res.status(500).json({
       success: false,
@@ -84,7 +84,7 @@ router.get('/:projectId/:standard/validate', authenticateToken, async (req: Auth
       success: true,
       data: report
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to validate compliance:', error);
     res.status(500).json({
       success: false,
