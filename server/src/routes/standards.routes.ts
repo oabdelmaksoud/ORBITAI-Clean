@@ -234,11 +234,7 @@ router.get('/:id', async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Failed to get standard:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get standard',
-      error: error.message,
-    });
+    next(error);
   }
 });
 

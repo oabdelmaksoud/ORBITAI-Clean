@@ -50,7 +50,7 @@ const upload = multer({
  * @body {File} audio - Audio file (webm, wav, mp3, etc.)
  * @returns {Object} { text: string, language?: string }
  */
-router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res) => {
+router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -105,10 +105,7 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
     }
 
     logger.error('[Speech] Transcription error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to transcribe audio',
-    });
+    next(error);
   }
 });
 
@@ -122,7 +119,7 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
  * Note: For now, we'll use OpenAI's TTS API which uses open-source models.
  * In the future, this can be replaced with fully local solutions like Coqui TTS.
  */
-router.post('/synthesize', async (req: AuthRequest, res) => {
+router.post('/synthesize', async (req: AuthRequest, res, next) => {
   try {
     const { text, voice = 'alloy', language = 'en' } = req.body;
 
@@ -172,10 +169,7 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
     res.send(synthesisResult.audioBuffer);
   } catch (error: any) {
     logger.error('[Speech] Synthesis error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to synthesize speech',
-    });
+    next(error);
   }
 });
 
@@ -185,7 +179,7 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
  * 
  * @returns {Object} { voices: Array<{id: string, name: string, language: string}> }
  */
-router.get('/voices', async (req: AuthRequest, res) => {
+router.get('/voices', async (req: AuthRequest, res, next) => {
   try {
     // Get voices from available provider
     const voices = await speechProviderService.getVoices();
@@ -203,10 +197,7 @@ router.get('/voices', async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     logger.error('[Speech] Error getting voices:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to get voices',
-    });
+    next(error);
   }
 });
 
@@ -214,7 +205,7 @@ router.get('/voices', async (req: AuthRequest, res) => {
  * GET /api/speech/providers
  * Get available speech providers
  */
-router.get('/providers', async (req: AuthRequest, res) => {
+router.get('/providers', async (req: AuthRequest, res, next) => {
   try {
     const providers = await speechProviderService.getAvailableProviders();
     const preferred = await speechProviderService.getPreferredProvider();
@@ -226,10 +217,7 @@ router.get('/providers', async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     logger.error('[Speech] Error getting providers:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to get providers',
-    });
+    next(error);
   }
 });
 
