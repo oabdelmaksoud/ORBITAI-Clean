@@ -21,7 +21,7 @@ router.get('/health', (_req, res) => {
  * GET /api/integrations/slack/auth
  * Initiate Slack OAuth flow
  */
-router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/auth', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/slack/callback`;
@@ -53,10 +53,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     logger.error('Failed to initiate Slack OAuth:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to initiate Slack OAuth'
-    });
+    next(error);
   }
 });
 

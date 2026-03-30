@@ -137,11 +137,7 @@ router.post('/estimate-sprints', async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Sprint estimation failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Sprint estimation failed',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -191,11 +187,7 @@ router.post('/auto-configure', async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('SDLC auto-configuration failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'SDLC auto-configuration failed',
-      error: error.message,
-    });
+    next(error);
   }
 });
 

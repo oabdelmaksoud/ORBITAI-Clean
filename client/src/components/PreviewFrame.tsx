@@ -773,7 +773,16 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
   <div id="root"></div>
   <script>
     window.onerror = function(msg, url, line) {
-      document.body.innerHTML = '<div style="padding:20px;color:red;font-family:monospace"><h1>Runtime Error</h1><pre>' + msg + '</pre></div>';
+      var container = document.createElement('div');
+      container.style.cssText = 'padding:20px;color:red;font-family:monospace';
+      var heading = document.createElement('h1');
+      heading.textContent = 'Runtime Error';
+      var pre = document.createElement('pre');
+      pre.textContent = String(msg);
+      container.appendChild(heading);
+      container.appendChild(pre);
+      document.body.textContent = '';
+      document.body.appendChild(container);
     };
   </script>
   
@@ -809,7 +818,23 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
         } catch(e) {
           // Obfuscate strings to prevent CUA from detecting them in the source code
           console.error('Bootstrap ' + 'Failed:', e);
-          document.body.innerHTML = '<div class="orbitai-bootstrap-error" data-error-type="bootstrap" style="color:red;padding:20px"><h1>' + 'Load Error' + '</h1><p class="error-message">Failed to initialize: ' + e.message.substring(0, 300) + '</p><p style="color:#666;font-size:12px;margin-top:10px;">Try regenerating the prototype.</p></div>';
+          var errContainer = document.createElement('div');
+          errContainer.className = 'orbitai-bootstrap-error';
+          errContainer.setAttribute('data-error-type', 'bootstrap');
+          errContainer.style.cssText = 'color:red;padding:20px';
+          var errH1 = document.createElement('h1');
+          errH1.textContent = 'Load Error';
+          var errMsg = document.createElement('p');
+          errMsg.className = 'error-message';
+          errMsg.textContent = 'Failed to initialize: ' + String(e.message).substring(0, 300);
+          var errHint = document.createElement('p');
+          errHint.style.cssText = 'color:#666;font-size:12px;margin-top:10px;';
+          errHint.textContent = 'Try regenerating the prototype.';
+          errContainer.appendChild(errH1);
+          errContainer.appendChild(errMsg);
+          errContainer.appendChild(errHint);
+          document.body.textContent = '';
+          document.body.appendChild(errContainer);
         }
     })();
   </script>
