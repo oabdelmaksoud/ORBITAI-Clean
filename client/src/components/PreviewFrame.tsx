@@ -1597,7 +1597,7 @@ try {
   console.error('Babel transformation error:', error);
   const errorDiv = document.createElement('div');
   errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #fef2f2; color: #dc2626; padding: 20px; border-bottom: 2px solid #fecaca; z-index: 10000; font-family: system-ui, sans-serif;';
-  errorDiv.innerHTML = '<strong>Code Transformation Error:</strong> The generated code could not be processed. This may be due to syntax errors or code that is too complex. Please try regenerating the prototype.';
+  errorDiv.textContent = 'Code Transformation Error: The generated code could not be processed. This may be due to syntax errors or code that is too complex. Please try regenerating the prototype.';
   if (document.body) {
     document.body.appendChild(errorDiv);
   } else {

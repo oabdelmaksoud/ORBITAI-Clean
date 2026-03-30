@@ -61,7 +61,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res, next) => {
  * GET /api/integrations/slack/callback
  * Handle Slack OAuth callback
  */
-router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/callback', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
     const { code, state } = req.query;
 
@@ -117,10 +117,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     logger.error('Failed to handle Slack OAuth callback:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to complete Slack OAuth'
-    });
+    next(error);
   }
 });
 
@@ -128,7 +125,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
  * POST /api/integrations/slack/webhook
  * Handle Slack webhook events
  */
-router.post('/webhook', async (req, res) => {
+router.post('/webhook', async (req, res, next) => {
   try {
     const { type, challenge, event } = req.body;
 
