@@ -41,7 +41,7 @@ export const rateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req: Request) => {
-    return skipAdminRoutes(req) || skipLocalhostInDev(req);
+    return skipLocalhostInDev(req);
   },
   handler: jitterHandler,
 });
@@ -50,8 +50,8 @@ export const rateLimiter = rateLimit({
 // Using a shorter window with very high limits to handle React StrictMode double invocations
 // and multiple components making requests on mount
 export const adminRateLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window (resets more frequently)
-  max: 1000, // Very high limit: 1000 requests per minute (~16 requests/second)
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // 200 requests per 15 minutes for admin routes
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -83,8 +83,7 @@ export const taskExecutionRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req: Request) => {
-    // Skip rate limiting for admin routes
-    return req.path.startsWith('/api/admin') || req.path.startsWith('/api/admin-auth');
+    return skipLocalhostInDev(req);
   }
 });
 

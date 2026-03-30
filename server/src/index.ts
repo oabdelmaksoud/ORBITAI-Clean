@@ -69,6 +69,9 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) {
+      if (config.nodeEnv === 'production') {
+        return callback(new Error('CORS: Origin required'), false);
+      }
       return callback(null, true);
     }
 
@@ -427,6 +430,35 @@ async function startServer() {
 
 startServer();
 
+// Graceful shutdown handler
+function gracefulShutdown(signal: string) {
+  logger.info(`${signal} received. Starting graceful shutdown...`);
+
+  // Force exit after 30 seconds if graceful shutdown fails
+  const forceExitTimeout = setTimeout(() => {
+    logger.error('Graceful shutdown timed out after 30s. Forcing exit.');
+    process.exit(1);
+  }, 30000);
+  forceExitTimeout.unref();
+
+  // Stop accepting new connections
+  httpServer.close(() => {
+    logger.info('HTTP server closed. No longer accepting connections.');
+
+    // Close database connection
+    mongoose.connection.close().then(() => {
+      logger.info('MongoDB connection closed.');
+      clearTimeout(forceExitTimeout);
+      process.exit(0);
+    }).catch((err) => {
+      logger.error('Error closing MongoDB connection:', err);
+      clearTimeout(forceExitTimeout);
+      process.exit(1);
+    });
+  });
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
 export default app;
-
-

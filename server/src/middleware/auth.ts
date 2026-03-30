@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger.js';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { AppError } from './errorHandler.js';
 import { config } from '../config/env.js';
 import { User } from '../models/User.model.js';

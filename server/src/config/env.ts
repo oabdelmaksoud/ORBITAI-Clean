@@ -151,7 +151,7 @@ export const config = {
     // Production: only allow configured frontend URL
     return [frontendUrl];
   })(),
-  corsCredentials: process.env.CORS_CREDENTIALS !== 'false', // Default to true
+  corsCredentials: process.env.CORS_CREDENTIALS === 'true', // Default to false
 
 };
 
