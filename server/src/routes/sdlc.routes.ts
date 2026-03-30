@@ -13,7 +13,7 @@ const router = express.Router();
  * Initialize SDLC matching service
  * POST /api/sdlc/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (req, res, next) => {
   try {
     await sdlcMatchingService.initialize();
     res.json({
@@ -22,11 +22,7 @@ router.post('/initialize', async (req, res, _next) => {
     });
   } catch (error: any) {
     logger.error('SDLC initialization failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to initialize SDLC matching service',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -34,7 +30,7 @@ router.post('/initialize', async (req, res, _next) => {
  * Recommend SDLC methodology
  * POST /api/sdlc/recommend
  */
-router.post('/recommend', async (req, res, _next) => {
+router.post('/recommend', async (req, res, next) => {
   try {
     const {
       name,
@@ -76,11 +72,7 @@ router.post('/recommend', async (req, res, _next) => {
     });
   } catch (error: any) {
     logger.error('SDLC recommendation failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'SDLC recommendation failed',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -88,7 +80,7 @@ router.post('/recommend', async (req, res, _next) => {
  * Estimate sprint count
  * POST /api/sdlc/estimate-sprints
  */
-router.post('/estimate-sprints', async (req, res, _next) => {
+router.post('/estimate-sprints', async (req, res, next) => {
   try {
     const {
       methodology,
@@ -157,7 +149,7 @@ router.post('/estimate-sprints', async (req, res, _next) => {
  * Auto-configure SDLC
  * POST /api/sdlc/auto-configure
  */
-router.post('/auto-configure', async (req, res, _next) => {
+router.post('/auto-configure', async (req, res, next) => {
   try {
     const {
       name,

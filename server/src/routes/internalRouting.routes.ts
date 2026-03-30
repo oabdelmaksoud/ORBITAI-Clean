@@ -10,6 +10,7 @@ import { internalTaskRouter } from '../services/internalTaskRouter.service.js';
 import { InternalRoutingConfig } from '../models/InternalRoutingConfig.model.js';
 import { InternalRoutingHistory } from '../models/InternalRoutingHistory.model.js';
 import { logger } from '../utils/logger.js';
+import { sanitizePagination } from '../middleware/validate.js';
 
 const router = express.Router();
 
@@ -185,41 +186,41 @@ router.get('/history', async (req: AdminRequest, res) => {
       taskType, 
       context,
       modelId,
-      limit = '100',
-      offset = '0'
     } = req.query;
-    
+
+    const { page, limit, skip } = sanitizePagination(req.query);
+
     const query: any = {};
-    
+
     if (startDate || endDate) {
       query.timestamp = {};
       if (startDate) query.timestamp.$gte = new Date(startDate as string);
       if (endDate) query.timestamp.$lte = new Date(endDate as string);
     }
-    
+
     if (tier) query.selectedTier = tier;
     if (taskType) query.taskType = taskType;
     if (context) query.context = context;
     if (modelId) query.selectedModelId = modelId;
-    
+
     const [history, total] = await Promise.all([
       InternalRoutingHistory.find(query)
         .sort({ timestamp: -1 })
-        .skip(parseInt(offset as string))
-        .limit(parseInt(limit as string))
+        .skip(skip)
+        .limit(limit)
         .lean(),
       InternalRoutingHistory.countDocuments(query)
     ]);
-    
+
     res.json({
       success: true,
       data: {
         history,
         pagination: {
           total,
-          limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
-          hasMore: total > parseInt(offset as string) + parseInt(limit as string)
+          limit,
+          page,
+          hasMore: total > skip + limit
         }
       }
     });

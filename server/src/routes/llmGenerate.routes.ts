@@ -240,12 +240,8 @@ Keep suggestions concise and actionable.`;
             }
         });
     } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Quick Suggestions] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+        logger.error('[LLM Quick Suggestions] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 
@@ -253,7 +249,7 @@ Keep suggestions concise and actionable.`;
  * POST /api/llm/generate-theme
  * Generate UI theme configuration
  */
-router.post('/generate-theme', async (req: AuthRequest, res, _next) => {
+router.post('/generate-theme', async (req: AuthRequest, res, next) => {
     try {
         const { projectType, style = 'modern', colorPreference = '' } = req.body;
 
@@ -329,12 +325,8 @@ Return a JSON theme object with:
             }
         });
     } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Generate Theme] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+        logger.error('[LLM Generate Theme] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 
