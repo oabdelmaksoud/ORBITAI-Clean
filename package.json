@@ -17,6 +17,7 @@
         "build:server": "npm run build --workspace=server",
         "clean": "rm -rf client/dist server/dist shared/dist",
         "test": "npm run test --workspaces",
+        "test:e2e": "bash ./e2e-test.sh",
         "install:all": "npm install",
         "start:prod": "npm run start --workspace=server",
         "preview:client": "npm run preview --workspace=client"
