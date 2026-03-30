@@ -143,10 +143,7 @@ router.post('/webhook', async (req, res, next) => {
     res.json({ success: true });
   } catch (error: any) {
     logger.error('Failed to handle Slack webhook:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to process webhook'
-    });
+    next(error);
   }
 });
 
@@ -154,7 +151,7 @@ router.post('/webhook', async (req, res, next) => {
  * POST /api/integrations/slack/send-message
  * Send message to Slack channel
  */
-router.post('/send-message', authenticateToken, async (req: AuthRequest, res) => {
+router.post('/send-message', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
     const { channel, message } = req.body;
 
@@ -202,10 +199,7 @@ router.post('/send-message', authenticateToken, async (req: AuthRequest, res) =>
     });
   } catch (error: any) {
     logger.error('Failed to send Slack message:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to send message'
-    });
+    next(error);
   }
 });
 

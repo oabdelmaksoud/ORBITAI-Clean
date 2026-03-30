@@ -14,7 +14,7 @@ const router = express.Router();
  * Initialize standards matching service
  * POST /api/standards/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (req, res, next) => {
   try {
     await standardsMatchingService.initialize();
     res.json({
@@ -23,11 +23,7 @@ router.post('/initialize', async (req, res, _next) => {
     });
   } catch (error: any) {
     logger.error('Standards initialization failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to initialize standards service',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -35,7 +31,7 @@ router.post('/initialize', async (req, res, _next) => {
  * Find matching standards for a project
  * POST /api/standards/match
  */
-router.post('/match', async (req, res, _next) => {
+router.post('/match', async (req, res, next) => {
   try {
     const {
       name,
@@ -83,11 +79,7 @@ router.post('/match', async (req, res, _next) => {
     });
   } catch (error: any) {
     logger.error('Standards matching failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to find matching standards',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -95,7 +87,7 @@ router.post('/match', async (req, res, _next) => {
  * Auto-enroll standards for a project
  * POST /api/standards/auto-enroll
  */
-router.post('/auto-enroll', async (req, res, _next) => {
+router.post('/auto-enroll', async (req, res, next) => {
   try {
     const {
       name,
@@ -146,11 +138,7 @@ router.post('/auto-enroll', async (req, res, _next) => {
     });
   } catch (error: any) {
     logger.error('Auto-enrollment failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to auto-enroll standards',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -158,7 +146,7 @@ router.post('/auto-enroll', async (req, res, _next) => {
  * Search for standards
  * POST /api/standards/search
  */
-router.post('/search', async (req, res, _next) => {
+router.post('/search', async (req, res, next) => {
   try {
     const { query, filters } = req.body;
 
@@ -190,7 +178,7 @@ router.post('/search', async (req, res, _next) => {
  * Get all standards
  * GET /api/standards
  */
-router.get('/', async (req, res, _next) => {
+router.get('/', async (req, res, next) => {
   try {
     const { category, projectType, industry, complianceLevel, isActive } = req.query;
 
@@ -235,7 +223,7 @@ router.get('/', async (req, res, _next) => {
  * Get standard by ID
  * GET /api/standards/:id
  */
-router.get('/:id', async (req, res, _next) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const standard = await QualityStandard.findOne({ id }).exec();

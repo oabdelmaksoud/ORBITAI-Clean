@@ -3,7 +3,7 @@
  * RESTful endpoints for AI-powered game mechanics generation
  */
 
-import express, { Response } from 'express';
+import express, { Response, NextFunction } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import gameMechanicsService from '../services/gameMechanicsService.js';
 import { logger } from '../utils/logger.js';
@@ -15,7 +15,7 @@ const router = express.Router();
  * POST /api/game-mechanics/generate
  * Generate game mechanics from description
  */
-router.post('/generate', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/generate', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { gameDescription, targetEngine, complexity, customization }: MechanicsRequest = req.body;
 
@@ -43,10 +43,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
 
     } catch (error: any) {
         logger.error('[GameMechanics API] Generation failed:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message || 'Failed to generate game mechanics'
-        });
+        next(error);
     }
 });
 
@@ -54,7 +51,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
  * GET /api/game-mechanics/templates
  * List all available mechanics templates
  */
-router.get('/templates', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/templates', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const templates = gameMechanicsService.getAvailableTemplates();
 
@@ -78,10 +75,7 @@ router.get('/templates', authenticateToken, async (req: AuthRequest, res: Respon
 
     } catch (error: any) {
         logger.error('[GameMechanics API] Failed to list templates:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to list templates'
-        });
+        next(error);
     }
 });
 
@@ -89,7 +83,7 @@ router.get('/templates', authenticateToken, async (req: AuthRequest, res: Respon
  * GET /api/game-mechanics/templates/:templateId
  * Get details of a specific template
  */
-router.get('/templates/:templateId', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/templates/:templateId', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { templateId } = req.params;
         const template = gameMechanicsService.getTemplate(templateId);
@@ -114,10 +108,7 @@ router.get('/templates/:templateId', authenticateToken, async (req: AuthRequest,
 
     } catch (error: any) {
         logger.error('[GameMechanics API] Failed to get template:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to get template'
-        });
+        next(error);
     }
 });
 
