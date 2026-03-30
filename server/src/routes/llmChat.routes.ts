@@ -66,7 +66,7 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
                 provider: result.provider
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Chat] Error:', errorMessage);
         res.status(500).json({
@@ -124,7 +124,7 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
 
         res.write('data: [DONE]\n\n');
         res.end();
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Chat Stream] Error:', errorMessage);
 

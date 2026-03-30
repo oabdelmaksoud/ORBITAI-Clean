@@ -69,7 +69,7 @@ class NLPService {
       return summarySentences.length > maxLength
         ? summarySentences.substring(0, maxLength) + '...'
         : summarySentences;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to summarize content:', error);
       // Fallback: return first N characters
       return content.substring(0, maxLength) + (content.length > maxLength ? '...' : '');
@@ -107,7 +107,7 @@ class NLPService {
         .map(([word]) => word);
 
       return sorted;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to extract keywords:', error);
       return [];
     }
@@ -164,7 +164,7 @@ class NLPService {
       );
 
       return unique;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to extract entities:', error);
       return [];
     }
@@ -212,7 +212,7 @@ class NLPService {
         label,
         confidence: Math.abs(score)
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze sentiment:', error);
       return {
         score: 0,
@@ -244,7 +244,7 @@ class NLPService {
         topics,
         readability
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze content:', error);
       throw error;
     }

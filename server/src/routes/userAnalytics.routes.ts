@@ -140,7 +140,7 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
         summary
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -268,7 +268,7 @@ router.get('/segmentation', async (_req: AdminRequest, res, next) => {
         totalUsers: users.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -378,7 +378,7 @@ router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
         totalUsers: users.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

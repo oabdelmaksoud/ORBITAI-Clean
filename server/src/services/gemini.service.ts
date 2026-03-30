@@ -529,7 +529,7 @@ export class GeminiService {
       }
 
       return parsed;
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Enhance error messages for common issues
       let enhancedError = error;
 
@@ -669,7 +669,7 @@ export class GeminiService {
           yield text;
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Gemini streaming error:', error);
       throw new Error(`Gemini streaming error: ${error.message || 'Unknown error'}`);
     }

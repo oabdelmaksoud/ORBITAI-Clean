@@ -227,7 +227,7 @@ class CUAAdapterService {
         try {
             const result = await cuaService.testPrototypeLive(html, sessionId);
             return this.convertToCUAFormat(result);
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA Adapter] Local execution failed:', error);
             return {
                 output: [],
@@ -324,7 +324,7 @@ class CUAAdapterService {
 
             return response;
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA Adapter] LLM-enhanced execution failed:', error);
             // Fall back to local execution
             return this.executeLocal(html, sessionId);
@@ -390,7 +390,7 @@ class CUAAdapterService {
             await client.disconnect();
             return response;
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA Adapter] Cloud execution failed:', error);
             logger.info('[CUA Adapter] Falling back to local execution');
             return this.executeLocal(html, sessionId);

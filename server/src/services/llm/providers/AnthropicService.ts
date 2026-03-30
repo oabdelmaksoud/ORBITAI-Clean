@@ -81,7 +81,7 @@ export class AnthropicService {
           totalTokens: response.usage.input_tokens + response.usage.output_tokens
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Anthropic API error:', apiError);
       throw new Error(`Anthropic API error: ${apiError.message || 'Unknown error'}`);

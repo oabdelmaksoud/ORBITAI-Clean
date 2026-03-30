@@ -39,7 +39,7 @@ router.post('/analyze', authenticateToken, async (req: AuthRequest, res, next) =
       success: true,
       data: { assessment }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Maturity Assessment] Route error:', error);
     next(error);
   }

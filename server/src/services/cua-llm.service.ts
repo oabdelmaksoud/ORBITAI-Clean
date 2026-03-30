@@ -127,7 +127,7 @@ Return a JSON array of detected elements.`;
             logger.info(`[CUA-LLM] Detected ${result?.length || 0} elements from screenshot`);
             return result || [];
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA-LLM] Screenshot analysis failed:', error);
             return [];
         }
@@ -196,7 +196,7 @@ Provide your reasoning and confidence (0-1).`;
             logger.info(`[CUA-LLM] Next action: ${result?.action} (confidence: ${result?.confidence})`);
             return result || { action: 'done', reasoning: 'Unable to determine next action', confidence: 0 };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA-LLM] Action decision failed:', error);
             return { action: 'done', reasoning: 'LLM analysis failed', confidence: 0 };
         }
@@ -262,7 +262,7 @@ Be specific about the cause based on what you see.`;
                 isRetryable: true
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA-LLM] Failure analysis failed:', error);
             return {
                 cause: 'Analysis failed',
@@ -322,7 +322,7 @@ Keep it brief but insightful.`;
 
             return result.text || `Test completed: ${passedCount}/${results.length} passed`;
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA-LLM] Summary generation failed:', error);
             return `Test completed: ${passedCount}/${results.length} passed, ${failedCount} failed`;
         }
@@ -380,7 +380,7 @@ Also provide alternative selectors if the primary one might not work.`;
 
             return result || { selector: null, confidence: 0, alternatives: [] };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA-LLM] Selector finding failed:', error);
             return { selector: null, confidence: 0, alternatives: [] };
         }
@@ -487,7 +487,7 @@ Provide the COMPLETE fixed HTML code with all corrections applied.`;
                 explanation: 'Unable to generate fix'
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA-LLM] Fix generation failed:', error);
             return {
                 success: false,

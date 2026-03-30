@@ -84,7 +84,7 @@ router.post('/search', async (req: AuthRequest & FeatureRequest, res, _next) => 
       success: true,
       data: results.slice(0, 20) // Limit to 20 results
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Codebase search failed:', error);
     res.status(500).json({
       success: false,

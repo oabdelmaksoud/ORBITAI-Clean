@@ -209,7 +209,7 @@ class InternalTaskRouterService {
       logger.info(`[InternalRouter] Selected ${selectedModel.name} (${tier} tier) for ${input.taskType || 'unknown'} task. Reasoning: ${reasoning}`);
 
       return decision;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[InternalRouter] Routing failed:', error);
 
       // Fallback to a model that supports JSON mode (for structured output tasks)

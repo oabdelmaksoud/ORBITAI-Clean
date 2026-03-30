@@ -37,7 +37,7 @@ router.post('/publish', async (req: AdminRequest, res, next) => {
       success: true,
       data: listing
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -63,7 +63,7 @@ router.get('/marketplace', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -86,7 +86,7 @@ router.post('/rate', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Rating submitted'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -113,7 +113,7 @@ router.post('/fork', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -136,7 +136,7 @@ router.post('/import', async (req: AdminRequest, res, next) => {
       success: true,
       data: { improvementId: importedId }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -153,7 +153,7 @@ router.get('/stats', async (req: AdminRequest, res, next) => {
       success: true,
       data: stats
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

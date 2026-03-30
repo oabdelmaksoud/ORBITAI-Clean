@@ -34,7 +34,7 @@ router.post('/summarize', async (req: AdminRequest, res, next) => {
       success: true,
       data: { summary }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -57,7 +57,7 @@ router.post('/keywords', async (req: AdminRequest, res, next) => {
       success: true,
       data: { keywords }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -80,7 +80,7 @@ router.post('/entities', async (req: AdminRequest, res, next) => {
       success: true,
       data: { entities }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -103,7 +103,7 @@ router.post('/sentiment', async (req: AdminRequest, res, next) => {
       success: true,
       data: { sentiment }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -126,7 +126,7 @@ router.post('/analyze', async (req: AdminRequest, res, next) => {
       success: true,
       data: analysis
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

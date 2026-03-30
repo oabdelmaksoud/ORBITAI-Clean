@@ -91,7 +91,7 @@ class FlakyTestDetectionService {
 
       logger.info(`Detected ${flakyTests.length} flaky tests`);
       return flakyTests;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect flaky tests:', error);
       throw error;
     }
@@ -191,7 +191,7 @@ Identify the most likely causes for this flaky test.`;
 
       const parsed = JSON.parse(response.content);
       return parsed.causes || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('LLM cause identification failed:', error.message);
       return ['Unknown cause - requires manual investigation'];
     }

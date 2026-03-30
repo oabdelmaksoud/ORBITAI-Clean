@@ -35,7 +35,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res, next) => {
       success: true,
       data: { folder }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -57,7 +57,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res, next) => {
       success: true,
       data: { folders }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -84,7 +84,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res, next) => {
       success: true,
       data: { folder }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -119,7 +119,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res, next) => {
       success: true,
       data: { folder }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -144,7 +144,7 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res, next) => 
       success: true,
       message: hardDelete ? 'Folder and contents deleted successfully' : 'Folder deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -167,7 +167,7 @@ router.post('/:id/conversations/:conversationId', authenticateToken, async (req:
       success: true,
       message: 'Conversation added to folder'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -190,7 +190,7 @@ router.delete('/:id/conversations/:conversationId', authenticateToken, async (re
       success: true,
       message: 'Conversation removed from folder'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

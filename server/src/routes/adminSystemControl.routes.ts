@@ -198,7 +198,7 @@ router.get('/logs', async (req: AdminRequest, res, next) => {
           }
         });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       // If log directory doesn't exist, return empty
       res.json({
         success: true,

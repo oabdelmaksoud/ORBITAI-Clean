@@ -7,6 +7,22 @@ import { Request, Response, NextFunction } from 'express';
 import { z, ZodError } from 'zod';
 import { AppError } from './errorHandler.js';
 
+const MAX_PAGINATION_LIMIT = 100;
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+
+/**
+ * Sanitize and enforce pagination parameters from query params.
+ * Enforces a max limit of 100 to prevent excessive data fetching.
+ * Returns { page, limit, skip } with safe defaults.
+ */
+export function sanitizePagination(query: Record<string, any>): { page: number; limit: number; skip: number } {
+  const page = Math.max(1, parseInt(query.page as string) || DEFAULT_PAGE);
+  const limit = Math.min(Math.max(1, parseInt(query.limit as string) || DEFAULT_LIMIT), MAX_PAGINATION_LIMIT);
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
+}
+
 /**
  * Middleware factory to validate request body against a Zod schema
  */

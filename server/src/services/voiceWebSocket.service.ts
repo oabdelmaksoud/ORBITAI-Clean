@@ -101,7 +101,7 @@ class VoiceWebSocketService {
             // Binary audio data
             await this.handleAudioChunk(session, data);
           }
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.error(`[VoiceWebSocket] Error handling message: ${error.message}`);
           this.sendMessage(ws, {
             type: 'error',
@@ -236,7 +236,7 @@ class VoiceWebSocketService {
           text: transcription,
           interim: false
         });
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`[VoiceWebSocket] Transcription failed: ${error.message}`);
         this.sendMessage(session.ws, {
           type: 'error',
@@ -341,7 +341,7 @@ class VoiceWebSocketService {
             type: 'response_complete'
           });
 
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.error(`[VoiceWebSocket] Synthesis failed: ${error.message}`);
           this.sendMessage(session.ws, {
             type: 'error',
@@ -353,7 +353,7 @@ class VoiceWebSocketService {
           });
         }
 
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`[VoiceWebSocket] LLM request failed: ${error.message}`);
         this.sendMessage(session.ws, {
           type: 'error',
@@ -361,7 +361,7 @@ class VoiceWebSocketService {
         });
       }
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[VoiceWebSocket] Error processing audio: ${error.message}`);
       this.sendMessage(session.ws, {
         type: 'error',

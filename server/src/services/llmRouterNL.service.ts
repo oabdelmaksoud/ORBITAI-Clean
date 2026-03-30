@@ -108,7 +108,7 @@ Return ONLY valid JSON, no markdown formatting, no code blocks.`;
         explanation: `Generated rule "${ruleData.name}" with ${Object.keys(ruleData.conditions || {}).length} conditions and ${Object.keys(ruleData.actions || {}).length} actions`,
         validationErrors: validationErrors.length > 0 ? validationErrors : undefined
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate rule from natural language:', error);
       throw new Error(`Failed to generate rule: ${error.message}`);
     }
@@ -180,7 +180,7 @@ Provide a clear, concise explanation of what this rule does, when it applies, an
       });
 
       return result.text;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to explain rule:', error);
       // Fallback to manual explanation
       return this.generateManualExplanation(rule);
@@ -295,7 +295,7 @@ Suggest specific improvements to make this rule more effective, cost-efficient, 
         suggestions: suggestions.suggestions || [],
         improvedRule: suggestions.improvedRule
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to suggest rule improvements:', error);
       // Return basic suggestions based on rule structure
       return {

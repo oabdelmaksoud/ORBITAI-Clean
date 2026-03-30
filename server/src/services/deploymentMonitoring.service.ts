@@ -70,7 +70,7 @@ class DeploymentMonitoringService {
         metrics,
         alerts
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Deployment monitoring failed:', error);
       throw error;
     }
@@ -100,7 +100,7 @@ class DeploymentMonitoringService {
         uptime,
         lastCheck: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         status: 'unhealthy',
         responseTime: 0,

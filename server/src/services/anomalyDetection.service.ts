@@ -95,7 +95,7 @@ class AnomalyDetectionService {
         const severityOrder = { critical: 3, warning: 2, info: 1 };
         return severityOrder[b.severity] - severityOrder[a.severity];
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect anomalies:', error);
       return [];
     }
@@ -161,7 +161,7 @@ class AnomalyDetectionService {
           });
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect cost spikes:', error);
     }
 
@@ -222,7 +222,7 @@ class AnomalyDetectionService {
           affectedEntities: filters
         });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect performance degradation:', error);
     }
 
@@ -276,7 +276,7 @@ class AnomalyDetectionService {
           }
         });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect error spikes:', error);
     }
 
@@ -348,7 +348,7 @@ class AnomalyDetectionService {
           });
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to detect unusual patterns:', error);
     }
 

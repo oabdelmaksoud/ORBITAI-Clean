@@ -40,7 +40,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: documents
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -66,7 +66,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: document
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -95,7 +95,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: document
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -124,7 +124,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: document
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -153,7 +153,7 @@ router.post('/:id/comments', async (req: AdminRequest, res, next) => {
       success: true,
       data: comment
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -182,7 +182,7 @@ router.post('/:id/comments/:commentId/reply', async (req: AdminRequest, res, nex
       success: true,
       message: 'Reply added'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -204,7 +204,7 @@ router.get('/:id/versions/:version', async (req: AdminRequest, res, next) => {
       success: true,
       data: { version, content }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -231,7 +231,7 @@ router.get('/:id/compare', async (req: AdminRequest, res, next) => {
       success: true,
       data: comparison
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -248,7 +248,7 @@ router.post('/:id/lock', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Document locked'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -265,7 +265,7 @@ router.post('/:id/unlock', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Document unlocked'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

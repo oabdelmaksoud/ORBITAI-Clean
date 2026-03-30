@@ -39,7 +39,7 @@ router.get('/config', async (req, res) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get internal router config:', error);
     res.status(500).json({
       success: false,
@@ -85,7 +85,7 @@ router.put('/config', async (req, res) => {
       success: true,
       data: { config }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update internal router config:', error);
     res.status(500).json({
       success: false,
@@ -114,7 +114,7 @@ router.get('/statistics', async (req, res) => {
         timeRange: { start, end }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get internal router statistics:', error);
     res.status(500).json({
       success: false,
@@ -173,7 +173,7 @@ router.get('/history', async (req, res) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get internal router history:', error);
     res.status(500).json({
       success: false,
@@ -209,7 +209,7 @@ router.post('/test', async (req, res) => {
       success: true,
       data: { decision }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to test internal routing:', error);
     res.status(500).json({
       success: false,
@@ -260,7 +260,7 @@ router.post('/tiers', async (req, res) => {
       success: true,
       data: { config: updatedConfig }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update tier:', error);
     res.status(500).json({
       success: false,
@@ -310,7 +310,7 @@ router.post('/task-overrides', async (req, res) => {
       success: true,
       data: { config: updatedConfig }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update task override:', error);
     res.status(500).json({
       success: false,
@@ -347,7 +347,7 @@ router.delete('/task-overrides/:taskType', async (req, res) => {
       success: true,
       data: { config: updatedConfig }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to delete task override:', error);
     res.status(500).json({
       success: false,
@@ -397,7 +397,7 @@ router.post('/context-overrides', async (req, res) => {
       success: true,
       data: { config: updatedConfig }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to update context override:', error);
     res.status(500).json({
       success: false,
@@ -434,7 +434,7 @@ router.delete('/context-overrides/:context', async (req, res) => {
       success: true,
       data: { config: updatedConfig }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to delete context override:', error);
     res.status(500).json({
       success: false,
@@ -457,7 +457,7 @@ router.post('/clear-cache', async (req, res) => {
       success: true,
       message: 'Cache cleared successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to clear cache:', error);
     res.status(500).json({
       success: false,
@@ -487,7 +487,7 @@ router.post('/reset', async (req, res) => {
       success: true,
       data: { config }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to reset config:', error);
     res.status(500).json({
       success: false,

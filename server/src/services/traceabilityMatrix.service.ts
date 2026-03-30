@@ -132,7 +132,7 @@ class TraceabilityMatrixService {
         },
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate traceability matrix:', error);
       throw error;
     }

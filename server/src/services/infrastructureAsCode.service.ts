@@ -65,7 +65,7 @@ class InfrastructureAsCodeService {
       }
 
       return templates;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate IaC templates:', error);
       throw error;
     }
@@ -99,7 +99,7 @@ class InfrastructureAsCodeService {
         content: response.content,
         resources
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn(`Failed to generate ${tool} template:`, error.message);
       return null;
     }

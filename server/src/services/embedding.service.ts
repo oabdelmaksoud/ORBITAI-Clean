@@ -88,7 +88,7 @@ export class EmbeddingService {
 
       const data = await response.json();
       return data.data[0].embedding;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('OpenAI embedding generation failed:', error);
       // Fallback to hash-based embedding
       return this.generateHashEmbedding(text);
@@ -114,7 +114,7 @@ export class EmbeddingService {
       });
 
       return result.embeddings?.[0]?.values || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Gemini embedding generation failed:', error);
       // Fallback to hash-based embedding
       return this.generateHashEmbedding(text);

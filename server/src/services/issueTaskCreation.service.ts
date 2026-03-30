@@ -114,7 +114,7 @@ class IssueTaskCreationService {
         created: true,
         message: `Task created successfully: ${newTask.title}`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to create task for issue:', error);
       return {
         taskId: '',

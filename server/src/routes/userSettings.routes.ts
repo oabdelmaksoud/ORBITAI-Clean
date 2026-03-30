@@ -63,7 +63,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -117,7 +117,7 @@ router.put('/', async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -157,7 +157,7 @@ router.patch('/preference', async (req: AuthRequest, res, next) => {
         preference: { [key]: value }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -217,7 +217,7 @@ router.post('/migrate', async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -265,7 +265,7 @@ router.get('/llm-config', async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -346,7 +346,7 @@ router.put('/llm-config', async (req: AuthRequest, res, next) => {
         if (llm.enabled !== false) {
           try {
             await modelRegistry.registerDiscoveredModels(userId, llm.type, llm.baseUrl);
-          } catch (error: unknown) {
+          } catch (error: any) {
             logger.warn(`Failed to discover models for ${llm.type} at ${llm.baseUrl}:`, error);
             // Continue with other LLMs even if one fails
           }
@@ -389,7 +389,7 @@ router.put('/llm-config', async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -423,7 +423,7 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
             try {
               // Decrypt the saved key
               apiKeyToTest = userApiKeyEncryption.decryptApiKey(userId, savedKey.apiKey);
-            } catch (error: unknown) {
+            } catch (error: any) {
               return res.json({
                 success: false,
                 error: 'Failed to decrypt saved API key'
@@ -510,7 +510,7 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
           error: testResult.error,
           models: testResult.models
         });
-      } catch (error: unknown) {
+      } catch (error: any) {
         return res.json({
           success: false,
           error: error.message || 'Connection test failed'
@@ -519,7 +519,7 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
     } else {
       throw new AppError('Invalid test type', 400);
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -565,7 +565,7 @@ router.delete('/llm-config/api-key/:provider', async (req: AuthRequest, res, nex
       success: true,
       message: 'API key deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -617,7 +617,7 @@ router.delete('/llm-config/local-llm', async (req: AuthRequest, res, next) => {
       if (llm.enabled !== false) {
         try {
           await modelRegistry.registerDiscoveredModels(userId, llm.type, llm.baseUrl);
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn(`Failed to discover models for ${llm.type} at ${llm.baseUrl}:`, error);
         }
       }
@@ -629,7 +629,7 @@ router.delete('/llm-config/local-llm', async (req: AuthRequest, res, next) => {
       success: true,
       message: 'Local LLM deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

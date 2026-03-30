@@ -32,7 +32,7 @@ router.post('/trigger', async (req: AdminRequest, res: Response, next: NextFunct
       success: true,
       message: 'Agent learning aggregation completed'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -54,7 +54,7 @@ router.post('/embed-artifacts', async (req: AdminRequest, res: Response, next: N
       message: `Embedded ${embedded} artifacts`,
       count: embedded
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -78,7 +78,7 @@ router.get('/status', async (req: AdminRequest, res: Response, next: NextFunctio
         aggregatorRunning: agentKnowledgeAggregator.isRunning || false
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -110,7 +110,7 @@ router.post('/embed-single/:artifactId', async (req: AdminRequest, res: Response
       success: true,
       message: `Artifact ${artifactId} embedding generated`
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

@@ -1,6 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+
+const TEST_SECRET = 'test-secret-key-for-unit-tests';
+
+// Mock config before auth module imports it
+vi.mock('../../config/env.js', () => ({
+  config: {
+    jwtSecret: 'test-secret-key-for-unit-tests',
+    jwtExpiresIn: '7d',
+  },
+  default: {
+    jwtSecret: 'test-secret-key-for-unit-tests',
+    jwtExpiresIn: '7d',
+  },
+}));
+
 import { authenticateToken, generateToken, AuthRequest } from '../../middleware/auth.js';
 import { AppError } from '../../middleware/errorHandler.js';
 import { config } from '../../config/env.js';
@@ -60,13 +75,13 @@ describe('Auth Middleware', () => {
 
       const res = {} as Response;
       let nextCalled = false;
-      let nextError: any = null;
+      let nextError: any = undefined;
       const next = ((err?: any) => { nextCalled = true; nextError = err; }) as NextFunction;
 
       await authenticateToken(req, res, next);
 
       expect(nextCalled).toBe(true);
-      expect(nextError).toBeNull();
+      expect(nextError).toBeUndefined();
       expect(req.user).toBeDefined();
       expect(req.user?.id).toBe(userId);
       expect(req.user?.email).toBe(email);

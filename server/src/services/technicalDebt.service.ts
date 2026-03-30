@@ -124,7 +124,7 @@ class TechnicalDebtService {
 
       logger.info(`Identified ${debtItems.length} technical debt items`);
       return debtItems;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to identify technical debt:', error);
       throw error;
     }
@@ -374,7 +374,7 @@ class TechnicalDebtService {
         remediationPriorities,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate technical debt report:', error);
       throw error;
     }

@@ -220,7 +220,7 @@ export async function seedHomepageContent(): Promise<void> {
     }
 
     logger.info(`✅ Homepage content seeding complete: ${created} created, ${updated} updated`);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.warn('Homepage content seeding failed:', error.message);
   }
 }

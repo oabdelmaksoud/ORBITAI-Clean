@@ -120,7 +120,7 @@ class ApiKeyManagementService {
       await key.save();
 
       return decrypted;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to decrypt API key ${id}:`, error);
       return null;
     }
@@ -152,7 +152,7 @@ class ApiKeyManagementService {
       await key.save();
 
       return decrypted;
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Handle MongoDB timeout errors specifically
       if (error.name === 'MongoServerError' || error.name === 'MongooseError' || error.message?.includes('buffering timed out')) {
         logger.error(`MongoDB connection issue while retrieving API key for ${provider}:`, error.message);
@@ -187,7 +187,7 @@ class ApiKeyManagementService {
         apiKey: decrypted,
         metadata: key.metadata
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to decrypt API key for provider ${provider}:`, error);
       return null;
     }

@@ -83,7 +83,7 @@ class OpenRouterService {
 
       const data = await response.json();
       return data.data || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('[OpenRouter] Failed to fetch models:', apiError);
       throw apiError;
@@ -179,7 +179,7 @@ class OpenRouterService {
           totalTokens: usage.totalTokens
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('[OpenRouter] Generation failed:', apiError);
       throw apiError;

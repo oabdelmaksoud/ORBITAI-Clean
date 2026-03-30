@@ -201,7 +201,7 @@ class PrototypeAssetGenerator {
             }
 
             throw new Error('All providers failed');
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.warn(`[AssetGenerator] Failed to generate ${asset.name}: ${error.message}`);
             throw error;
         }

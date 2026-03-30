@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger.js';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { AppError } from './errorHandler.js';
 import { config } from '../config/env.js';
 import { User } from '../models/User.model.js';
@@ -36,9 +37,21 @@ async function authenticateTokenAsync(
 
   // Check if this is a guest token (starts with 'guest-token-')
   if (token.startsWith('guest-token-')) {
+    // Validate HMAC signature: format is guest-token-{userId}-{hmac}
+    const parts = token.split('-');
+    // Expected: ['guest', 'token', userId, hmac]
+    if (parts.length < 4) {
+      return next(new AppError('Invalid guest token format', 401));
+    }
+    const hmacProvided = parts[parts.length - 1];
+    const userId = parts.slice(2, parts.length - 1).join('-');
+    const expectedHmac = crypto.createHmac('sha256', config.jwtSecret).update(userId).digest('hex');
+    if (!crypto.timingSafeEqual(Buffer.from(hmacProvided, 'hex'), Buffer.from(expectedHmac, 'hex'))) {
+      return next(new AppError('Invalid guest token signature', 401));
+    }
     // Allow guest users with minimal permissions
     req.user = {
-      id: 'guest',
+      id: userId,
       email: 'guest@local',
       name: 'Guest',
       plan: 'free',
@@ -75,6 +88,12 @@ async function authenticateTokenAsync(
   }
 }
 
+// Helper to generate a valid guest token with HMAC signature
+export function generateGuestToken(userId: string): string {
+  const hmac = crypto.createHmac('sha256', config.jwtSecret).update(userId).digest('hex');
+  return `guest-token-${userId}-${hmac}`;
+}
+
 // Export wrapped async middleware
 export const authenticateToken = asyncHandler(authenticateTokenAsync);
 
@@ -101,14 +120,26 @@ async function authenticateTokenOptionalAsync(
 
   // Check if this is a guest token (starts with 'guest-token-')
   if (token.startsWith('guest-token-')) {
-    // Allow guest users with minimal permissions
-    req.user = {
-      id: 'guest',
-      email: 'guest@local',
-      name: 'Guest',
-      plan: 'free',
-      role: 'guest'
-    };
+    // Validate HMAC signature: format is guest-token-{userId}-{hmac}
+    const parts = token.split('-');
+    if (parts.length >= 4) {
+      const hmacProvided = parts[parts.length - 1];
+      const userId = parts.slice(2, parts.length - 1).join('-');
+      try {
+        const expectedHmac = crypto.createHmac('sha256', config.jwtSecret).update(userId).digest('hex');
+        if (crypto.timingSafeEqual(Buffer.from(hmacProvided, 'hex'), Buffer.from(expectedHmac, 'hex'))) {
+          req.user = {
+            id: userId,
+            email: 'guest@local',
+            name: 'Guest',
+            plan: 'free',
+            role: 'guest'
+          };
+        }
+      } catch {
+        // Invalid HMAC, continue without user
+      }
+    }
     return next();
   }
 

@@ -125,7 +125,7 @@ export class RoutingEngine {
             }
           }
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error('[RoutingEngine] Predictive routing failed:', toApiError(error));
         // Continue to rule-based routing
       }
@@ -165,7 +165,7 @@ export class RoutingEngine {
             }
           }
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.debug('RL routing failed, falling back to standard routing:', toApiError(error).message);
       }
     }
@@ -212,7 +212,7 @@ export class RoutingEngine {
             }
           }
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         // Log but don't fail - fall back to standard routing
         logger.debug('AI prediction failed, using standard routing:', toApiError(error).message);
       }
@@ -919,7 +919,7 @@ export class RoutingEngine {
         // Overnight schedule (e.g., 22-6)
         return currentHour >= startHour || currentHour < endHour;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn(`[RoutingEngine] Schedule evaluation failed:`, toApiError(error));
       return true; // Default to active on error
     }

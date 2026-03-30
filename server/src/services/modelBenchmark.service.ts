@@ -183,7 +183,7 @@ class ModelBenchmarkService {
 
       logger.info(`[ModelBenchmark] Completed benchmark for ${modelId} on ${taskType}`);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[ModelBenchmark] Benchmark failed for ${modelId}:`, error);
       
       // Create failure record

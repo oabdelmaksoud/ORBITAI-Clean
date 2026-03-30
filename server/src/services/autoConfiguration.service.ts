@@ -66,7 +66,7 @@ class AutoConfigurationService {
         overallScore,
         analysisDate: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze configuration:', error);
       return {
         userId,
@@ -92,7 +92,7 @@ class AutoConfigurationService {
       try {
         await this.applyRecommendation(rec, userId);
         applied++;
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn(`Failed to apply recommendation ${rec.setting}:`, error);
         failed++;
       }

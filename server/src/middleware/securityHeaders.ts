@@ -13,7 +13,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // Content Security Policy
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com", // unsafe-eval needed for some libraries
+    "script-src 'self' https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com",
     "img-src 'self' data: https:",
     "font-src 'self' data:",

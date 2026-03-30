@@ -24,7 +24,7 @@ router.use((req: AuthRequest, res, next) => {
  * POST /api/llm/generate-embedding
  * Generate embedding vector for text
  */
-router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
+router.post('/generate-embedding', async (req: AuthRequest, res, next) => {
     try {
         const { text, model = 'text-embedding-004' } = req.body;
 
@@ -47,13 +47,9 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
                 model
             }
         });
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Embedding] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+    } catch (error: any) {
+        logger.error('[LLM Embedding] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 
@@ -61,7 +57,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
  * POST /api/llm/enhance-prompt
  * Enhance a user prompt for better LLM responses
  */
-router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
+router.post('/enhance-prompt', async (req: AuthRequest, res, next) => {
     try {
         const { prompt, context = '' } = req.body;
 
@@ -103,13 +99,9 @@ Return only the enhanced prompt, no explanations.`;
                 originalPrompt: prompt
             }
         });
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Enhance Prompt] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+    } catch (error: any) {
+        logger.error('[LLM Enhance Prompt] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 
@@ -117,7 +109,7 @@ Return only the enhanced prompt, no explanations.`;
  * POST /api/llm/generate-agent-profile
  * Generate an AI agent profile
  */
-router.post('/generate-agent-profile', async (req: AuthRequest, res, _next) => {
+router.post('/generate-agent-profile', async (req: AuthRequest, res, next) => {
     try {
         const { role, capabilities = [], domain = '' } = req.body;
 
@@ -183,13 +175,9 @@ Return a JSON object with:
                 modelUsed: result.modelUsed
             }
         });
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Generate Agent Profile] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+    } catch (error: any) {
+        logger.error('[LLM Generate Agent Profile] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 
@@ -197,7 +185,7 @@ Return a JSON object with:
  * POST /api/llm/quick-suggestions
  * Generate quick suggestions based on context
  */
-router.post('/quick-suggestions', async (req: AuthRequest, res, _next) => {
+router.post('/quick-suggestions', async (req: AuthRequest, res, next) => {
     try {
         const { context, type = 'general', count = 5 } = req.body;
 
@@ -251,13 +239,9 @@ Keep suggestions concise and actionable.`;
                 count: suggestions.length
             }
         });
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Quick Suggestions] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+    } catch (error: any) {
+        logger.error('[LLM Quick Suggestions] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 
@@ -265,7 +249,7 @@ Keep suggestions concise and actionable.`;
  * POST /api/llm/generate-theme
  * Generate UI theme configuration
  */
-router.post('/generate-theme', async (req: AuthRequest, res, _next) => {
+router.post('/generate-theme', async (req: AuthRequest, res, next) => {
     try {
         const { projectType, style = 'modern', colorPreference = '' } = req.body;
 
@@ -340,13 +324,9 @@ Return a JSON theme object with:
                 modelUsed: result.modelUsed
             }
         });
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('[LLM Generate Theme] Error:', errorMessage);
-        res.status(500).json({
-            success: false,
-            error: errorMessage
-        });
+    } catch (error: any) {
+        logger.error('[LLM Generate Theme] Error:', error instanceof Error ? error.message : String(error));
+        next(error);
     }
 });
 

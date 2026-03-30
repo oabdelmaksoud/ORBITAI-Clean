@@ -309,7 +309,7 @@ class ASPICEComplianceService {
 
       logger.info(`Mapped ${requirements.length} requirements to ${complianceRecords.length} ASPICE process areas`);
       return complianceRecords;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to map requirements to ASPICE:', error);
       throw error;
     }
@@ -373,7 +373,7 @@ class ASPICEComplianceService {
         gaps,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate ASPICE compliance report:', error);
       throw error;
     }

@@ -141,7 +141,7 @@ router.get('/forecast', async (_req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -215,7 +215,7 @@ router.get('/ltv', async (_req: AdminRequest, res, next) => {
         ) / 100
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -321,7 +321,7 @@ router.get('/churn-impact', async (_req: AdminRequest, res, next) => {
         ].filter(Boolean)
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

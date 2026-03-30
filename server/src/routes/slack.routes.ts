@@ -21,7 +21,7 @@ router.get('/health', (_req, res) => {
  * GET /api/integrations/slack/auth
  * Initiate Slack OAuth flow
  */
-router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/auth', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/slack/callback`;
@@ -51,12 +51,9 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
         state
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to initiate Slack OAuth:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to initiate Slack OAuth'
-    });
+    next(error);
   }
 });
 
@@ -64,7 +61,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
  * GET /api/integrations/slack/callback
  * Handle Slack OAuth callback
  */
-router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/callback', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
     const { code, state } = req.query;
 
@@ -118,12 +115,9 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
         teamName: tokenData.team?.name
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle Slack OAuth callback:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to complete Slack OAuth'
-    });
+    next(error);
   }
 });
 
@@ -131,7 +125,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
  * POST /api/integrations/slack/webhook
  * Handle Slack webhook events
  */
-router.post('/webhook', async (req, res) => {
+router.post('/webhook', async (req, res, next) => {
   try {
     const { type, challenge, event } = req.body;
 
@@ -147,12 +141,9 @@ router.post('/webhook', async (req, res) => {
     }
 
     res.json({ success: true });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle Slack webhook:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to process webhook'
-    });
+    next(error);
   }
 });
 
@@ -160,7 +151,7 @@ router.post('/webhook', async (req, res) => {
  * POST /api/integrations/slack/send-message
  * Send message to Slack channel
  */
-router.post('/send-message', authenticateToken, async (req: AuthRequest, res) => {
+router.post('/send-message', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
     const { channel, message } = req.body;
 
@@ -206,12 +197,9 @@ router.post('/send-message', authenticateToken, async (req: AuthRequest, res) =>
         channel: data.channel
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to send Slack message:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to send message'
-    });
+    next(error);
   }
 });
 

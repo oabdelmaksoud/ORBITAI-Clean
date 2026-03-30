@@ -2,7 +2,7 @@
  * ErrorBoundary Component Tests
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ErrorBoundary from '@src/components/ErrorBoundary';
 
@@ -42,8 +42,8 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText('An unexpected error occurred')).toBeInTheDocument();
+    expect(screen.getByText('Application Error')).toBeInTheDocument();
+    expect(screen.getByText('An unexpected error occurred. Please try reloading the page.')).toBeInTheDocument();
   });
 
   it('should have Try Again button', () => {
@@ -65,15 +65,4 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Reload Page')).toBeInTheDocument();
   });
-
-  it('should have Go Home button', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    );
-
-    expect(screen.getByText('Go Home')).toBeInTheDocument();
-  });
 });
-

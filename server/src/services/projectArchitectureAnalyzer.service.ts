@@ -114,7 +114,7 @@ class ProjectArchitectureAnalyzerService {
       });
 
       return analysis;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Architecture analysis failed, using defaults:', error.message);
       // Return safe defaults
       return this.getDefaultArchitecture(input);
@@ -279,7 +279,7 @@ Respond in JSON format:
           }
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Failed to parse LLM response, using rule-based analysis:', error.message);
       return this.ruleBasedAnalysis(input);
     }

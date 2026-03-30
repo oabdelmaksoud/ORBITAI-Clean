@@ -147,7 +147,7 @@ class GameAssetService {
                     // Emit asset complete event
                     this.emitGenerationEvent('assetComplete', job, { asset: result });
 
-                } catch (error: unknown) {
+                } catch (error: any) {
                     logger.error(`[GameAssetService] Failed to generate asset: ${assetSpec.description}`, error);
 
                     job.failedAssets++;
@@ -177,7 +177,7 @@ class GameAssetService {
 
             logger.info(`[GameAssetService] Job ${jobId} completed: ${job.completedAssets}/${job.totalAssets} successful`);
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error(`[GameAssetService] Job ${jobId} processing failed:`, error);
 
             job.status = 'failed';
@@ -278,7 +278,7 @@ class GameAssetService {
                 metadata
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[GameAssetService] 3D generation failed:', error);
 
             // Try fallback to Sloyd API
@@ -376,7 +376,7 @@ class GameAssetService {
                 metadata
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[GameAssetService] 2D generation failed:', error);
             throw new Error(`2D asset generation failed: ${error.message}`);
         }
@@ -451,7 +451,7 @@ class GameAssetService {
                 metadata
             };
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[GameAssetService] Sloyd generation failed:', error);
             throw error;
         }

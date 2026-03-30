@@ -45,7 +45,7 @@ router.post('/recommendations', async (req, res) => {
     }
 
     res.json({ recommendations });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get AI recommendations:', error);
     res.status(500).json({ error: error.message });
   }
@@ -66,7 +66,7 @@ router.post('/generate-rule', async (req, res) => {
     const result = await llmRouterNLService.generateRuleFromDescription(description, context);
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to generate rule from natural language:', error);
     res.status(500).json({ error: error.message });
   }
@@ -92,7 +92,7 @@ router.get('/insights', async (req, res) => {
       insights,
       patterns: patterns.slice(0, 20) // Top 20 patterns
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get AI insights:', error);
     res.status(500).json({ error: error.message });
   }
@@ -131,7 +131,7 @@ router.get('/anomalies', async (req, res) => {
     }
 
     res.json({ anomalies });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get anomalies:', error);
     res.status(500).json({ error: error.message });
   }
@@ -175,7 +175,7 @@ router.post('/auto-tune', async (req, res) => {
     }
 
     res.json(result);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to trigger auto-tuning:', error);
     res.status(500).json({ error: error.message });
   }
@@ -221,7 +221,7 @@ router.get('/predict', async (req, res) => {
     });
 
     res.json({ prediction });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to predict optimal model:', error);
     res.status(500).json({ error: error.message });
   }
@@ -278,7 +278,7 @@ router.post('/apply-recommendations', async (req, res) => {
       applied: appliedChanges.length,
       changes: appliedChanges
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to apply recommendations:', error);
     res.status(500).json({ error: error.message });
   }
@@ -302,7 +302,7 @@ router.get('/explain-rule/:ruleId', async (req, res) => {
     const explanation = await llmRouterNLService.explainRule(rule);
 
     res.json({ explanation });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to explain rule:', error);
     res.status(500).json({ error: error.message });
   }
@@ -316,7 +316,7 @@ router.get('/auto-tune/history', async (req, res) => {
   try {
     const history = llmRouterAutoTuneService.getTuningHistory();
     res.json({ history });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get auto-tuning history:', error);
     res.status(500).json({ error: error.message });
   }
@@ -330,7 +330,7 @@ router.get('/ab-tests', async (req, res) => {
   try {
     const tests = llmRouterAutoTuneService.getActiveABTests();
     res.json({ tests });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get A/B tests:', error);
     res.status(500).json({ error: error.message });
   }
@@ -355,7 +355,7 @@ router.post('/ab-tests', async (req, res) => {
     );
 
     res.json({ test });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to start A/B test:', error);
     res.status(500).json({ error: error.message });
   }

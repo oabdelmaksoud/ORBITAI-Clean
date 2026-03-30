@@ -24,7 +24,7 @@ router.get('/available', authenticateToken, async (_req: AuthRequest, res, next)
       success: true,
       data: { agents }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get available agents:', error);
     next(error);
   }
@@ -46,7 +46,7 @@ router.post('/discover', requireAdmin, async (_req: AdminRequest, res, next) => 
         message: `Discovered and created/updated ${discoveredAgents.length} agent profiles`
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to discover agents:', error);
     next(error);
   }
@@ -69,7 +69,7 @@ router.post('/discover/project/:projectId', requireAdmin, async (req: AdminReque
         count: discoveredAgents.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error(`Failed to discover agents from project ${req.params.projectId}:`, error);
     next(error);
   }

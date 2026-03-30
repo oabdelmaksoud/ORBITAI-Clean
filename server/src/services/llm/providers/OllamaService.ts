@@ -70,7 +70,7 @@ export class OllamaService {
 
       const data = await response.json();
       return (data.models || []).map((model: any) => model.name || model.model);
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Failed to fetch Ollama models:', apiError);
       throw new Error(`Failed to fetch Ollama models: ${apiError.message}`);
@@ -143,7 +143,7 @@ export class OllamaService {
           totalTokens: promptTokens + completionTokens
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Ollama API error:', apiError);
       throw new Error(`Ollama API error: ${apiError.message || 'Unknown error'}`);
@@ -193,7 +193,7 @@ export class OllamaService {
 
       const models = await this.getAvailableModels();
       return { success: true, models };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       return { success: false, error: apiError.message };
     }

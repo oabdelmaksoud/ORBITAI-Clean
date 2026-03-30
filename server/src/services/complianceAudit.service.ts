@@ -121,7 +121,7 @@ class ComplianceAuditService {
         recommendations,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to check compliance:', error);
       throw error;
     }
@@ -437,7 +437,7 @@ class ComplianceAuditService {
       }
 
       return mappings;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to map to regulations:', error);
       throw error;
     }

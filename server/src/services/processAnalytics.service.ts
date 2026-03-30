@@ -75,7 +75,7 @@ class ProcessAnalyticsService {
         trends,
         recommendations
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get analytics:', error);
       throw error;
     }
@@ -278,7 +278,7 @@ class ProcessAnalyticsService {
         estimatedTimeSaved,
         estimatedValue
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to calculate ROI:', error);
       throw error;
     }

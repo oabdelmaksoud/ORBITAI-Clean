@@ -98,7 +98,7 @@ class TestGenerationService {
           );
           // Add security tests to test suite (can be integrated into unit/integration tests)
           logger.debug(`Generated ${securityTests.testCases.length} security test cases`);
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn('Security test generation failed:', error.message);
         }
       }
@@ -115,7 +115,7 @@ class TestGenerationService {
           );
           testSuite.performanceTests = performanceTests.tests;
           logger.debug(`Generated ${performanceTests.tests.length} performance test cases`);
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.warn('Performance test generation failed:', error.message);
         }
       }
@@ -125,7 +125,7 @@ class TestGenerationService {
 
       logger.info(`Test suite generated: ${testSuite.unitTests.length} unit, ${testSuite.integrationTests.length} integration, ${testSuite.e2eTests.length} E2E tests, ${testSuite.performanceTests?.length || 0} performance tests`);
       return testSuite;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Test suite generation failed:', error);
         return {
           unitTests: [],
@@ -213,7 +213,7 @@ Return as JSON array with:
 
       const parsed = JSON.parse(response.content);
       return parsed.tests || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Unit test generation failed:', error);
       return [];
     }
@@ -282,7 +282,7 @@ Return as JSON array with test cases.`;
 
       const parsed = JSON.parse(response.content);
       return parsed.tests || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Integration test generation failed:', error);
       return [];
     }
@@ -359,7 +359,7 @@ Return as JSON array with:
 
       const parsed = JSON.parse(response.content);
       return parsed.tests || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('E2E test generation failed:', error);
       return [];
     }

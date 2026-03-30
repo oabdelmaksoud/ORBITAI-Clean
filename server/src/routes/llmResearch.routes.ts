@@ -79,7 +79,7 @@ Format the response in a clear, structured manner.`;
                 provider: result.provider
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Research] Error:', errorMessage);
         res.status(500).json({
@@ -162,7 +162,7 @@ Create a well-structured summary with:
                 modelUsed: synthesisResult.modelUsed
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Deep Research] Error:', errorMessage);
         res.status(500).json({
@@ -230,7 +230,7 @@ Format as structured JSON where applicable.`;
                 provider: result.provider
             }
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('[LLM Architecture Analysis] Error:', errorMessage);
         res.status(500).json({

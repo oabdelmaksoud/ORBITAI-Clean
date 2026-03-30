@@ -85,7 +85,7 @@ router.post('/test',
                 message: 'Live CUA test started. Listen for WebSocket events: cua:frame, cua:scenarios, cua:scenario:start, cua:scenario:result, cua:test:complete'
             });
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA] Route error:', error);
             res.status(500).json({
                 success: false,
@@ -165,7 +165,7 @@ router.post('/test/advanced',
                 message: 'Advanced CUA test started. Listen for WebSocket events including cua:reasoning and cua:usage'
             });
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA Advanced] Route error:', error);
             res.status(500).json({
                 success: false,
@@ -194,7 +194,7 @@ router.get('/health', async (_req: Request, res: Response) => {
             },
             message: isHealthy ? 'CUA service is healthy' : 'CUA service is not responding'
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         res.status(500).json({
             success: false,
             healthy: false,
@@ -272,7 +272,7 @@ router.post('/test/autofix',
                 duration: result.totalDuration
             });
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA Auto-Fix] Route error:', error);
             res.status(500).json({
                 success: false,
@@ -313,7 +313,7 @@ router.post('/session/cancel',
                 message: `Session ${sessionId} cancelled`
             });
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error('[CUA] Cancel session error:', error);
             res.status(500).json({
                 success: false,

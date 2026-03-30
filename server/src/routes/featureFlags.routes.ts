@@ -118,7 +118,7 @@ router.get('/check/:key', async (req, res, next) => {
         enabledRoles: flag.enabledRoles
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -150,7 +150,7 @@ router.get('/', async (_req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -183,7 +183,7 @@ router.get('/:key', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -257,7 +257,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'feature_flag.create',
       entityType: 'feature_flag',
@@ -354,7 +354,7 @@ router.put('/:key', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'feature_flag.update',
       entityType: 'feature_flag',
@@ -410,7 +410,7 @@ router.delete('/:key', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Feature flag deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'feature_flag.delete',
       entityType: 'feature_flag',

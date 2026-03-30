@@ -171,7 +171,7 @@ router.post('/generate-research', async (req: AuthRequest, res) => {
             data: researchData
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('Error generating research:', error);
         res.status(500).json({
             success: false,
@@ -271,7 +271,7 @@ Use clear, professional technical language. Include specific technologies with v
             },
             latency: latency
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Deep research failed:', error);
         res.status(500).json({
             success: false,
@@ -322,7 +322,7 @@ router.post('/full-architecture-analysis', routeTimeout(120000), async (req: Aut
             },
             latency: latency
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Full architecture analysis failed:', error);
         res.status(500).json({
             success: false,

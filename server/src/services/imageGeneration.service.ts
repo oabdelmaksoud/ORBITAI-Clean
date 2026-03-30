@@ -169,7 +169,7 @@ class ImageGenerationService {
         default:
           throw new Error(`Unsupported image provider: ${provider}`);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Image generation failed:', error);
       return {
         success: false,
@@ -289,7 +289,7 @@ class ImageGenerationService {
           estimatedCost
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[ImageGeneration] Gemini image generation failed:', error);
       throw new Error(`Gemini image generation failed: ${error.message}`);
     }
@@ -354,7 +354,7 @@ class ImageGenerationService {
           estimatedCost
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[ImageGeneration] Imagen generation failed:', error);
       throw new Error(`Imagen generation failed: ${error.message}`);
     }
@@ -417,7 +417,7 @@ class ImageGenerationService {
           estimatedCost
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[ImageGeneration] Nano Banana generation failed:', error);
       throw new Error(`Nano Banana generation failed: ${error.message}`);
     }
@@ -473,7 +473,7 @@ class ImageGenerationService {
           estimatedCost: 0.02 * images.length
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Image editing failed:', error);
       return {
         success: false,
@@ -522,7 +522,7 @@ class ImageGenerationService {
           estimatedCost: 0.02 * images.length
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Image variation failed:', error);
       return {
         success: false,

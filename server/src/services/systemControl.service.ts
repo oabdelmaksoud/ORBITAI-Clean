@@ -69,7 +69,7 @@ export class SystemControlService {
         nodeVersion: process.version,
         platform: os.platform()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get system health: ${error.message}`, 500);
     }
   }
@@ -132,7 +132,7 @@ export class SystemControlService {
       }
 
       return processes;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get processes:', error);
       // Return current process if command fails
       return [{
@@ -173,7 +173,7 @@ export class SystemControlService {
         userAgent: 'admin-console',
         success: true
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Log failed kill
       await AuditLog.create({
         userId: adminId,
@@ -216,7 +216,7 @@ export class SystemControlService {
         userAgent: 'admin-console',
         success: true
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to set maintenance mode: ${error.message}`, 500);
     }
   }
@@ -248,7 +248,7 @@ export class SystemControlService {
             await redisService.flushAll();
             results.cleared.push('redis');
           }
-        } catch (error: unknown) {
+        } catch (error: any) {
           results.errors.push({ type: 'redis', error: error.message });
         }
       }
@@ -260,7 +260,7 @@ export class SystemControlService {
             global.gc();
             results.cleared.push('memory');
           }
-        } catch (error: unknown) {
+        } catch (error: any) {
           results.errors.push({ type: 'memory', error: error.message });
         }
       }
@@ -282,7 +282,7 @@ export class SystemControlService {
       }
 
       return results;
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to clear cache: ${error.message}`, 500);
     }
   }
@@ -317,7 +317,7 @@ export class SystemControlService {
         logger.warn('Server restart initiated by admin');
         process.exit(0);
       }, delaySeconds * 1000);
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to schedule restart: ${error.message}`, 500);
     }
   }
@@ -343,7 +343,7 @@ export class SystemControlService {
       } else {
         throw new AppError('Garbage collection not available (run Node with --expose-gc)', 400);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to force GC: ${error.message}`, 500);
     }
   }

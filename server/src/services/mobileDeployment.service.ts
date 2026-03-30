@@ -119,7 +119,7 @@ class MobileDeploymentService {
       result.logs = logs;
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('React Native deployment failed:', error);
       return {
         success: false,
@@ -170,7 +170,7 @@ class MobileDeploymentService {
       result.logs = logs;
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Flutter deployment failed:', error);
       return {
         success: false,
@@ -229,7 +229,7 @@ class MobileDeploymentService {
           ? `https://apps.apple.com/app/id${buildData.appStoreId || ''}` 
           : undefined
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Expo iOS deployment failed:', error);
       // Fallback to placeholder if API fails
       return {
@@ -283,7 +283,7 @@ class MobileDeploymentService {
         playConsoleUrl: `https://play.google.com/console/u/0/developers/${buildData.developerId}/app/${buildData.packageName}/track/production`,
         status: 'building'
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Expo Android deployment failed:', error);
       // Fallback to placeholder if API fails
       return {
@@ -341,7 +341,7 @@ class MobileDeploymentService {
         testflightUrl: `https://appstoreconnect.apple.com/apps/${appId}/testflight`,
         status: 'building'
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Bare React Native iOS deployment failed:', error);
       return {
         buildId: `xcode-${Date.now()}`,
@@ -393,7 +393,7 @@ class MobileDeploymentService {
         playConsoleUrl: `https://play.google.com/console/u/0/developers/${editResponse.data.id}/app/${packageName}/track/production`,
         status: 'building'
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Bare React Native Android deployment failed:', error);
       return {
         buildId: `android-${Date.now()}`,
@@ -674,7 +674,7 @@ dev_dependencies:
         algorithm: 'ES256', 
         header 
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate App Store Connect JWT:', error);
       throw new Error(`JWT generation failed: ${error.message}`);
     }

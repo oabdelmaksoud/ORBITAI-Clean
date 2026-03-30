@@ -61,7 +61,7 @@ class KnowledgeVersioningService {
 
       logger.info(`Created version ${knowledge.version} for knowledge ${knowledgeId}`);
       return knowledge;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to create knowledge version:', error);
       throw error;
     }

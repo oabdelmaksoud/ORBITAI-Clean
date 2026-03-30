@@ -153,7 +153,7 @@ class AIOptimizationService {
         score,
         recommendations
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to analyze process:', error);
       throw error;
     }
@@ -282,7 +282,7 @@ class AIOptimizationService {
 
       logger.info(`Tested variation for improvement: ${improvementId}`);
       return variation;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to test variation:', error);
       throw error;
     }
@@ -361,7 +361,7 @@ class AIOptimizationService {
         confidence,
         factors
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to predict outcome:', error);
       throw error;
     }
@@ -419,7 +419,7 @@ class AIOptimizationService {
         changes,
         recommendations: analysis.recommendations
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to auto-optimize:', error);
       throw error;
     }

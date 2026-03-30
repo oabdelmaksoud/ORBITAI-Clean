@@ -342,7 +342,7 @@ router.get('/details', async (req: AdminRequest, res, next) => {
         timestamp: new Date().toISOString()
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get comprehensive system details:', error);
     next(error);
   }
@@ -414,7 +414,7 @@ router.get('/config', async (req: AdminRequest, res, next) => {
       success: true,
       data: systemConfig
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get system config:', error);
     next(error);
   }
@@ -458,7 +458,7 @@ router.get('/stats', async (req: AdminRequest, res, next) => {
         } : null
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get system stats:', error);
     next(error);
   }

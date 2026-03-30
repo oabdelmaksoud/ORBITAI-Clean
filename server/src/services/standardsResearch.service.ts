@@ -64,7 +64,7 @@ class StandardsResearchService {
 
       this.initialized = true;
       logger.info('✅ Standards Research service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize Standards Research service:', error);
       throw error;
     }
@@ -91,7 +91,7 @@ class StandardsResearchService {
         : JSON.stringify(response.content);
 
       return this.parseResearchResult(content, query);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Standards research failed:', error);
       throw new Error(`Standards research failed: ${error.message}`);
     }

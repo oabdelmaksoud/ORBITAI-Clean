@@ -56,7 +56,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
         state
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to initiate Google Drive OAuth:', error);
     res.status(500).json({
       success: false,
@@ -123,7 +123,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
         refreshToken: tokenData.refresh_token ? '***' : undefined
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to handle Google Drive OAuth callback:', error);
     res.status(500).json({
       success: false,
@@ -166,7 +166,7 @@ router.get('/files', authenticateToken, async (req: AuthRequest, res) => {
         files: data.files || []
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list Google Drive files:', error);
     res.status(500).json({
       success: false,
@@ -228,7 +228,7 @@ router.post('/upload', authenticateToken, async (req: AuthRequest, res) => {
         fileName: data.name
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to upload file to Google Drive:', error);
     res.status(500).json({
       success: false,

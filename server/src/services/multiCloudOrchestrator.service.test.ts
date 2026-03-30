@@ -1,35 +1,53 @@
-// Tests for MultiCloudOrchestratorService (Week 3)
-// ORBIT-AI Platform
-// Created: December 5, 2025
-
+// Tests for MultiCloudOrchestratorService
+import { describe, it, expect, vi } from 'vitest';
 import { MultiCloudOrchestratorService } from './multiCloudOrchestrator.service';
-import { CloudPlatform, LoadBalancerConfig, FailoverPolicy, MultiCloudStatus } from '../types/multiCloud.types';
+
+// Mock all external dependencies
+vi.mock('./deploymentOrchestrator.service', () => ({
+  deploymentOrchestratorService: {
+    orchestrateDeployment: vi.fn().mockResolvedValue({
+      platform: 'vercel',
+      status: 'deployed',
+      url: 'https://test.vercel.app',
+    }),
+  },
+}));
+
+vi.mock('./loadBalancer.service', () => {
+  return {
+    LoadBalancerService: class {
+      configure = vi.fn().mockResolvedValue({ status: 'configured' });
+    },
+  };
+});
+
+vi.mock('./failover.service', () => {
+  return {
+    FailoverService: class {
+      handleFailover = vi.fn().mockResolvedValue({ status: 'ok' });
+    },
+  };
+});
 
 describe('MultiCloudOrchestratorService', () => {
   const service = new MultiCloudOrchestratorService();
 
-  it('should throw for deployToMultiplePlatforms (stub)', async () => {
+  it('should throw for empty platforms array', async () => {
     await expect(service.deployToMultiplePlatforms({
       projectId: 'p1',
       projectName: 'TestProject',
       codeArtifactId: 'c1',
+      platforms: [],
+    })).rejects.toThrow('No platforms specified');
+  });
+
+  it('should deploy to a single platform', async () => {
+    const result = await service.deployToMultiplePlatforms({
+      projectId: 'p1',
+      projectName: 'TestProject',
+      codeArtifactId: 'c1',
       platforms: [{ name: 'vercel' }],
-    })).rejects.toThrow('Not yet implemented: deployToMultiplePlatforms');
-  });
-
-  it('should throw for monitorDeployments (stub)', async () => {
-    await expect(service.monitorDeployments(['d1'])).rejects.toThrow('Not yet implemented: monitorDeployments');
-  });
-
-  it('should throw for configureLoadBalancer (stub)', async () => {
-    await expect(service.configureLoadBalancer({ strategy: 'round-robin' })).rejects.toThrow('Not yet implemented: configureLoadBalancer');
-  });
-
-  it('should throw for handleFailover (stub)', async () => {
-    await expect(service.handleFailover({ type: 'automatic', fallbackPlatforms: ['aws'] }, [])).rejects.toThrow('Not yet implemented: handleFailover');
-  });
-
-  it('should throw for optimizeCosts (stub)', async () => {
-    await expect(service.optimizeCosts([])).rejects.toThrow('Not yet implemented: optimizeCosts');
+    });
+    expect(result).toBeDefined();
   });
 });

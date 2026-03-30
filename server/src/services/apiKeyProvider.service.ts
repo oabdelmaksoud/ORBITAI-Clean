@@ -212,7 +212,7 @@ class APIKeyProviderService {
         logger.error(`Failed to decrypt API key for user ${userId}, provider ${provider}:`, decryptError);
         return null;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to get user API key for ${userId}, provider ${provider}:`, error);
       return null;
     }

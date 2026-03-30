@@ -95,7 +95,7 @@ class LLMRouterAutoTuneService {
         errorRate,
         costPerRequest: avgCost
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to monitor performance:', error);
       throw error;
     }
@@ -164,7 +164,7 @@ class LLMRouterAutoTuneService {
         });
 
       return priorities;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to suggest model priorities:', error);
       return {};
     }
@@ -293,7 +293,7 @@ class LLMRouterAutoTuneService {
         expectedImprovement,
         rollbackAvailable: true
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to auto-tune:', error);
       throw error;
     }
@@ -328,7 +328,7 @@ class LLMRouterAutoTuneService {
       }, durationHours * 60 * 60 * 1000);
 
       return abTest;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to start A/B test:', error);
       throw error;
     }
@@ -373,7 +373,7 @@ class LLMRouterAutoTuneService {
       test.endDate = new Date();
 
       logger.info(`A/B test ${testId} completed. Winner: Config ${test.results.winner}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to complete A/B test:', error);
     }
   }
@@ -426,7 +426,7 @@ class LLMRouterAutoTuneService {
 
       lastTuning.result = 'improved';
       return false;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to rollback:', error);
       return false;
     }

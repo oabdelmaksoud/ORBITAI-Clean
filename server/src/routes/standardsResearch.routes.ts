@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'Standards research service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Standards research initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -66,7 +66,7 @@ router.post('/research', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Standards research failed:', error);
     res.status(500).json({
       success: false,
@@ -112,7 +112,7 @@ router.post('/audit', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Audit research failed:', error);
     res.status(500).json({
       success: false,
@@ -158,7 +158,7 @@ router.post('/compliance', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Compliance research failed:', error);
     res.status(500).json({
       success: false,
@@ -204,7 +204,7 @@ router.post('/evaluation', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Evaluation research failed:', error);
     res.status(500).json({
       success: false,
@@ -250,7 +250,7 @@ router.post('/comprehensive', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Comprehensive research failed:', error);
     res.status(500).json({
       success: false,

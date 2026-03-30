@@ -54,7 +54,7 @@ class KnowledgeSharingService {
 
       logger.info(`Knowledge ${knowledgeId} shared with scope: ${options.scope}`);
       return knowledge;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to share knowledge:', error);
       throw error;
     }

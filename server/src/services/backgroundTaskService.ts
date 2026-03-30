@@ -145,7 +145,7 @@ Please complete this task and provide your output.`;
         result = await geminiService.generateContent(prompt, modelUsed, {
           systemInstruction: `You are ${bgTask.agent.name || bgTask.agent.role}. ${bgTask.agent.goal || ''}`
         });
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`[Background Task ${backgroundTaskId}] Task execution failed:`, error);
         throw error;
       }
@@ -222,7 +222,7 @@ Please complete this task and provide your output.`;
         clearTimeout(bgTask.timeoutId);
       }
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[Background Task ${backgroundTaskId}] Execution error:`, error);
 
       // Update task status to failed

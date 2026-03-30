@@ -298,7 +298,7 @@ class ProcessImprovementService {
 
       logger.info(`Auto-generated process improvement from agent learning: ${improvement.id}`);
       return improvement;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate improvement from agent learning:', error);
       return null;
     }
@@ -519,7 +519,7 @@ This approach has proven successful and should be considered for similar tasks i
 
       logger.info(`Assessment complete: ${assessed} assessed, ${errors} errors`);
       return { assessed, errors };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to assess pending improvements:', error);
       return { assessed, errors };
     }
@@ -756,7 +756,7 @@ This approach has proven successful and should be considered for similar tasks i
 
       await improvement.save();
       logger.info(`Agent assessment complete for improvement: ${improvementId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Agent assessment failed for improvement ${improvementId}:`, error);
       
       // Log activity event for assessment failure
@@ -836,7 +836,7 @@ This approach has proven successful and should be considered for similar tasks i
           cleaned++;
           
           logger.info(`Cleaned up stuck improvement: ${improvement.id} (was ${previousStatus})`);
-        } catch (error: unknown) {
+        } catch (error: any) {
           errors++;
           logger.error(`Failed to clean up stuck improvement ${improvement.id}:`, error);
         }
@@ -844,7 +844,7 @@ This approach has proven successful and should be considered for similar tasks i
 
       logger.info(`Cleanup complete: ${cleaned} cleaned, ${errors} errors`);
       return { cleaned, errors };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to cleanup stuck improvements:', error);
       return { cleaned, errors };
     }

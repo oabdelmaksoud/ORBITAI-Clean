@@ -52,7 +52,7 @@ class HostingService {
         setupFee: plan.price.setup || 0,
         features: plan.features || []
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get hosting plans:', error);
       return [];
     }
@@ -125,7 +125,7 @@ class HostingService {
       logger.info(`Created hosting for project ${request.projectId} on ${request.platform}`);
 
       return hostedProject;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to create hosting:', error);
       throw error;
     }
@@ -137,7 +137,7 @@ class HostingService {
   async getUserHostedProjects(userId: string): Promise<HostedProject[]> {
     try {
       return await HostedProject.find({ userId, status: 'active' }).lean();
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get hosted projects:', error);
       return [];
     }
@@ -161,7 +161,7 @@ class HostingService {
       await hostedProject.save();
 
       logger.info(`Suspended hosting: ${hostedProjectId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to suspend hosting:', error);
       throw error;
     }
@@ -191,7 +191,7 @@ class HostingService {
       });
 
       logger.info(`Terminated hosting: ${hostedProjectId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to terminate hosting:', error);
       throw error;
     }

@@ -56,7 +56,7 @@ router.get('/export/users', checkFeatureAccess('export_data'), async (req: Admin
       entityType: 'user',
       details: { format, count: users.length }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -101,7 +101,7 @@ router.get('/export/projects', checkFeatureAccess('export_data'), async (req: Ad
       entityType: 'project',
       details: { format, count: projects.length }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -163,7 +163,7 @@ router.post('/bulk/users', async (req: AdminRequest, res, next) => {
         total: userIds.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'users.bulk.action',
       entityType: 'user',
@@ -219,7 +219,7 @@ router.post('/bulk/projects', async (req: AdminRequest, res, next) => {
         total: projectIds.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'projects.bulk.action',
       entityType: 'project',
@@ -381,7 +381,7 @@ router.get('/financial/dashboard', async (_req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -517,7 +517,7 @@ router.get('/analytics/overview', async (_req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

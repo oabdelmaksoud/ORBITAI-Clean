@@ -53,7 +53,7 @@ class MutationTestingService {
         default:
           return await this.runLLMMutationAnalysis(code, tests, language);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Mutation testing failed:', error);
       // Fallback to LLM analysis
       return await this.runLLMMutationAnalysis(code, tests, language);
@@ -240,7 +240,7 @@ Estimate mutation score (0-100) based on how well tests would catch mutations.`;
         weakTests: parsed.weakTests || [],
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('LLM mutation analysis failed:', error);
       return {
         tool: 'llm',

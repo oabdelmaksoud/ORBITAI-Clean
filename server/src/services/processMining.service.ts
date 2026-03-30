@@ -105,7 +105,7 @@ class ProcessMiningService {
         recommendations,
         statistics
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to discover workflows:', error);
       throw error;
     }
@@ -412,7 +412,7 @@ class ProcessMiningService {
         predictiveInsights,
         anomalyPatterns
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Deep learning analysis failed:', error);
       return undefined;
     }
@@ -772,7 +772,7 @@ class ProcessMiningService {
         predictiveInsights,
         anomalyPatterns
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Deep learning analysis failed:', error);
       return undefined;
     }

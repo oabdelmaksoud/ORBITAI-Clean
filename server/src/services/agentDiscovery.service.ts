@@ -55,7 +55,7 @@ export class AgentDiscoveryService {
       }
 
       return agentsArray;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to discover agents from projects:', error);
       throw error;
     }
@@ -100,7 +100,7 @@ export class AgentDiscoveryService {
           await agentKnowledge.save();
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to ensure knowledge profile for ${agent.agentRole}:`, error);
     }
   }
@@ -222,7 +222,7 @@ export class AgentDiscoveryService {
       }
 
       return discoveredAgents;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to process project ${projectId} for agent discovery:`, error);
       return [];
     }
@@ -251,7 +251,7 @@ export class AgentDiscoveryService {
         domainsCount: agent.knowledgeDomains?.length || 0,
         lastActive: agent.metrics?.lastActiveDate
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get all available agents:', error);
       return [];
     }

@@ -287,7 +287,7 @@ export class SystemCostTrackingService {
       breakdown.timeSeries = await this.generateTimeSeries(query, groupBy);
 
       return breakdown;
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get system cost breakdown: ${error.message}`, 500);
     }
   }
@@ -395,7 +395,7 @@ export class SystemCostTrackingService {
           calls: result.calls || 0
         };
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       // If aggregation fails, return empty array
       return [];
     }
@@ -481,7 +481,7 @@ export class SystemCostTrackingService {
         averageCostPerCall: totalCalls > 0 ? totalCost / totalCalls : 0,
         costPerDay: totalCost / daysDiff
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get cost summary: ${error.message}`, 500);
     }
   }

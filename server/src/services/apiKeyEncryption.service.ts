@@ -20,13 +20,12 @@ class ApiKeyEncryptionService {
     const masterKey = process.env.API_KEY_ENCRYPTION_KEY;
     
     if (!masterKey) {
-      // Use a fixed development key instead of random to prevent key rotation issues
       // In production, this should ALWAYS be set via environment variable
-      const devKey = 'orbitai-dev-encryption-key-2024-do-not-use-in-production-change-this';
-      console.error('❌ CRITICAL: API_KEY_ENCRYPTION_KEY not set in environment!');
-      console.error('   Using development key. ALL ENCRYPTED KEYS WILL BE LOST ON SERVER RESTART!');
-      console.error('   Set API_KEY_ENCRYPTION_KEY in your .env file immediately.');
-      this.encryptionKey = this.deriveKey(devKey);
+      console.warn('⚠️  WARNING: API_KEY_ENCRYPTION_KEY not set in environment!');
+      console.warn('   A derived key will be used, but encrypted keys will NOT persist across restarts.');
+      console.warn('   Set API_KEY_ENCRYPTION_KEY in your .env file immediately.');
+      const derivedFallback = crypto.randomBytes(32).toString('hex');
+      this.encryptionKey = this.deriveKey(derivedFallback);
     } else {
       this.encryptionKey = this.deriveKey(masterKey);
     }
@@ -36,7 +35,7 @@ class ApiKeyEncryptionService {
    * Derive encryption key from master key using PBKDF2
    */
   private deriveKey(masterKey: string): Buffer {
-    const salt = process.env.API_KEY_ENCRYPTION_SALT || 'orbitai-api-key-salt-2024';
+    const salt = process.env.API_KEY_ENCRYPTION_SALT || crypto.randomBytes(16).toString('hex');
     return crypto.pbkdf2Sync(masterKey, salt, 100000, KEY_LENGTH, 'sha512');
   }
 
@@ -81,7 +80,7 @@ class ApiKeyEncryptionService {
       decrypted += decipher.final('utf8');
 
       return decrypted;
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new Error(`Decryption failed: ${error.message}`);
     }
   }

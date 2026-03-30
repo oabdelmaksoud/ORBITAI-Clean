@@ -68,7 +68,7 @@ class AutoCompletionService {
       logger.info(`Project ${projectId} auto-completed. Deployment ready: ${completionResult.deploymentReady}`);
 
       return completionResult.success;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Auto-completion check failed for project ${projectId}:`, error);
       return false;
     }
@@ -92,7 +92,7 @@ class AutoCompletionService {
       return tasks.every((task: any) => 
         task.status === 'Completed' || task.status === 'completed'
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to check completion readiness for project ${projectId}:`, error);
       return false;
     }

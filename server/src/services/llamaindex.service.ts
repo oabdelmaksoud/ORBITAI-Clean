@@ -144,7 +144,7 @@ class LlamaIndexService {
 
       this.initialized = true;
       logger.info('✅ LlamaIndex RAG service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize LlamaIndex service:', error);
       throw error;
     }
@@ -196,7 +196,7 @@ class LlamaIndexService {
       }
 
       logger.info(`✅ Indexed ${documents.length} documents`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to index documents:', error);
       throw error;
     }
@@ -289,7 +289,7 @@ Answer:`;
           total: 0,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('RAG query failed:', error);
       throw new Error(`RAG query failed: ${error.message}`);
     }
@@ -365,7 +365,7 @@ Answer:`;
           : JSON.stringify(chunk.content);
         yield content;
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Streaming RAG query failed:', error);
       throw new Error(`Streaming RAG query failed: ${error.message}`);
     }
@@ -385,14 +385,14 @@ Answer:`;
         for (const docId of documentIds) {
           try {
             await weaviateService.deleteArtifact(docId);
-          } catch (error: unknown) {
+          } catch (error: any) {
             logger.warn(`Failed to delete ${docId} from Weaviate:`, error.message);
           }
         }
       }
 
       logger.info(`✅ Deleted ${documentIds.length} documents`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to delete documents:', error);
       throw error;
     }
@@ -421,7 +421,7 @@ Answer:`;
         totalChunks: totalDocuments, // Approximate
         vectorStore: weaviateService.isAvailable() ? 'weaviate' : 'in-memory',
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get index stats:', error);
       return {
         totalDocuments: 0,

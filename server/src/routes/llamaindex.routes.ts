@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'LlamaIndex service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('LlamaIndex initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -51,7 +51,7 @@ router.post('/index', async (req, res, _next) => {
       success: true,
       message: `Indexed ${documents.length} documents`,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Document indexing failed:', error);
     res.status(500).json({
       success: false,
@@ -89,7 +89,7 @@ router.post('/query', async (req, res, _next) => {
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('RAG query failed:', error);
     res.status(500).json({
       success: false,
@@ -132,7 +132,7 @@ router.post('/query/stream', async (req, res, _next) => {
 
     res.write('data: [DONE]\n\n');
     res.end();
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Streaming RAG query failed:', error);
     res.status(500).json({
       success: false,
@@ -163,7 +163,7 @@ router.post('/delete', async (req, res, _next) => {
       success: true,
       message: `Deleted ${documentIds.length} documents`,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Document deletion failed:', error);
     res.status(500).json({
       success: false,
@@ -184,7 +184,7 @@ router.get('/stats', async (req, res, _next) => {
       success: true,
       data: stats,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get index stats:', error);
     res.status(500).json({
       success: false,

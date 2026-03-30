@@ -94,7 +94,7 @@ class ReinforcementLearningRouterService {
         exploitationScore: bestModel.exploitationScore,
         reasoning: `RL selection: ${bestModel.modelId} (UCB score: ${bestModel.ucbScore.toFixed(3)}, pulls: ${totalPulls}, avg reward: ${bestModel.exploitationScore.toFixed(3)})`
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to select model using RL:', error);
       return null;
     }
@@ -135,7 +135,7 @@ class ReinforcementLearningRouterService {
       this.persistState(state).catch(err => {
         logger.warn('Failed to persist RL state:', err);
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to update RL reward:', error);
     }
   }
@@ -317,7 +317,7 @@ class ReinforcementLearningRouterService {
         averageReward,
         lastUpdated: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Failed to load RL state from database:', error);
       return null;
     }

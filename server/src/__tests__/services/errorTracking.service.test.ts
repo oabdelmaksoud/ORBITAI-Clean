@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { captureException, captureMessage, setUser } from '../../services/errorTracking.service.js';
+import { captureException, captureMessage, setUserContext } from '../../services/errorTracking.service.js';
 
 // Mock logger
 vi.mock('../../utils/logger.js', () => ({
@@ -53,7 +53,7 @@ describe('Error Tracking Service', () => {
       const user = { id: 'user123', email: 'test@example.com' };
 
       expect(() => {
-        setUser(user);
+        setUserContext(user);
       }).not.toThrow();
     });
   });

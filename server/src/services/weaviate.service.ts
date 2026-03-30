@@ -21,7 +21,7 @@ async function loadWeaviateClient() {
     weaviateClient = weaviateModule.default;
     WeaviateClient = weaviateModule.WeaviateClient;
     ApiKey = weaviateModule.ApiKey;
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.warn('Weaviate package not installed. Vector search will use in-memory fallback.');
     logger.debug('Install with: npm install weaviate-ts-client');
     weaviateClient = false; // Mark as unavailable
@@ -103,7 +103,7 @@ export class WeaviateService {
 
       this.initialized = true;
       logger.info(`✅ Weaviate connected: ${config.weaviateUrl}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize Weaviate:', error);
       logger.warn('Vector search will use fallback (in-memory)');
       this.client = null;
@@ -205,7 +205,7 @@ export class WeaviateService {
 
       await this.client.schema.classCreator().withClass(classDefinition).do();
       logger.info(`✅ Created Weaviate class: ${this.className}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       if (error.message?.includes('already exists')) {
         logger.debug(`Weaviate class "${this.className}" already exists`);
       } else {
@@ -242,7 +242,7 @@ export class WeaviateService {
       }
 
       logger.info(`✅ Initialized Weaviate with ${artifacts.length} artifacts`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize artifacts in Weaviate:', error);
       throw error;
     }
@@ -290,7 +290,7 @@ export class WeaviateService {
         .do();
 
       logger.debug(`Added artifact to Weaviate: ${artifact.id}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to add artifact ${artifact.id} to Weaviate:`, error);
       throw error;
     }
@@ -312,7 +312,7 @@ export class WeaviateService {
         .do();
 
       logger.debug(`Deleted artifact from Weaviate: ${artifactId}`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to delete artifact ${artifactId} from Weaviate:`, error);
       throw error;
     }
@@ -416,7 +416,7 @@ export class WeaviateService {
           tags: item.tags,
         },
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Weaviate vector search failed:', error);
       return [];
     }
@@ -520,7 +520,7 @@ export class WeaviateService {
           tags: item.tags,
         },
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Weaviate hybrid search failed:', error);
       // Fallback to vector search
       return await this.vectorSearch(query, topK, filters);
@@ -543,7 +543,7 @@ export class WeaviateService {
         .do();
 
       return (result.data?.Aggregate?.[this.className]?.[0]?.meta as any)?.count || 0;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get document count from Weaviate:', error);
       return 0;
     }
@@ -569,7 +569,7 @@ export class WeaviateService {
         .do();
 
       logger.warn('⚠️  Cleared all documents from Weaviate');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to clear Weaviate:', error);
       throw error;
     }

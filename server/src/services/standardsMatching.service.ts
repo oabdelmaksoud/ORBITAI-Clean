@@ -65,7 +65,7 @@ class StandardsMatchingService {
       await this.indexStandards();
       this.initialized = true;
       logger.info('✅ Standards Matching service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize Standards Matching service:', error);
       throw error;
     }
@@ -97,7 +97,7 @@ class StandardsMatchingService {
       }
 
       logger.debug(`Indexed ${standards.length} quality standards`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Failed to index standards, continuing without vector search:', error.message);
     }
   }
@@ -446,7 +446,7 @@ class StandardsMatchingService {
         optional: optional.slice(0, maxResults),
         allMatches: matches.slice(0, maxResults * 2),
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to find matching standards:', error);
       return {
         required: [],
@@ -966,7 +966,7 @@ class StandardsMatchingService {
       });
 
       return uniqueEnrolled;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to auto-enroll standards:', error);
       return [];
     }
@@ -1040,7 +1040,7 @@ class StandardsMatchingService {
       matches.sort((a, b) => b.score - a.score);
 
       return matches;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to search standards:', error);
       return [];
     }

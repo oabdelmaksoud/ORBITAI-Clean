@@ -73,7 +73,7 @@ class CommunitySharingService {
 
       logger.info(`Published improvement to marketplace: ${improvementId} -> ${listingId}`);
       return listing;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to publish to marketplace:', error);
       throw error;
     }
@@ -115,7 +115,7 @@ class CommunitySharingService {
       ]);
 
       return { listings, total };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to search marketplace:', error);
       throw error;
     }
@@ -165,7 +165,7 @@ class CommunitySharingService {
 
       await listing.save();
       logger.info(`Rated listing: ${listingId} with ${rating} stars`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to rate improvement:', error);
       throw error;
     }
@@ -243,7 +243,7 @@ class CommunitySharingService {
         originalId: listing.improvementId,
         customizations
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to fork improvement:', error);
       throw error;
     }
@@ -316,7 +316,7 @@ class CommunitySharingService {
 
       logger.info(`Imported improvement from marketplace: ${listingId} -> ${importedId}`);
       return importedId;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to import from marketplace:', error);
       throw error;
     }
@@ -360,7 +360,7 @@ class CommunitySharingService {
         averageRating,
         topCategories
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get marketplace stats:', error);
       throw error;
     }

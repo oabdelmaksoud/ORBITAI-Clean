@@ -43,7 +43,7 @@ router.get('/settings', async (_req: Request, res: Response) => {
         users: userSettings
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get router settings:', apiError);
     res.status(500).json({
@@ -65,7 +65,7 @@ router.get('/settings/global', async (_req: Request, res: Response) => {
       success: true,
       data: settings
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get global router settings:', apiError);
     res.status(500).json({
@@ -104,7 +104,7 @@ router.put('/settings/global', async (req: Request, res: Response) => {
       data: updated,
       message: 'Global router settings updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to update global router settings:', apiError);
     res.status(500).json({
@@ -127,7 +127,7 @@ router.get('/settings/user/:userId', async (req: Request, res: Response) => {
       success: true,
       data: settings
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to get user router settings for ${req.params.userId}:`, apiError);
     res.status(500).json({
@@ -167,7 +167,7 @@ router.put('/settings/user/:userId', async (req: Request, res: Response) => {
       data: updated,
       message: 'User router settings updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to update user router settings for ${req.params.userId}:`, apiError);
     res.status(500).json({
@@ -194,7 +194,7 @@ router.post('/settings/user/:userId/reset', async (req: Request, res: Response) 
       success: true,
       message: 'User router settings reset to global defaults'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to reset user router settings for ${req.params.userId}:`, apiError);
     res.status(500).json({
@@ -235,7 +235,7 @@ router.get('/rules', async (req: Request, res: Response) => {
       success: true,
       data: rules
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get routing rules:', apiError);
     res.status(500).json({
@@ -282,7 +282,7 @@ router.post('/rules', async (req: Request, res: Response) => {
       data: rule,
       message: 'Routing rule created successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to create routing rule:', apiError);
     res.status(500).json({
@@ -323,7 +323,7 @@ router.put('/rules/:ruleId', async (req: Request, res: Response) => {
       data: rule,
       message: 'Routing rule updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to update routing rule ${req.params.ruleId}:`, apiError);
     res.status(500).json({
@@ -363,7 +363,7 @@ router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
       success: true,
       message: 'Routing rule deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to delete routing rule ${req.params.ruleId}:`, apiError);
     res.status(500).json({
@@ -394,7 +394,7 @@ router.post('/rules/test', async (req: Request, res: Response) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to test routing rule:', apiError);
     res.status(500).json({
@@ -430,7 +430,7 @@ router.get('/analytics', async (_req: Request, res: Response) => {
         performanceOptimizationEnabled: globalSettings?.enablePerformanceOptimization || false
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get routing analytics:', apiError);
     res.status(500).json({
@@ -461,7 +461,7 @@ router.get('/metrics/realtime', async (req: Request, res: Response) => {
       success: true,
       data: metrics
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get real-time metrics:', apiError);
     res.status(500).json({
@@ -484,7 +484,7 @@ router.get('/metrics/health', async (_req: Request, res: Response) => {
       success: true,
       data: health
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get model health:', apiError);
     res.status(500).json({
@@ -514,7 +514,7 @@ router.get('/metrics/model/:modelId', async (req: Request, res: Response) => {
       success: true,
       data: metrics
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to get metrics for model ${req.params.modelId}:`, apiError);
     res.status(500).json({
@@ -544,7 +544,7 @@ router.get('/metrics/sparkline/:modelId', async (req: Request, res: Response) =>
       success: true,
       data: sparkline
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to get sparkline for model ${req.params.modelId}:`, apiError);
     res.status(500).json({
@@ -567,7 +567,7 @@ router.post('/metrics/cache/clear', async (_req: Request, res: Response) => {
       success: true,
       message: 'Metrics cache cleared successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to clear metrics cache:', apiError);
     res.status(500).json({
@@ -597,7 +597,7 @@ router.get('/forecast', async (req: Request, res: Response) => {
       success: true,
       data: forecast
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get cost forecast:', apiError);
     res.status(500).json({
@@ -627,7 +627,7 @@ router.get('/forecast/anomalies', async (req: Request, res: Response) => {
       success: true,
       data: anomalies
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to detect anomalies:', apiError);
     res.status(500).json({
@@ -651,7 +651,7 @@ router.post('/forecast/what-if', async (req: Request, res: Response) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to run what-if scenario:', apiError);
     res.status(500).json({
@@ -679,7 +679,7 @@ router.get('/forecast/breakdown', async (req: Request, res: Response) => {
       success: true,
       data: breakdown
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get cost breakdown:', apiError);
     res.status(500).json({
@@ -721,7 +721,7 @@ router.get('/decisions', async (req: Request, res: Response) => {
       success: true,
       data: decisions
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get routing decisions:', apiError);
     res.status(500).json({
@@ -753,7 +753,7 @@ router.get('/decisions/:decisionId', async (req: Request, res: Response) => {
       success: true,
       data: decision
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to get routing decision ${req.params.decisionId}:`, apiError);
     res.status(500).json({
@@ -813,7 +813,7 @@ router.get('/decisions/export', async (req: Request, res: Response) => {
         data: decisions
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to export routing decisions:', apiError);
     res.status(500).json({
@@ -885,7 +885,7 @@ router.get('/decisions/stats', async (req: Request, res: Response) => {
         byTaskType: taskStats
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get decision stats:', apiError);
     res.status(500).json({
@@ -923,7 +923,7 @@ router.get('/quotas', async (req: Request, res: Response) => {
       success: true,
       data: quotas
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to get quotas:', apiError);
     res.status(500).json({
@@ -966,7 +966,7 @@ router.post('/quotas', async (req: Request, res: Response) => {
       data: quota,
       message: 'Quota created successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error('Failed to create quota:', apiError);
     res.status(500).json({
@@ -1004,7 +1004,7 @@ router.put('/quotas/:quotaId', async (req: Request, res: Response) => {
       data: quota,
       message: 'Quota updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to update quota ${req.params.quotaId}:`, apiError);
     res.status(500).json({
@@ -1036,7 +1036,7 @@ router.delete('/quotas/:quotaId', async (req: Request, res: Response) => {
       success: true,
       message: 'Quota deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to delete quota ${req.params.quotaId}:`, apiError);
     res.status(500).json({
@@ -1068,7 +1068,7 @@ router.get('/quotas/:quotaId', async (req: Request, res: Response) => {
       success: true,
       data: quota
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     const apiError = toApiError(error);
     logger.error(`Failed to get quota ${req.params.quotaId}:`, apiError);
     res.status(500).json({

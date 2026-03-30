@@ -195,7 +195,7 @@ Remember: Your evaluation will be used to refine the task and improve the output
         timestamp: Date.now()
       };
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Evaluation failed:', error);
       
       // Return a fallback evaluation on error

@@ -166,7 +166,7 @@ User's latest message: ${message}`;
             modelUsed: result.modelUsed,
             provider: result.provider
         });
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Chat failed:', error);
         res.status(500).json({
             success: false,
@@ -300,7 +300,7 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
             res.write(`data: ${JSON.stringify({ error: streamError.message || 'Streaming failed' })}\n\n`);
             res.end();
         }
-    } catch (error: unknown) {
+    } catch (error: any) {
         logger.error('[LLMRouter] Streaming chat setup failed:', error);
         if (!res.headersSent) {
             res.status(500).json({

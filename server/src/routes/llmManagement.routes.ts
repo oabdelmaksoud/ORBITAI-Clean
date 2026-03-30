@@ -92,7 +92,7 @@ router.get('/models', async (_req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -212,7 +212,7 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
         model: modelWithApiKeyStatus
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -380,7 +380,7 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
         message: `Model ${enabled ? 'enabled' : 'disabled'} successfully`
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -432,7 +432,7 @@ router.get('/config', async (_req: AdminRequest, res, next) => {
         providers
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -608,7 +608,7 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
         }
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

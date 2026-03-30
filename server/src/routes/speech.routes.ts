@@ -50,7 +50,7 @@ const upload = multer({
  * @body {File} audio - Audio file (webm, wav, mp3, etc.)
  * @returns {Object} { text: string, language?: string }
  */
-router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res) => {
+router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -68,7 +68,7 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
         req.file.path,
         req.file.mimetype
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Clean up uploaded file
       await fs.unlink(req.file.path).catch(() => {});
       
@@ -98,17 +98,14 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
       text: transcription.text,
       language: transcription.language || 'en',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     // Clean up uploaded file on error
     if (req.file) {
       await fs.unlink(req.file.path).catch(() => {});
     }
 
     logger.error('[Speech] Transcription error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to transcribe audio',
-    });
+    next(error);
   }
 });
 
@@ -122,7 +119,7 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
  * Note: For now, we'll use OpenAI's TTS API which uses open-source models.
  * In the future, this can be replaced with fully local solutions like Coqui TTS.
  */
-router.post('/synthesize', async (req: AuthRequest, res) => {
+router.post('/synthesize', async (req: AuthRequest, res, next) => {
   try {
     const { text, voice = 'alloy', language = 'en' } = req.body;
 
@@ -147,7 +144,7 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
         voice,
         language
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Provide helpful error message
       const errorMessage = error.message || 'Text-to-speech service not configured.';
       const isQuotaError = error?.status === 429 || error?.message?.includes('quota');
@@ -170,12 +167,9 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
 
     res.send(synthesisResult.audioBuffer);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Speech] Synthesis error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to synthesize speech',
-    });
+    next(error);
   }
 });
 
@@ -185,7 +179,7 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
  * 
  * @returns {Object} { voices: Array<{id: string, name: string, language: string}> }
  */
-router.get('/voices', async (req: AuthRequest, res) => {
+router.get('/voices', async (req: AuthRequest, res, next) => {
   try {
     // Get voices from available provider
     const voices = await speechProviderService.getVoices();
@@ -201,12 +195,9 @@ router.get('/voices', async (req: AuthRequest, res) => {
       success: true,
       voices,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Speech] Error getting voices:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to get voices',
-    });
+    next(error);
   }
 });
 
@@ -214,7 +205,7 @@ router.get('/voices', async (req: AuthRequest, res) => {
  * GET /api/speech/providers
  * Get available speech providers
  */
-router.get('/providers', async (req: AuthRequest, res) => {
+router.get('/providers', async (req: AuthRequest, res, next) => {
   try {
     const providers = await speechProviderService.getAvailableProviders();
     const preferred = await speechProviderService.getPreferredProvider();
@@ -224,12 +215,9 @@ router.get('/providers', async (req: AuthRequest, res) => {
       providers,
       preferred,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Speech] Error getting providers:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to get providers',
-    });
+    next(error);
   }
 });
 

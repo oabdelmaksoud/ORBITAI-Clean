@@ -264,7 +264,7 @@ class DynamicToolingService {
         const tools = await this.discoverFromSource(source);
         discoveredTools.push(...tools);
         logger.info(`[DynamicTooling] Discovered ${tools.length} tools from ${source.name}`);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn(`[DynamicTooling] Failed to discover tools from ${source.name}: ${error.message}`);
       }
     }
@@ -330,7 +330,7 @@ class DynamicToolingService {
           }
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[DynamicTooling] Failed to discover MCP tools:', error);
     }
 

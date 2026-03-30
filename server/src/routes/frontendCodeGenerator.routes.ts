@@ -130,7 +130,7 @@ router.post(
           fileCount: result.files.length
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Frontend generation route error:', error);
       next(error);
     }
@@ -199,7 +199,7 @@ router.post(
           code: component
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }
@@ -296,7 +296,7 @@ router.post(
           }))
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       next(error);
     }
   }

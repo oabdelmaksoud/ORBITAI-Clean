@@ -153,7 +153,7 @@ IMPORTANT:
       data: aiDecision
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Agent Assignment] Error analyzing requirements:', error);
     res.status(500).json({
       success: false,
@@ -239,7 +239,7 @@ If no additional agents are needed, return an empty selectedAgents array with re
       data: aiDecision
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Agent Assignment] Error requesting additional agents:', error);
     res.status(500).json({
       success: false,
@@ -298,7 +298,7 @@ router.post('/intelligent-assignment', async (req: AuthRequest, res) => {
       data: result
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('[Intelligent Assignment] Error in intelligent assignment:', error);
     res.status(500).json({
       success: false,

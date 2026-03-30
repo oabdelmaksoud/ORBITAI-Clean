@@ -82,7 +82,7 @@ class ProcessSimulationService {
       }
 
       return results;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to simulate process:', error);
       throw error;
     }
@@ -365,7 +365,7 @@ class ProcessSimulationService {
         },
         risks
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to perform what-if analysis:', error);
       throw error;
     }
@@ -420,7 +420,7 @@ class ProcessSimulationService {
         confidence,
         factors
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to predict performance:', error);
       throw error;
     }

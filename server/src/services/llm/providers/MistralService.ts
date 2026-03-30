@@ -46,7 +46,7 @@ export class MistralService {
       const client = await this.getClient();
       const models = await client.models.list();
       return models.data.map(m => m.id);
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Failed to list Mistral models:', apiError);
       // Return common Mistral model names as fallback
@@ -122,7 +122,7 @@ export class MistralService {
           };
         }) : undefined
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       const apiError = toApiError(error);
       logger.error('Mistral API error:', apiError);
 

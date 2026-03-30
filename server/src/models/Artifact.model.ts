@@ -112,7 +112,7 @@ ArtifactSchema.pre('save', async function(next) {
     
     this.embedding = embedding;
     next();
-  } catch (error: unknown) {
+  } catch (error: any) {
     // Log but don't fail - embedding is optional
     const { logger } = await import('../utils/logger.js');
     logger.warn(`Failed to generate embedding for artifact ${this._id}:`, error);

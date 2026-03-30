@@ -51,7 +51,7 @@ class DeploymentRollbackService {
         } else {
           consecutiveFailures = 0; // Reset on success
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`Health check monitoring error for ${deploymentId}:`, error);
       }
     }, config.healthCheckInterval);
@@ -116,7 +116,7 @@ class DeploymentRollbackService {
         reason,
         timestamp: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Rollback failed:', error);
       throw error;
     }

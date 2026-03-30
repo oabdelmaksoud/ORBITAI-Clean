@@ -590,7 +590,7 @@ class RequirementsValidationService {
       return suggestions
         .sort((a, b) => b.confidence - a.confidence)
         .slice(0, 5);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to suggest requirement links:', error);
       return [];
     }

@@ -94,7 +94,7 @@ class ProjectCompletionService {
         try {
           await this.refineProjectCode(project);
           logger.info('Code refinement completed');
-        } catch (error: unknown) {
+        } catch (error: any) {
           result.warnings.push(`Code refinement failed: ${error.message}`);
         }
       }
@@ -104,7 +104,7 @@ class ProjectCompletionService {
         try {
           await this.generateProjectTests(project);
           logger.info('Test generation completed');
-        } catch (error: unknown) {
+        } catch (error: any) {
           result.warnings.push(`Test generation failed: ${error.message}`);
         }
       }
@@ -128,7 +128,7 @@ class ProjectCompletionService {
           }
 
           logger.info(`Quality gates: ${qualityResult.passed ? 'PASSED' : 'FAILED'} (${qualityResult.score}/100)`);
-        } catch (error: unknown) {
+        } catch (error: any) {
           result.errors.push(`Quality gate check failed: ${error.message}`);
         }
       }
@@ -167,7 +167,7 @@ class ProjectCompletionService {
           };
 
           logger.info('Documentation generated');
-        } catch (error: unknown) {
+        } catch (error: any) {
           result.errors.push(`Documentation generation failed: ${error.message}`);
         }
       }
@@ -181,7 +181,7 @@ class ProjectCompletionService {
             packageSize: packageResult.zipBuffer.length
           };
           logger.info(`Project packaged: ${(packageResult.zipBuffer.length / 1024).toFixed(2)} KB`);
-        } catch (error: unknown) {
+        } catch (error: any) {
           result.errors.push(`Packaging failed: ${error.message}`);
         }
       }
@@ -211,7 +211,7 @@ class ProjectCompletionService {
       logger.info(`Project completion finished. Deployment ready: ${result.deploymentReady}`);
 
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Project completion failed:', error);
       return {
         success: false,

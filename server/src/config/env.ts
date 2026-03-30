@@ -116,7 +116,7 @@ export const config = {
   githubRedirectUri: process.env.GITHUB_REDIRECT_URI || 'http://localhost:3001/api/integrations/github/callback',
 
   // Share Links
-  shareLinkSecret: process.env.SHARE_LINK_SECRET || process.env.JWT_SECRET || 'orbitai-super-secret-jwt-key-change-this-in-production-2024', // Fallback to JWT secret if not set
+  shareLinkSecret: process.env.SHARE_LINK_SECRET || process.env.JWT_SECRET || '', // Must be set via environment variable
 
   // Pipecat Voice Service Configuration
   pipecatHost: process.env.PIPECAT_HOST || 'localhost',
@@ -151,7 +151,7 @@ export const config = {
     // Production: only allow configured frontend URL
     return [frontendUrl];
   })(),
-  corsCredentials: process.env.CORS_CREDENTIALS !== 'false', // Default to true
+  corsCredentials: process.env.CORS_CREDENTIALS === 'true', // Default to false
 
 };
 

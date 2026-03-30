@@ -100,7 +100,7 @@ class SDLCMatchingService {
 
       this.initialized = true;
       logger.info('✅ SDLC Matching service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize SDLC Matching service:', error);
       throw error;
     }
@@ -520,7 +520,7 @@ class SDLCMatchingService {
         matchFactors,
         methodologyDetails,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('SDLC recommendation failed:', error);
       // Fallback to V-Model
       return {
@@ -804,7 +804,7 @@ class SDLCMatchingService {
     try {
       // AI-POWERED: Use LLM to analyze project and estimate sprints
       return await this.aiEstimateSprints(methodology, metadata, context);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('AI sprint estimation failed, falling back to rule-based:', error);
       // Fallback to rule-based estimation if AI fails
       return await this.ruleBasedEstimateSprints(methodology, metadata, context);
@@ -931,7 +931,7 @@ Be precise and justify your estimate with specific observations from the project
           requirements: (metadata.requirementsCount || context.requirements?.length || 0) > 20 ? 1.2 : (metadata.requirementsCount || context.requirements?.length || 0) < 5 ? 0.8 : 1.0,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('AI sprint estimation error:', error);
       throw error; // Re-throw to trigger fallback
     }
@@ -975,7 +975,7 @@ Be precise and justify your estimate with specific observations from the project
         methodologyAlignment: 'Analysis completed',
         riskFactors: []
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to parse AI response:', error);
       return {
         totalSprints: 7,
@@ -1416,7 +1416,7 @@ Be precise and justify your estimate with specific observations from the project
           requirements: requirementsCount > 20 ? 1.2 : requirementsCount < 5 ? 0.8 : 1.0,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Sprint estimation failed:', error);
       return {
         totalSprints: 7, // Research: Industry average 6.8 sprints (rounded to 7)

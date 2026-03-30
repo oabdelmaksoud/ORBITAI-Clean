@@ -107,7 +107,7 @@ class LLMHealthMonitoringService {
         lastChecked: new Date(),
         trends
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to calculate provider health metrics:', error);
       throw error;
     }
@@ -227,7 +227,7 @@ class LLMHealthMonitoringService {
         unhealthyProviders,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate health report:', error);
       throw error;
     }

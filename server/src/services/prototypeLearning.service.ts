@@ -96,7 +96,7 @@ class PrototypeLearningService {
             });
 
             return learning;
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error(`[PrototypeLearning] Failed to record learning:`, error.message);
             throw error;
         }
@@ -150,7 +150,7 @@ class PrototypeLearningService {
                 confidence: l.confidence,
                 occurrences: l.occurrences
             }));
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.error(`[PrototypeLearning] Failed to retrieve learnings:`, error.message);
             return [];
         }
@@ -176,7 +176,7 @@ class PrototypeLearningService {
             }
 
             await learning.save();
-        } catch (error: unknown) {
+        } catch (error: any) {
             logger.warn(`[PrototypeLearning] Failed to update success rate:`, error.message);
         }
     }

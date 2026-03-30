@@ -160,7 +160,7 @@ router.get('/trends', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get LLM trends:', error);
     next(error);
   }
@@ -244,7 +244,7 @@ router.get('/model-comparison', async (req: AdminRequest, res, next) => {
         models: comparison.sort((a, b) => b.calls - a.calls)
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get model comparison:', error);
     next(error);
   }
@@ -361,7 +361,7 @@ router.get('/cost-analysis', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get cost analysis:', error);
     next(error);
   }
@@ -425,7 +425,7 @@ router.get('/performance', async (req: AdminRequest, res, next) => {
           : 0
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get performance metrics:', error);
     next(error);
   }
@@ -540,7 +540,7 @@ router.get('/context-breakdown', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get context breakdown:', error);
     next(error);
   }

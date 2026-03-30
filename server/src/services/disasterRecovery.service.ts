@@ -50,7 +50,7 @@ class DisasterRecoveryService {
 
       await plan.save();
       return plan;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate disaster recovery plan:', error);
       throw error;
     }
@@ -171,7 +171,7 @@ Return as JSON array with steps.`;
         estimatedTime: p.estimatedTime,
         dependencies: []
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('LLM recovery procedure generation failed, using template:', error.message);
       return this.getDefaultRecoveryProcedures();
     }

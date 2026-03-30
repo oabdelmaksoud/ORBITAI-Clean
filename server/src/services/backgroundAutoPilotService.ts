@@ -190,7 +190,7 @@ class BackgroundAutoPilotService {
       }
 
       logger.info(`[Background AutoPilot ${autoPilotId}] Execution loop completed`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[Background AutoPilot ${autoPilotId}] Execution error:`, error);
       await this.stopBackgroundAutoPilot(autoPilotId, 'error');
     }
@@ -326,7 +326,7 @@ Please complete this task and provide your output.`;
           logger.info(`[Background AutoPilot ${autoPilot.id}] Task ${task.id} completed. Score: ${evaluation.score}/100`);
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[Background AutoPilot ${autoPilot.id}] Task execution failed:`, error);
       
       // Update task status to failed
@@ -386,7 +386,7 @@ Please complete this task and provide your output.`;
       }
       
       return false;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[Background AutoPilot ${autoPilot.id}] Failed to advance phase:`, error);
       return false;
     }

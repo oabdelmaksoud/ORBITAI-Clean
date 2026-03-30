@@ -31,7 +31,7 @@ router.get('/stats', async (_req: AdminRequest, res, next) => {
       success: true,
       data: stats
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -61,7 +61,7 @@ router.post('/node', async (req: AdminRequest, res, next) => {
       success: true,
       data: node
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -102,7 +102,7 @@ router.post('/relationship', async (req: AdminRequest, res, next) => {
       success: true,
       data: relationship
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -133,7 +133,7 @@ router.get('/nodes', async (req: AdminRequest, res, next) => {
       success: true,
       data: nodes
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -172,7 +172,7 @@ router.post('/traverse', async (req: AdminRequest, res, next) => {
       success: true,
       data: paths
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -211,7 +211,7 @@ router.post('/shortest-path', async (req: AdminRequest, res, next) => {
       success: true,
       data: path
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -238,7 +238,7 @@ router.post('/query', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

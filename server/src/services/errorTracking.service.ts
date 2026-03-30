@@ -62,7 +62,7 @@ export async function initErrorTracking(): Promise<void> {
 
     isSentryInitialized = true;
     logger.info('[Error Tracking] Sentry initialized');
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.warn('[Error Tracking] Failed to initialize Sentry:', error.message);
     isSentryInitialized = true; // Mark as initialized (using logger fallback)
   }

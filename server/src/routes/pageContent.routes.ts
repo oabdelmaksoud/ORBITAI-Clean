@@ -50,7 +50,7 @@ router.get('/:pageKey', async (req: AdminRequest, res, next) => {
         sections: sectionsMap
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get page content:', error);
     next(error);
   }
@@ -92,7 +92,7 @@ router.get('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get page section:', error);
     next(error);
   }
@@ -173,7 +173,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'page_content.create',
       entityType: 'page_content',
@@ -244,7 +244,7 @@ router.put('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     await logAudit(req, {
       action: 'page_content.update',
       entityType: 'page_content',
@@ -288,7 +288,7 @@ router.delete('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Section deactivated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to delete page content:', error);
     next(error);
   }
@@ -324,7 +324,7 @@ router.get('/public/:pageKey', async (req, res, next) => {
         sections: sectionsMap
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get public page content:', error);
     next(error);
   }

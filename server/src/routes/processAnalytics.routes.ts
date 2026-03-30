@@ -38,7 +38,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: analytics
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -55,7 +55,7 @@ router.get('/roi/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: roi
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

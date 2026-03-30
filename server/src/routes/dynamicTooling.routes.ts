@@ -58,7 +58,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       count: tools.length,
       tools
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Get tools error:', error);
     res.status(500).json({
       success: false,
@@ -88,7 +88,7 @@ router.post('/discover', authenticateToken, async (_req: Request, res: Response)
       discovered: discoveredTools.length,
       tools: discoveredTools
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Discover tools error:', error);
     res.status(500).json({
       success: false,
@@ -133,7 +133,7 @@ router.get('/:toolId', authenticateToken, async (req: Request, res: Response) =>
       success: true,
       tool
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Get tool error:', error);
     res.status(500).json({
       success: false,
@@ -172,7 +172,7 @@ router.get('/category/:category', authenticateToken, async (req: Request, res: R
       count: tools.length,
       tools
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Get tools by category error:', error);
     res.status(500).json({
       success: false,
@@ -201,7 +201,7 @@ router.get('/stats/overview', authenticateToken, async (_req: Request, res: Resp
       success: true,
       statistics
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Get tool statistics error:', error);
     res.status(500).json({
       success: false,
@@ -251,7 +251,7 @@ router.post('/search', authenticateToken, async (req: Request, res: Response) =>
       count: tools.length,
       tools
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Search tools error:', error);
     res.status(500).json({
       success: false,

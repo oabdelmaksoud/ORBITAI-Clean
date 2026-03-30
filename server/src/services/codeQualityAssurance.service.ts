@@ -89,7 +89,7 @@ class CodeQualityAssuranceService {
           // Merge with existing issues
           securityIssues = [...securityIssues, ...aggregated.issues];
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.debug('External security tools not available, using LLM only:', error.message);
       }
 
@@ -148,7 +148,7 @@ class CodeQualityAssuranceService {
       this.createTasksForIssuesAsync(result, context?.projectId, context?.userId, context?.artifactId);
       
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Code review failed:', error);
       // Return safe defaults
       return {
@@ -266,7 +266,7 @@ Return as JSON array.`;
 
       const parsed = JSON.parse(response.content);
       return parsed.checks || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Best practices check failed:', error);
       return [];
     }
@@ -352,7 +352,7 @@ Return as JSON array.`;
 
       const parsed = JSON.parse(response.content);
       return parsed.issues || [];
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Security scan failed:', error);
       return [];
     }
@@ -421,7 +421,7 @@ Return as JSON object.`;
         potentialBottlenecks: parsed.potentialBottlenecks || [],
         optimizationSuggestions: parsed.optimizationSuggestions || []
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Performance assessment failed:', error);
       return {
         complexity: 'medium',
@@ -485,7 +485,7 @@ Return as JSON object.`;
         naming: parsed.naming || [],
         structure: parsed.structure || []
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Code style check failed:', error);
       return {
         consistency: 'needs-improvement',
@@ -678,7 +678,7 @@ Return only a number between 0-100.`;
       const match = response.content.match(/\d+/);
       const score = match ? parseInt(match[0], 10) : 50;
       return Math.max(0, Math.min(100, score));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Quick quality score calculation failed:', error);
       return 50; // Default score
     }
@@ -712,7 +712,7 @@ Return only a number between 0-100.`;
         artifactId || '',
         userId
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Log but don't throw - task creation failure shouldn't break code review
       logger.warn('Failed to create tasks for detected issues:', error);
     }

@@ -128,7 +128,7 @@ class DeploymentOrchestratorService {
           logs.push(`✅ Generated ${iacTemplates.length} IaC template(s)`);
           // IaC templates would be added to the code repository
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn('IaC generation failed (non-critical):', error.message);
       }
 
@@ -216,7 +216,7 @@ class DeploymentOrchestratorService {
         deployedAt: Date.now(),
         estimatedCost: this.estimateMonthlyCost(config.platform),
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`❌ Deployment failed: ${error.message}`);
       logs.push(`❌ Error: ${error.message}`);
 
@@ -273,7 +273,7 @@ class DeploymentOrchestratorService {
         sshUrl: repo.ssh_url,
         fullName: repo.full_name,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -319,7 +319,7 @@ class DeploymentOrchestratorService {
         success: true,
         filesCount: files.length,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -408,7 +408,7 @@ class DeploymentOrchestratorService {
           cdn: true,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -501,7 +501,7 @@ class DeploymentOrchestratorService {
           cdn: true,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -539,7 +539,7 @@ class DeploymentOrchestratorService {
           autoscaling: true,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -576,7 +576,7 @@ class DeploymentOrchestratorService {
           autoscaling: true,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -607,7 +607,7 @@ class DeploymentOrchestratorService {
           autoscaling: true,
         },
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -639,7 +639,7 @@ class DeploymentOrchestratorService {
         status: health.status,
         responseTime: response.headers.get('x-response-time') || 'unknown',
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,

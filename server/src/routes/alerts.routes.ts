@@ -45,7 +45,7 @@ router.get('/rules', async (req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -89,7 +89,7 @@ router.post('/rules', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -133,7 +133,7 @@ router.put('/rules/:id', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -156,7 +156,7 @@ router.delete('/rules/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Alert rule deleted'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -179,7 +179,7 @@ router.post('/rules/:id/test', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Test alert sent'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

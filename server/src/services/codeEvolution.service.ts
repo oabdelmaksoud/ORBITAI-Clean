@@ -112,7 +112,7 @@ class CodeEvolutionService {
       await evolution.save();
 
       return evolution;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to track code evolution snapshot:', error);
       throw error;
     }
@@ -323,7 +323,7 @@ class CodeEvolutionService {
         },
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate code evolution report:', error);
       throw error;
     }

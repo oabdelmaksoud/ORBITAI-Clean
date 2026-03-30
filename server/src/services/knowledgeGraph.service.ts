@@ -65,7 +65,7 @@ class KnowledgeGraphService {
       
       this.initialized = true;
       logger.info('✅ Knowledge Graph service initialized');
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to initialize Knowledge Graph service:', error);
       throw error;
     }
@@ -110,7 +110,7 @@ class KnowledgeGraphService {
       await weaviateService.addArtifact(artifact);
 
       logger.debug(`Added entity to knowledge graph: ${entity.id} (${entity.name})`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to add entity ${entity.id}:`, error);
       throw error;
     }
@@ -153,7 +153,7 @@ class KnowledgeGraphService {
       await weaviateService.addArtifact(artifact);
 
       logger.debug(`Added relationship: ${relationship.type} (${relationship.sourceId} -> ${relationship.targetId})`);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to add relationship:`, error);
       throw error;
     }
@@ -194,7 +194,7 @@ class KnowledgeGraphService {
           };
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to find entities:', error);
       return [];
     }
@@ -239,7 +239,7 @@ class KnowledgeGraphService {
           properties: {},
         };
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to get entity ${entityId}:`, error);
       return null;
     }
@@ -293,7 +293,7 @@ class KnowledgeGraphService {
       }
 
       return relationships;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to get relationships for ${entityId}:`, error);
       return [];
     }
@@ -364,7 +364,7 @@ class KnowledgeGraphService {
       }
 
       return null; // No path found
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to find path from ${sourceId} to ${targetId}:`, error);
       return null;
     }
@@ -419,7 +419,7 @@ class KnowledgeGraphService {
         totalRelationships: 0, // Would need separate tracking
         entityTypes: {},
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to get graph stats:', error);
       return {
         totalEntities: 0,

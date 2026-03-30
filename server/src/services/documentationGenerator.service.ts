@@ -64,7 +64,7 @@ class DocumentationGeneratorService {
         architectureDoc,
         codeComments: {} // Will be populated separately if needed
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Documentation generation failed:', error);
       throw error;
     }
@@ -120,7 +120,7 @@ Make it professional, clear, and comprehensive. Use proper markdown formatting.`
       });
 
       return response.content;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('README generation failed:', error);
       return this.getDefaultREADME(project);
     }
@@ -175,7 +175,7 @@ Return valid ${format === 'openapi' ? 'OpenAPI' : 'Swagger'} JSON/YAML.`;
       });
 
       return response.content;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('API docs generation failed:', error);
       return this.getDefaultAPIDocs(project);
     }
@@ -219,7 +219,7 @@ Make it user-friendly, clear, and include examples where helpful.`;
       });
 
       return response.content;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('User guide generation failed:', error);
       return this.getDefaultUserGuide(project);
     }
@@ -238,7 +238,7 @@ Make it user-friendly, clear, and include examples where helpful.`;
     for (const platform of platforms) {
       try {
         guides[platform] = await this.generateDeploymentGuide(project, platform, options);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`Deployment guide generation failed for ${platform}:`, error);
         guides[platform] = this.getDefaultDeploymentGuide(project, platform);
       }
@@ -338,7 +338,7 @@ Use diagrams (Mermaid format) where helpful.`;
       });
 
       return response.content;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Architecture docs generation failed:', error);
       return this.getDefaultArchitectureDoc(project);
     }
@@ -384,7 +384,7 @@ Return the code with comments added.`;
       const codeBlockRegex = new RegExp(`\`\`\`${language}\\s*([\\s\\S]*?)\`\`\``, 'i');
       const match = response.content.match(codeBlockRegex);
       return match ? match[1].trim() : response.content.trim();
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Code commenting failed:', error);
       return code; // Return original on failure
     }

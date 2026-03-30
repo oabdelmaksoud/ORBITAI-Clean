@@ -39,7 +39,8 @@ router.get('/conversations/:conversationId', authenticateToken, async (req: Auth
     });
   } catch (error: unknown) {
     logger.error('Error fetching transcriptions:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -93,7 +94,8 @@ router.post('/conversations/:conversationId', authenticateToken, async (req: Aut
     });
   } catch (error: unknown) {
     logger.error('Error adding transcription:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -176,7 +178,8 @@ router.get('/search', authenticateToken, async (req: AuthRequest, res: Response)
     });
   } catch (error: unknown) {
     logger.error('Error searching transcriptions:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -217,7 +220,8 @@ router.get('/conversations/:conversationId/export', authenticateToken, async (re
     }
   } catch (error: unknown) {
     logger.error('Error exporting transcriptions:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 

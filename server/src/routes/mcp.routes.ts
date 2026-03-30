@@ -41,7 +41,7 @@ router.post('/discover', async (req, res, _next) => {
       data: toolsByServer,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('MCP tool discovery failed:', error);
     
     res.status(500).json({
@@ -81,7 +81,7 @@ router.post('/call', async (req, res, _next) => {
       data: result,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('MCP tool call failed:', error);
     
     res.status(500).json({
@@ -137,7 +137,7 @@ router.post('/vector-search/initialize', async (req, res, _next) => {
       message: `Vector search initialized with ${artifacts.length} artifacts`,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Vector search initialization failed:', error);
     
     res.status(500).json({
@@ -177,7 +177,7 @@ router.post('/vector-search', async (req, res, _next) => {
       data: results,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Vector search failed:', error);
     
     res.status(500).json({
@@ -217,7 +217,7 @@ router.post('/vector-search/recall-context', async (req, res, _next) => {
       data: context,
       timestamp: new Date().toISOString()
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Context recall failed:', error);
     
     res.status(500).json({

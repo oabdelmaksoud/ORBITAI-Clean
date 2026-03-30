@@ -79,7 +79,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(toApiError(error));
   }
 });
@@ -118,7 +118,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(toApiError(error));
   }
 });
@@ -196,7 +196,7 @@ router.get('/export/compliance', async (req: AdminRequest, res, next) => {
         }
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(toApiError(error));
   }
 });
@@ -227,7 +227,7 @@ router.get('/gdpr/user/:userId', async (req: AdminRequest, res, next) => {
         exportedAt: new Date().toISOString()
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(toApiError(error));
   }
 });
@@ -312,7 +312,7 @@ router.get('/stats/summary', async (_req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(toApiError(error));
   }
 });
@@ -357,7 +357,7 @@ router.get('/user/:userId', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(toApiError(error));
   }
 });

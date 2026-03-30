@@ -406,7 +406,7 @@ router.post('/webhooks/:id/test', async (req: AdminRequest, res, next) => {
           message: 'Webhook test successful'
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       webhook.lastTriggered = new Date();
       webhook.lastStatus = 'failed';
       webhook.lastError = error.message;

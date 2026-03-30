@@ -64,7 +64,7 @@ router.post('/login', strictRateLimiter, validate(adminLoginSchema), async (req,
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -106,7 +106,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

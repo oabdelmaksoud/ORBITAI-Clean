@@ -125,7 +125,7 @@ class FullProjectArchitectureAnalyzerService {
 
       logger.info('[ArchitectureAnalyzer] Architecture analysis completed successfully');
       return analysis;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('[ArchitectureAnalyzer] Failed to analyze architecture:', error);
       // Return default structure with error indication
       return this.getDefaultAnalysis(input);

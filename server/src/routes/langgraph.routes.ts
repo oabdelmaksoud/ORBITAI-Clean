@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'LangGraph service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('LangGraph initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -59,7 +59,7 @@ router.post('/workflows', async (req, res, _next) => {
       message: 'Workflow created',
       data: { workflowId: id },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create workflow:', error);
     res.status(500).json({
       success: false,
@@ -109,7 +109,7 @@ router.post('/workflows/:id/execute', async (req, res, _next) => {
         data: result,
       });
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Workflow execution failed:', error);
     res.status(500).json({
       success: false,
@@ -142,7 +142,7 @@ router.post('/workflows/agent', async (req, res, _next) => {
       message: 'Agent workflow created',
       data: { workflowId },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create agent workflow:', error);
     res.status(500).json({
       success: false,
@@ -180,7 +180,7 @@ router.post('/workflows/multi-agent', async (req, res, _next) => {
       message: 'Multi-agent workflow created',
       data: { workflowId },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create multi-agent workflow:', error);
     res.status(500).json({
       success: false,
@@ -212,7 +212,7 @@ router.post('/workflows/rag', async (req, res, _next) => {
       success: true,
       message: 'RAG workflow creation - retrieval handler must be implemented',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create RAG workflow:', error);
     res.status(500).json({
       success: false,
@@ -243,7 +243,7 @@ router.get('/workflows/:id', async (req, res, _next) => {
       success: true,
       message: 'Workflow found',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get workflow:', error);
     res.status(500).json({
       success: false,
@@ -264,7 +264,7 @@ router.get('/workflows', async (req, res, _next) => {
       success: true,
       data: workflows,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list workflows:', error);
     res.status(500).json({
       success: false,

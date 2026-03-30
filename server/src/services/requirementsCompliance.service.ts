@@ -148,7 +148,7 @@ class RequirementsComplianceService {
         },
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to calculate compliance score:', error);
       throw error;
     }
@@ -270,7 +270,7 @@ class RequirementsComplianceService {
         recommendations,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to generate compliance report:', error);
       throw error;
     }
@@ -370,7 +370,7 @@ Respond in JSON format:
       }
 
       return alignment;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to compare requirement to code:', error);
       // Return default score
       return {

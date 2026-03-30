@@ -202,7 +202,7 @@ class ProjectPackagerService {
           version: '1.0.0'
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Project packaging failed:', error);
       throw error;
     }
@@ -244,7 +244,7 @@ class ProjectPackagerService {
         dockerCompose: dockerCompose || undefined,
         dockerIgnore
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Docker config generation failed:', error);
       return {
         dockerfile: this.getDefaultDockerfile(),
@@ -297,7 +297,7 @@ class ProjectPackagerService {
             configs.netlify = this.generateNetlifyConfig(project);
             break;
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`Failed to generate ${platform} config:`, error);
       }
     }

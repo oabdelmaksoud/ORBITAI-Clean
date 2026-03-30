@@ -69,7 +69,7 @@ router.get('/events', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -116,7 +116,7 @@ router.get('/events/stats', async (req: AdminRequest, res, next) => {
         }, {})
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -142,7 +142,7 @@ router.put('/events/:id/resolve', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Security event marked as resolved'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -178,7 +178,7 @@ router.get('/sessions', async (req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -204,7 +204,7 @@ router.delete('/sessions/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Session revoked'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -238,7 +238,7 @@ router.get('/ip-whitelist', async (req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -280,7 +280,7 @@ router.post('/ip-whitelist', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -306,7 +306,7 @@ router.delete('/ip-whitelist/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'IP entry removed'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

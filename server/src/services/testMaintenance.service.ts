@@ -130,7 +130,7 @@ class TestMaintenanceService {
         updates,
         generatedAt: new Date()
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to maintain tests:', error);
       throw error;
     }
@@ -350,7 +350,7 @@ Return the updated test code.`;
       });
 
       return response.content;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Test update generation failed:', error.message);
       return oldTestCode; // Return original if update fails
     }
@@ -419,7 +419,7 @@ Return only the test code.`;
       });
 
       return response.content;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn(`Failed to generate test for ${functionName}:`, error.message);
       return null;
     }

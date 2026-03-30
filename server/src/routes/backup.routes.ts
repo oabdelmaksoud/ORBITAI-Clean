@@ -67,7 +67,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -132,7 +132,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         await backup.save();
 
         logger.info(`Backup completed: ${filename}`);
-      } catch (error: unknown) {
+      } catch (error: any) {
         backup.status = 'failed';
         backup.error = error.message;
         await backup.save();
@@ -151,7 +151,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       },
       message: 'Backup started'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -191,12 +191,12 @@ router.post('/:id/verify', async (req: AdminRequest, res, next) => {
           message: isValid ? 'Backup verified successfully' : 'Backup verification failed'
         }
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
       backup.verified = false;
       await backup.save();
       throw new AppError(`Backup verification failed: ${error.message}`, 400);
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -243,7 +243,7 @@ router.post('/:id/restore', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Backup restored successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -276,7 +276,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Backup deleted'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

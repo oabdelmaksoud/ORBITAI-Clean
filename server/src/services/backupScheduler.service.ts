@@ -201,7 +201,7 @@ class BackupSchedulerService {
 
       // Clean up old backups
       await this.cleanupOldBackups(schedule.retentionDays);
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[BackupScheduler] Backup failed: ${error.message}`, error);
       
       // Try to update backup record if it exists
@@ -243,11 +243,11 @@ class BackupSchedulerService {
           // Delete record
           await DatabaseBackup.findByIdAndDelete(backup._id);
           logger.info(`[BackupScheduler] Cleaned up expired backup: ${backup.filename}`);
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.error(`[BackupScheduler] Failed to cleanup backup ${backup.filename}: ${error.message}`);
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[BackupScheduler] Cleanup cleanup failed: ${error.message}`);
     }
   }

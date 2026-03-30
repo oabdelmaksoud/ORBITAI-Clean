@@ -41,7 +41,7 @@ const __dirname = path.dirname(__filename);
 try {
   const { initSentry } = await import('./services/monitoring/sentry.js');
   initSentry();
-} catch (error: unknown) {
+} catch (error: any) {
   logger.warn('Sentry initialization failed (optional):', toApiError(error).message);
 }
 
@@ -69,6 +69,9 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) {
+      if (config.nodeEnv === 'production') {
+        return callback(new Error('CORS: Origin required'), false);
+      }
       return callback(null, true);
     }
 
@@ -359,7 +362,7 @@ async function startServer() {
           const { neo4jService } = await import('./services/neo4j.service.js');
           await neo4jService.initialize();
           logger.info('✅ Neo4j Knowledge Graph service initialized');
-        } catch (error: unknown) {
+        } catch (error: any) {
           logger.debug('Neo4j service skipped: ' + toApiError(error).message);
         }
       } else {
@@ -378,7 +381,7 @@ async function startServer() {
         });
 
         mcpService.startHealthChecks(5 * 60 * 1000);
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.warn('MCP health check failed:', toApiError(error).message);
       }
 
@@ -419,7 +422,7 @@ async function startServer() {
 
     }, 100); // Small delay to let server start accepting connections first
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to start server:', toApiError(error));
     process.exit(1);
   }
@@ -427,6 +430,35 @@ async function startServer() {
 
 startServer();
 
+// Graceful shutdown handler
+function gracefulShutdown(signal: string) {
+  logger.info(`${signal} received. Starting graceful shutdown...`);
+
+  // Force exit after 30 seconds if graceful shutdown fails
+  const forceExitTimeout = setTimeout(() => {
+    logger.error('Graceful shutdown timed out after 30s. Forcing exit.');
+    process.exit(1);
+  }, 30000);
+  forceExitTimeout.unref();
+
+  // Stop accepting new connections
+  httpServer.close(() => {
+    logger.info('HTTP server closed. No longer accepting connections.');
+
+    // Close database connection
+    mongoose.connection.close().then(() => {
+      logger.info('MongoDB connection closed.');
+      clearTimeout(forceExitTimeout);
+      process.exit(0);
+    }).catch((err) => {
+      logger.error('Error closing MongoDB connection:', err);
+      clearTimeout(forceExitTimeout);
+      process.exit(1);
+    });
+  });
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
 export default app;
-
-

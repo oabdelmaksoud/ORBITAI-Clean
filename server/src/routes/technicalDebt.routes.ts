@@ -49,7 +49,7 @@ router.post('/:projectId/identify', authenticateToken, async (req: AuthRequest, 
         }))
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to identify technical debt:', error);
     res.status(500).json({
       success: false,
@@ -80,7 +80,7 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
       success: true,
       data: report
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get technical debt report:', error);
     res.status(500).json({
       success: false,
@@ -111,7 +111,7 @@ router.post('/:debtId/resolve', authenticateToken, async (req: AuthRequest, res:
       success: true,
       message: 'Technical debt resolved'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to resolve technical debt:', error);
     res.status(500).json({
       success: false,

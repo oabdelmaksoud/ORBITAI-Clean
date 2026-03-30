@@ -32,7 +32,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
         count: keys.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -56,7 +56,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: { key }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -123,7 +123,7 @@ router.post('/', strictRateLimiter, async (req: AdminRequest, res, next) => {
       data: { key },
       message: 'API key created successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -198,7 +198,7 @@ router.put('/:id', strictRateLimiter, async (req: AdminRequest, res, next) => {
       data: { key },
       message: 'API key updated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -223,7 +223,7 @@ router.delete('/:id', strictRateLimiter, async (req: AdminRequest, res, next) =>
       success: true,
       message: 'API key deleted permanently'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -248,7 +248,7 @@ router.post('/:id/deactivate', strictRateLimiter, async (req: AdminRequest, res,
       success: true,
       message: 'API key deactivated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -285,7 +285,7 @@ router.post('/:id/activate', strictRateLimiter, async (req: AdminRequest, res, n
       success: true,
       message: 'API key activated successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -394,7 +394,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
             } else {
               testResult = { valid: false, message: 'Gemini API key test failed: Invalid response' };
             }
-          } catch (error: unknown) {
+          } catch (error: any) {
             // Parse error message for better user feedback
             let errorMessage = error.message || 'Unknown error';
             if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('API key')) {
@@ -600,7 +600,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
             testResult = { valid: false, message: `Key format is invalid for ${key.provider}` };
           }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Provide more detailed error messages
       const errorMessage = error.message || 'Unknown error';
       if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
@@ -622,7 +622,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
         keyName: key.keyName
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     next(error);
   }
 });

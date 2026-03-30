@@ -216,7 +216,7 @@ class PipecatBridgeService {
           logger.info(`[PipecatBridge] Saved ${session.transcripts.length} voice transcripts to conversation: ${session.conversationId}`);
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[PipecatBridge] Error saving voice conversation: ${error.message}`, error);
     }
 

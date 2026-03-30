@@ -48,7 +48,7 @@ export class AdminDatabaseService {
       }
       const collections = await db.listCollections().toArray();
       return collections.map(col => col.name);
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to list collections: ${error.message}`, 500);
     }
   }
@@ -75,7 +75,7 @@ export class AdminDatabaseService {
         indexes: stats.nindexes || 0,
         avgObjSize: count > 0 ? (stats.size / count) : 0
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get collection stats: ${error.message}`, 500);
     }
   }
@@ -149,7 +149,7 @@ export class AdminDatabaseService {
           hasMore: totalCount > querySkip + queryLimit
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Log failed query
       await AuditLog.create({
         userId: adminId,
@@ -233,7 +233,7 @@ export class AdminDatabaseService {
         modifiedCount: result.modifiedCount,
         upsertedCount: result.upsertedCount || 0
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Log failed update
       await AuditLog.create({
         userId: adminId,
@@ -311,7 +311,7 @@ export class AdminDatabaseService {
         deletedCount: result.deletedCount,
         totalMatched: totalCount
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Log failed delete
       await AuditLog.create({
         userId: adminId,
@@ -364,7 +364,7 @@ export class AdminDatabaseService {
         timestamp,
         data: documents
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to backup collection: ${error.message}`, 500);
     }
   }
@@ -397,7 +397,7 @@ export class AdminDatabaseService {
         fields,
         sample
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       throw new AppError(`Failed to get collection schema: ${error.message}`, 500);
     }
   }

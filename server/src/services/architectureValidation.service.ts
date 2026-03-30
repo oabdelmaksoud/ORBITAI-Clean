@@ -111,7 +111,7 @@ class ArchitectureValidationService {
         complexity,
         overallScore
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to validate architecture pattern:', error);
       throw error;
     }
@@ -350,7 +350,7 @@ Return a JSON object with violations array.`;
       const score = parsed.score || Math.max(0, 100 - violations.length * 10);
 
       return { score: Math.round(score), violations };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.warn('Failed to validate SOLID principles with LLM, using fallback:', error.message);
       // Fallback: simple heuristic
       return {

@@ -142,7 +142,7 @@ export class CodeGeneratorService {
         generatedAt: Date.now(),
         validationReport,
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`❌ Code generation failed: ${error.message}`);
       return {
         projectId,
@@ -544,7 +544,10 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     req.userId = decoded.userId;
     next();
   } catch (error) {

@@ -21,7 +21,7 @@ router.post('/initialize', async (req, res, _next) => {
       success: true,
       message: 'Autogen service initialized',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Autogen initialization failed:', error);
     res.status(500).json({
       success: false,
@@ -62,7 +62,7 @@ router.post('/agents', async (req, res, _next) => {
       success: true,
       data: agent,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to register agent:', error);
     res.status(500).json({
       success: false,
@@ -93,7 +93,7 @@ router.get('/agents/:id', async (req, res, _next) => {
       success: true,
       data: agent,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get agent:', error);
     res.status(500).json({
       success: false,
@@ -139,7 +139,7 @@ router.post('/conversations', routeTimeout(300000), async (req: any, res, _next)
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Conversation initiation failed:', error);
     res.status(500).json({
       success: false,
@@ -185,7 +185,7 @@ router.post('/conversations/:id/continue', routeTimeout(180000), async (req: any
       success: true,
       data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Conversation continuation failed:', error);
     res.status(500).json({
       success: false,
@@ -208,7 +208,7 @@ router.get('/conversations/:id', async (req, res, _next) => {
       success: true,
       data: messages,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get conversation:', error);
     res.status(500).json({
       success: false,
@@ -229,7 +229,7 @@ router.get('/conversations', async (req, res, _next) => {
       success: true,
       data: conversations,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to list conversations:', error);
     res.status(500).json({
       success: false,
@@ -252,7 +252,7 @@ router.delete('/conversations/:id', async (req, res, _next) => {
       success: true,
       message: 'Conversation cleared',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to clear conversation:', error);
     res.status(500).json({
       success: false,
@@ -289,7 +289,7 @@ router.post('/conversations/two-agent', async (req, res, _next) => {
       success: true,
       data: { userProxy, assistant },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create two-agent conversation:', error);
     res.status(500).json({
       success: false,

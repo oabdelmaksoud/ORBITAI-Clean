@@ -234,7 +234,7 @@ export async function getTerminalInfo(): Promise<{
       user,
       shell,
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Error getting terminal info:', error);
     return {
       platform: 'unknown',

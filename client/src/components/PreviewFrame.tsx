@@ -773,7 +773,16 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
   <div id="root"></div>
   <script>
     window.onerror = function(msg, url, line) {
-      document.body.innerHTML = '<div style="padding:20px;color:red;font-family:monospace"><h1>Runtime Error</h1><pre>' + msg + '</pre></div>';
+      var container = document.createElement('div');
+      container.style.cssText = 'padding:20px;color:red;font-family:monospace';
+      var heading = document.createElement('h1');
+      heading.textContent = 'Runtime Error';
+      var pre = document.createElement('pre');
+      pre.textContent = String(msg);
+      container.appendChild(heading);
+      container.appendChild(pre);
+      document.body.textContent = '';
+      document.body.appendChild(container);
     };
   </script>
   
@@ -809,7 +818,23 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
         } catch(e) {
           // Obfuscate strings to prevent CUA from detecting them in the source code
           console.error('Bootstrap ' + 'Failed:', e);
-          document.body.innerHTML = '<div class="orbitai-bootstrap-error" data-error-type="bootstrap" style="color:red;padding:20px"><h1>' + 'Load Error' + '</h1><p class="error-message">Failed to initialize: ' + e.message.substring(0, 300) + '</p><p style="color:#666;font-size:12px;margin-top:10px;">Try regenerating the prototype.</p></div>';
+          var errContainer = document.createElement('div');
+          errContainer.className = 'orbitai-bootstrap-error';
+          errContainer.setAttribute('data-error-type', 'bootstrap');
+          errContainer.style.cssText = 'color:red;padding:20px';
+          var errH1 = document.createElement('h1');
+          errH1.textContent = 'Load Error';
+          var errMsg = document.createElement('p');
+          errMsg.className = 'error-message';
+          errMsg.textContent = 'Failed to initialize: ' + String(e.message).substring(0, 300);
+          var errHint = document.createElement('p');
+          errHint.style.cssText = 'color:#666;font-size:12px;margin-top:10px;';
+          errHint.textContent = 'Try regenerating the prototype.';
+          errContainer.appendChild(errH1);
+          errContainer.appendChild(errMsg);
+          errContainer.appendChild(errHint);
+          document.body.textContent = '';
+          document.body.appendChild(errContainer);
         }
     })();
   </script>
@@ -916,6 +941,7 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
         fullHtml = `< !DOCTYPE html > <html><head><meta charset="utf-8">${viewportMeta}<title>Preview</title><script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script><style>body {font - family: system-ui, sans-serif; padding: 2rem; line-height: 1.6; max-width: 1200px; margin: 0 auto; }</style></head><body><div id="markdown-content"></div><script>
   const content = ${JSON.stringify(fullHtml)};
   const html = marked.parse(content);
+  // TRUST BOUNDARY: content is user-authored markdown rendered in a sandboxed iframe; innerHTML is required for rendered HTML output
   document.getElementById('markdown-content').innerHTML = html;
 </script></body></html>`;
       } else {
@@ -1406,6 +1432,13 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
       const existingErrors = document.querySelectorAll('.code-parsing-error');
       existingErrors.forEach(el => el.remove());
 
+      // Escape HTML entities to prevent XSS from error messages
+      const escapeHtml = function(str) {
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+      };
+
       const errorDiv = document.createElement('div');
       errorDiv.className = 'code-parsing-error';
       errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #fef2f2; color: #dc2626; padding: 20px; border-bottom: 2px solid #fecaca; z-index: 10000; font-family: system-ui, sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 50vh; overflow-y: auto;';
@@ -1413,13 +1446,13 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ artifact, theme, onForceBui
       let errorHtml = '<div style="display: flex; justify-content: space-between; align-items: start; gap: 20px;">';
       errorHtml += '<div style="flex: 1;">';
       errorHtml += '<strong style="font-size: 16px; display: block; margin-bottom: 8px;">Code Parsing Error</strong>';
-      errorHtml += '<div style="margin-bottom: 8px;">' + message + '</div>';
+      errorHtml += '<div style="margin-bottom: 8px;">' + escapeHtml(message) + '</div>';
 
       if (details) {
         errorHtml += '<details style="margin-top: 12px; font-size: 12px; opacity: 0.8;">';
         errorHtml += '<summary style="cursor: pointer; margin-bottom: 8px;">Technical Details</summary>';
         errorHtml += '<pre style="background: #fee2e2; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 11px; margin: 0;">' +
-          String(details).substring(0, 500) + '</pre>';
+          escapeHtml(String(details).substring(0, 500)) + '</pre>';
         errorHtml += '</details>';
       }
 
@@ -1572,7 +1605,7 @@ try {
   console.error('Babel transformation error:', error);
   const errorDiv = document.createElement('div');
   errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #fef2f2; color: #dc2626; padding: 20px; border-bottom: 2px solid #fecaca; z-index: 10000; font-family: system-ui, sans-serif;';
-  errorDiv.innerHTML = '<strong>Code Transformation Error:</strong> The generated code could not be processed. This may be due to syntax errors or code that is too complex. Please try regenerating the prototype.';
+  errorDiv.textContent = 'Code Transformation Error: The generated code could not be processed. This may be due to syntax errors or code that is too complex. Please try regenerating the prototype.';
   if (document.body) {
     document.body.appendChild(errorDiv);
   } else {

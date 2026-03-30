@@ -59,7 +59,7 @@ class UserApiKeyEncryptionService {
       const combined = iv.toString('hex') + ':' + tag.toString('hex') + ':' + encrypted;
 
       return combined;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to encrypt API key for user ${userId}:`, error);
       throw new Error(`Encryption failed: ${error.message}`);
     }
@@ -95,7 +95,7 @@ class UserApiKeyEncryptionService {
       decrypted += decipher.final('utf8');
 
       return decrypted;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to decrypt API key for user ${userId}:`, error);
       throw new Error(`Decryption failed: ${error.message}`);
     }

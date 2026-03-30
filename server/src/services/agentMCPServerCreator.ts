@@ -85,7 +85,7 @@ export class AgentMCPServerCreator {
         source: server.source,
         tools: server.tools
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`Failed to create MCP server for agent ${agentRole}:`, error);
       throw new Error(`Failed to create MCP server: ${error.message}`);
     }
@@ -130,7 +130,7 @@ export class AgentMCPServerCreator {
         source: server.source,
         tools: server.tools
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to find MCP server for task:', error);
       return null;
     }
@@ -155,7 +155,7 @@ export class AgentMCPServerCreator {
         source: server.source,
         tools: server.tools
       }));
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error('Failed to list agent servers:', error);
       return [];
     }

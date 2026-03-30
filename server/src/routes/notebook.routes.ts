@@ -30,7 +30,7 @@ router.post('/execute-cell', async (req: AuthRequest, res, next) => {
       data: result.data,
       executionTime: result.executionTime
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to execute notebook cell:', error);
     next(error);
   }
@@ -53,7 +53,7 @@ router.post('/export', async (req: AuthRequest, res, next) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename="notebook.ipynb"');
     res.json(jupyterNotebook);
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to export notebook:', error);
     next(error);
   }
@@ -77,7 +77,7 @@ router.post('/parse', async (req: AuthRequest, res, next) => {
       success: true,
       cells
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to parse notebook:', error);
     next(error);
   }
@@ -101,7 +101,7 @@ router.post('/execute', async (req: AuthRequest, res, next) => {
       success: true,
       cells: updatedCells
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to execute notebook:', error);
     next(error);
   }

@@ -13,6 +13,8 @@
 
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { Project } from '../models/Project.model.js';
 
@@ -104,11 +106,10 @@ class WebSocketService {
       // Handle authentication
       socket.on('authenticate', async (data: { token: string }) => {
         try {
-          // Verify token and get user
-          // This would typically verify JWT token
-          const userId = data.token; // Simplified - should verify JWT
-          socket.data.userId = userId;
-          logger.info(`[WebSocket] Client authenticated: ${socket.id}, userId: ${userId}`);
+          // Verify JWT token
+          const decoded = jwt.verify(data.token, config.jwtSecret) as { userId: string };
+          socket.data.userId = decoded.userId;
+          logger.info(`[WebSocket] Client authenticated: ${socket.id}, userId: ${decoded.userId}`);
         } catch (error) {
           logger.error(`[WebSocket] Authentication failed: ${error}`);
           socket.disconnect();

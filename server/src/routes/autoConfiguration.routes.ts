@@ -37,7 +37,7 @@ userRouter.get('/analyze', async (req: AuthRequest, res, next) => {
       success: true,
       data: analysis
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to analyze configuration:', error);
     next(error);
   }
@@ -67,7 +67,7 @@ userRouter.post('/apply', async (req: AuthRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to apply recommendations:', error);
     next(error);
   }
@@ -89,7 +89,7 @@ userRouter.post('/auto-configure', async (req: AuthRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to auto-configure:', error);
     next(error);
   }
@@ -107,7 +107,7 @@ adminRouter.get('/rl-router/stats', async (_req: AdminRequest, res, next) => {
       success: true,
       data: stats
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to get RL router stats:', error);
     next(error);
   }
