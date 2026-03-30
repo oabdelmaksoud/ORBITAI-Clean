@@ -166,11 +166,7 @@ router.post('/search', async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Standards search failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to search standards',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -211,11 +207,7 @@ router.get('/', async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Failed to get standards:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get standards',
-      error: error.message,
-    });
+    next(error);
   }
 });
 
