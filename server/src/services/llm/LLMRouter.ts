@@ -263,7 +263,6 @@ class LLMRouter {
           logger.info(`[LLMRouter] DEBUG: executeWithProvider returned`);
           logger.info(`[LLMRouter] Provider execution successful. Response length: ${result.text?.length || 0}`);
           break; // Success, exit retry loop
-          break; // Success, exit retry loop
         } catch (error: any) {
           const apiError = toApiError(error);
           logger.error(`[LLMRouter] Provider execution failed (attempt ${retries + 1}/${maxRetries + 1}):`, apiError);

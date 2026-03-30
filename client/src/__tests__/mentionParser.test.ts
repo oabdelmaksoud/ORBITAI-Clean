@@ -29,13 +29,12 @@ describe('mentionParser', () => {
       expect(mentions[1].username).toBe('jane');
     });
 
-    it('should parse second @ in @@ as mention', () => {
+    it('should not parse @@ as mention', () => {
       const text = 'Email me at test@@example.com';
       const mentions = parseMentions(text);
 
-      // The regex matches @example from @@example.com (after the period terminates)
-      expect(mentions).toHaveLength(1);
-      expect(mentions[0].username).toBe('example');
+      // Per documentation: does not match @@username
+      expect(mentions).toHaveLength(0);
     });
 
     it('should parse usernames with numbers', () => {

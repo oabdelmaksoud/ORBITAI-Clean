@@ -37,9 +37,10 @@ router.get('/conversations/:conversationId', authenticateToken, async (req: Auth
       transcripts,
       isVoiceConversation: conversation.metadata?.isVoiceConversation || false
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching transcriptions:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -91,9 +92,10 @@ router.post('/conversations/:conversationId', authenticateToken, async (req: Aut
       success: true,
       transcript: conversation.metadata.voiceTranscripts[conversation.metadata.voiceTranscripts.length - 1]
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error adding transcription:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -174,9 +176,10 @@ router.get('/search', authenticateToken, async (req: AuthRequest, res: Response)
       results,
       count: results.length
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error searching transcriptions:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -215,9 +218,10 @@ router.get('/conversations/:conversationId/export', authenticateToken, async (re
       res.setHeader('Content-Disposition', `attachment; filename="transcription-${conversationId}.txt"`);
       res.send(textContent);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error exporting transcriptions:', error);
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 

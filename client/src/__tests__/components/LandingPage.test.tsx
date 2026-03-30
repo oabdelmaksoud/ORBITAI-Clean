@@ -46,9 +46,8 @@ describe('LandingPage', () => {
   it('should have sign up button', () => {
     render(<LandingPage {...mockHandlers} />);
 
-    // Find any button/link with sign up related text
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    const signUpButton = screen.getByRole('button', { name: /sign up/i });
+    expect(signUpButton).toBeInTheDocument();
   });
 
   it('should render with Logo component', () => {

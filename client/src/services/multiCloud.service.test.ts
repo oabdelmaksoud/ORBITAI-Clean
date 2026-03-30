@@ -10,13 +10,14 @@ describe('MultiCloudOrchestratorService', () => {
     // Mock the internal deploy methods to avoid real network calls
     vi.spyOn(service as any, 'deployToVercel').mockResolvedValue({
       platform: 'vercel',
-      status: 'deployed',
+      status: 'success',
     });
     const result = await service.deployToMultiplePlatforms({
       projectId: 'test-project',
       platforms: [{ name: 'vercel' }],
     });
     expect(result).toBeDefined();
+    expect(result.status).toBe('success');
   });
 });
 
