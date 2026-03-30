@@ -72,9 +72,13 @@ export async function connectDatabase(): Promise<void> {
     });
   } catch (error) {
     logger.error('MongoDB connection failed:', error);
-    logger.warn('⚠️  Starting server without database connection. Some features may not work.');
-    // Do not throw error to allow server to start in degraded mode
-    // throw error; 
+
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('Cannot start in production without a database connection. Exiting.');
+      process.exit(1);
+    }
+
+    logger.warn('⚠️  Starting server without database connection (development degraded mode). Some features may not work.');
   }
 }
 

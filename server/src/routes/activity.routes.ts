@@ -4,6 +4,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { sanitizePagination } from '../middleware/validate.js';
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.use(requireAdmin);
  */
 router.get('/', async (req: AdminRequest, res, next) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 100;
+    const { limit } = sanitizePagination(req.query);
     const type = req.query.type as string;
     const userId = req.query.userId as string;
     const entityType = req.query.entityType as string;

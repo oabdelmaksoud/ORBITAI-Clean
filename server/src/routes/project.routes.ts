@@ -56,7 +56,7 @@ router.get('/samples', async (req, res, next) => {
         const token = authHeader.substring(7);
         const jwt = await import('jsonwebtoken');
         const { JWT_SECRET } = await import('../config/env.js');
-        const decoded = jwt.default.verify(token, JWT_SECRET || 'your-secret-key') as any;
+        const decoded = jwt.default.verify(token, JWT_SECRET || '') as any;
         userRole = decoded.role?.toLowerCase().trim() || 'public';
         userId = decoded.id || decoded.email;
       }

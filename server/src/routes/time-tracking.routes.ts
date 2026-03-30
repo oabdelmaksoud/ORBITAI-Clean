@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { TimeEntry } from '../models/TimeEntry.model';
 import { authenticateToken } from '../middleware/auth';
 import { Types } from 'mongoose';
+import { sanitizePagination } from '../middleware/validate';
 
 const router = Router();
 
@@ -147,12 +148,11 @@ router.get('/entries', async (req, res) => {
     if (project) query.project = project;
     if (workspace) query.workspace = workspace;
 
-    const pageNum = parseInt(page as string) || 0;
-    const limitNum = parseInt(limit as string) || 50;
+    const { page: pageNum, limit: limitNum, skip } = sanitizePagination(req.query);
 
     const entries = await TimeEntry.find(query)
       .sort({ startTime: -1 })
-      .skip(pageNum * limitNum)
+      .skip(skip)
       .limit(limitNum)
       .populate('project', 'name')
       .populate('task', 'title');
