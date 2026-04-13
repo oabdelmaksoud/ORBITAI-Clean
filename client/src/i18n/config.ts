@@ -16,7 +16,60 @@ const fallbackResources = {
         search: "Search",
         loading: "Loading...",
         error: "Error",
-        success: "Success"
+        success: "Success",
+        create: "Create",
+        update: "Update",
+        submit: "Submit",
+        back: "Back",
+        next: "Next",
+        confirm: "Confirm",
+        yes: "Yes",
+        no: "No",
+        add: "Add",
+        name: "Name",
+        description: "Description",
+        status: "Status",
+        actions: "Actions",
+        settings: "Settings",
+        noData: "No data available",
+        processing: "Processing...",
+        failed: "Failed",
+        pending: "Pending",
+        completed: "Completed",
+        active: "Active",
+        inactive: "Inactive"
+      },
+      auth: {
+        login: "Log In",
+        logout: "Log Out",
+        email: "Email",
+        password: "Password",
+        loginTitle: "Welcome Back"
+      },
+      navigation: {
+        hub: "Hub",
+        workspace: "Workspace",
+        settings: "Settings",
+        admin: "Admin",
+        dashboard: "Dashboard",
+        projects: "Projects"
+      },
+      project: {
+        name: "Project Name",
+        create: "Create Project",
+        noProjects: "No projects found"
+      },
+      workspace: {
+        title: "Workspace",
+        agents: "Agents",
+        chat: "Chat",
+        logs: "Logs",
+        preview: "Preview"
+      },
+      errors: {
+        notFound: "Page not found",
+        serverError: "Server error. Please try again later.",
+        genericError: "Something went wrong. Please try again."
       }
     }
   }
