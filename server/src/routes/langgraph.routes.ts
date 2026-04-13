@@ -196,7 +196,7 @@ router.post('/workflows/multi-agent', async (req, res, _next) => {
  */
 router.post('/workflows/rag', async (req, res, _next) => {
   try {
-    const { workflowId, workflowName, retrievalHandler, model } = req.body;
+    const { workflowId, workflowName, model, collectionName } = req.body;
 
     if (!workflowId || !workflowName) {
       res.status(400).json({
@@ -206,11 +206,37 @@ router.post('/workflows/rag', async (req, res, _next) => {
       return;
     }
 
-    // Note: retrievalHandler would need to be a function reference
-    // In a real implementation, you'd store handlers and reference them
+    // Build a retrieval handler that delegates to the vector-search service
+    const retrievalHandler = async (state: any): Promise<Partial<any>> => {
+      const { vectorSearchService } = await import('../services/vectorSearch.service.js');
+
+      // Extract the last human message as the retrieval query
+      const messages = state.messages || [];
+      const lastMessage = messages[messages.length - 1];
+      const query =
+        typeof lastMessage?.content === 'string'
+          ? lastMessage.content
+          : 'relevant context';
+
+      try {
+        const results = await vectorSearchService.vectorSearch(query, 5, collectionName ? { collection: collectionName } : undefined);
+        const context = results
+          .map((r: any) => r.content || r.text || JSON.stringify(r))
+          .join('\n\n');
+
+        return { context, retrievedDocs: results };
+      } catch (_err) {
+        // Vector search is optional; continue with empty context
+        return { context: '', retrievedDocs: [] };
+      }
+    };
+
+    await langgraphService.createRAGWorkflow(workflowId, workflowName, retrievalHandler, model);
+
     res.json({
       success: true,
-      message: 'RAG workflow creation - retrieval handler must be implemented',
+      message: 'RAG workflow created',
+      data: { workflowId },
     });
   } catch (error: unknown) {
     logger.error('Failed to create RAG workflow:', error);

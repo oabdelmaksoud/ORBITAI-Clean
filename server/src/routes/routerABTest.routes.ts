@@ -5,18 +5,17 @@
 
 import express, { Request, Response } from 'express';
 import { requireAdmin } from '../middleware/adminAuth.js';
-import { llmRouterAutoTuneService, ABTestConfiguration, PerformanceMetrics } from '../services/llmRouterAutoTune.service.js';
 import { llmRouterSettingsService } from '../services/llmRouterSettings.service.js';
 import { LLMUsage } from '../models/LLMUsage.model.js';
+import { ABTest, IABTest } from '../models/ABTest.model.js';
 import { logger } from '../utils/logger.js';
-import mongoose from 'mongoose';
 
 const router = express.Router();
 
 // All routes require admin authentication
 router.use(requireAdmin);
 
-// In-memory storage for A/B tests (in production, use database)
+// Type alias kept for internal helper function compatibility
 interface ABTestWithVariants {
   id: string;
   name: string;
@@ -42,7 +41,21 @@ interface ABTestWithVariants {
   createdBy: string;
 }
 
-const abTestsStorage = new Map<string, ABTestWithVariants>();
+/** Convert a Mongoose ABTest document to the wire-format shape */
+function toWireFormat(doc: IABTest): ABTestWithVariants {
+  return {
+    id: doc.testId,
+    name: doc.name,
+    description: doc.description,
+    status: doc.status,
+    variants: doc.variants,
+    metrics: doc.metrics as ABTestWithVariants['metrics'],
+    winner: doc.winner,
+    startedAt: doc.startedAt,
+    completedAt: doc.completedAt,
+    createdBy: doc.createdBy
+  };
+}
 
 /**
  * GET /api/admin/llm-router/ab-tests
@@ -51,26 +64,24 @@ const abTestsStorage = new Map<string, ABTestWithVariants>();
 router.get('/ab-tests', async (req: Request, res: Response) => {
   try {
     const status = req.query.status as string | undefined;
-    
-    let tests = Array.from(abTestsStorage.values());
-    
+
+    const filter: Record<string, any> = {};
     if (status) {
-      tests = tests.filter(t => t.status === status);
+      filter.status = status;
     }
-    
-    // Sort by start date, most recent first
-    tests.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
-    
+
+    const docs = await ABTest.find(filter).sort({ startedAt: -1 }).lean();
+
     res.json({
       success: true,
-      data: tests
+      data: docs.map(d => toWireFormat(d as IABTest))
     });
   } catch (error: unknown) {
     logger.error('Failed to get A/B tests:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve A/B tests',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -82,25 +93,25 @@ router.get('/ab-tests', async (req: Request, res: Response) => {
 router.get('/ab-tests/:testId', async (req: Request, res: Response) => {
   try {
     const { testId } = req.params;
-    const test = abTestsStorage.get(testId);
-    
-    if (!test) {
+    const doc = await ABTest.findOne({ testId }).lean();
+
+    if (!doc) {
       return res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
     }
-    
+
     res.json({
       success: true,
-      data: test
+      data: toWireFormat(doc as IABTest)
     });
   } catch (error: unknown) {
     logger.error(`Failed to get A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve A/B test',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -113,7 +124,7 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
   try {
     const { name, description, variants, durationHours = 24 } = req.body;
     const userId = (req as any).user?.id || 'admin';
-    
+
     // Validate input
     if (!name) {
       return res.status(400).json({
@@ -121,14 +132,14 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
         message: 'Test name is required'
       });
     }
-    
+
     if (!variants || !Array.isArray(variants) || variants.length < 2) {
       return res.status(400).json({
         success: false,
         message: 'At least 2 variants are required'
       });
     }
-    
+
     // Validate traffic percentages sum to 100
     const totalTraffic = variants.reduce((sum: number, v: any) => sum + (v.trafficPercent || 0), 0);
     if (Math.abs(totalTraffic - 100) > 0.01) {
@@ -137,50 +148,45 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
         message: 'Variant traffic percentages must sum to 100'
       });
     }
-    
-    // Create test
+
     const testId = `ab-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const test: ABTestWithVariants = {
-      id: testId,
+
+    const mappedVariants = variants.map((v: any, idx: number) => ({
+      id: v.id || `variant-${idx}`,
+      name: v.name || `Variant ${String.fromCharCode(65 + idx)}`,
+      config: v.config || {},
+      trafficPercent: v.trafficPercent || (100 / variants.length)
+    }));
+
+    // Initialise per-variant metrics
+    const initialMetrics: Record<string, IABTest['metrics'][string]> = {};
+    mappedVariants.forEach(v => {
+      initialMetrics[v.id] = { requests: 0, successRate: 100, avgLatency: 0, avgCost: 0 };
+    });
+
+    const doc = await ABTest.create({
+      testId,
       name,
       description,
       status: 'running',
-      variants: variants.map((v: any, idx: number) => ({
-        id: v.id || `variant-${idx}`,
-        name: v.name || `Variant ${String.fromCharCode(65 + idx)}`,
-        config: v.config || {},
-        trafficPercent: v.trafficPercent || (100 / variants.length)
-      })),
-      metrics: {},
+      variants: mappedVariants,
+      metrics: initialMetrics,
       startedAt: new Date(),
       createdBy: userId
-    };
-    
-    // Initialize metrics for each variant
-    test.variants.forEach(v => {
-      test.metrics[v.id] = {
-        requests: 0,
-        successRate: 100,
-        avgLatency: 0,
-        avgCost: 0
-      };
     });
-    
-    abTestsStorage.set(testId, test);
-    
+
     // Schedule auto-completion if duration specified
     if (durationHours > 0) {
       setTimeout(() => {
         completeABTestAutomatically(testId);
       }, durationHours * 60 * 60 * 1000);
     }
-    
+
     logger.info(`A/B test created: ${testId} by ${userId}`);
-    
+
     res.status(201).json({
       success: true,
-      data: test,
+      data: toWireFormat(doc),
       message: 'A/B test created successfully'
     });
   } catch (error: unknown) {
@@ -188,7 +194,7 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create A/B test',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -200,56 +206,59 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
 router.post('/ab-tests/:testId/complete', async (req: Request, res: Response) => {
   try {
     const { testId } = req.params;
-    const test = abTestsStorage.get(testId);
-    
-    if (!test) {
+    const doc = await ABTest.findOne({ testId });
+
+    if (!doc) {
       return res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
     }
-    
-    if (test.status !== 'running') {
+
+    if (doc.status !== 'running') {
       return res.status(400).json({
         success: false,
-        message: `Cannot complete test with status: ${test.status}`
+        message: `Cannot complete test with status: ${doc.status}`
       });
     }
-    
+
+    const test = toWireFormat(doc);
+
     // Calculate final metrics and determine winner
     await calculateTestMetrics(test);
-    
+
     // Determine winner based on composite score
     let bestScore = -Infinity;
     let winnerId: string | undefined;
-    
+
     for (const variant of test.variants) {
       const metrics = test.metrics[variant.id];
       if (metrics) {
-        // Composite score: success rate (40%) + inverse latency (30%) + inverse cost (30%)
         const normalizedLatency = Math.min(metrics.avgLatency / 5000, 1);
         const normalizedCost = Math.min(metrics.avgCost / 0.1, 1);
-        const score = 
+        const score =
           (metrics.successRate / 100) * 0.4 +
           (1 - normalizedLatency) * 0.3 +
           (1 - normalizedCost) * 0.3;
-        
+
         if (score > bestScore && metrics.requests > 0) {
           bestScore = score;
           winnerId = variant.id;
         }
       }
     }
-    
-    test.status = 'completed';
-    test.completedAt = new Date();
-    test.winner = winnerId;
-    
+
+    doc.status = 'completed';
+    doc.completedAt = new Date();
+    doc.winner = winnerId;
+    doc.metrics = test.metrics;
+    await doc.save();
+
     logger.info(`A/B test ${testId} completed. Winner: ${winnerId}`);
-    
+
     res.json({
       success: true,
-      data: test,
+      data: toWireFormat(doc),
       message: `A/B test completed. Winner: ${winnerId || 'No clear winner'}`
     });
   } catch (error: unknown) {
@@ -257,7 +266,7 @@ router.post('/ab-tests/:testId/complete', async (req: Request, res: Response) =>
     res.status(500).json({
       success: false,
       message: 'Failed to complete A/B test',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -269,42 +278,42 @@ router.post('/ab-tests/:testId/complete', async (req: Request, res: Response) =>
 router.post('/ab-tests/:testId/apply-winner', async (req: Request, res: Response) => {
   try {
     const { testId } = req.params;
-    const test = abTestsStorage.get(testId);
-    
-    if (!test) {
+    const doc = await ABTest.findOne({ testId }).lean();
+
+    if (!doc) {
       return res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
     }
-    
-    if (test.status !== 'completed') {
+
+    if (doc.status !== 'completed') {
       return res.status(400).json({
         success: false,
         message: 'Test must be completed before applying winner'
       });
     }
-    
-    if (!test.winner) {
+
+    if (!doc.winner) {
       return res.status(400).json({
         success: false,
         message: 'No winner determined for this test'
       });
     }
-    
-    const winningVariant = test.variants.find(v => v.id === test.winner);
+
+    const winningVariant = doc.variants.find(v => v.id === doc.winner);
     if (!winningVariant) {
       return res.status(500).json({
         success: false,
         message: 'Winner variant not found'
       });
     }
-    
+
     // Apply the winning configuration to global settings
     await llmRouterSettingsService.updateGlobalSettings(winningVariant.config);
-    
-    logger.info(`Applied winning variant ${test.winner} from A/B test ${testId}`);
-    
+
+    logger.info(`Applied winning variant ${doc.winner} from A/B test ${testId}`);
+
     res.json({
       success: true,
       message: `Applied winning configuration from variant: ${winningVariant.name}`,
@@ -315,7 +324,7 @@ router.post('/ab-tests/:testId/apply-winner', async (req: Request, res: Response
     res.status(500).json({
       success: false,
       message: 'Failed to apply winning configuration',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -327,34 +336,32 @@ router.post('/ab-tests/:testId/apply-winner', async (req: Request, res: Response
 router.delete('/ab-tests/:testId', async (req: Request, res: Response) => {
   try {
     const { testId } = req.params;
-    const test = abTestsStorage.get(testId);
-    
-    if (!test) {
+    const doc = await ABTest.findOne({ testId });
+
+    if (!doc) {
       return res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
     }
-    
-    if (test.status === 'running') {
-      test.status = 'cancelled';
-      test.completedAt = new Date();
+
+    if (doc.status === 'running') {
+      doc.status = 'cancelled';
+      doc.completedAt = new Date();
+      await doc.save();
       logger.info(`A/B test ${testId} cancelled`);
+      res.json({ success: true, message: 'A/B test cancelled' });
     } else {
-      abTestsStorage.delete(testId);
+      await ABTest.deleteOne({ testId });
       logger.info(`A/B test ${testId} deleted`);
+      res.json({ success: true, message: 'A/B test deleted' });
     }
-    
-    res.json({
-      success: true,
-      message: test.status === 'cancelled' ? 'A/B test cancelled' : 'A/B test deleted'
-    });
   } catch (error: unknown) {
     logger.error(`Failed to delete A/B test ${req.params.testId}:`, error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete A/B test',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -366,21 +373,27 @@ router.delete('/ab-tests/:testId', async (req: Request, res: Response) => {
 router.get('/ab-tests/:testId/metrics', async (req: Request, res: Response) => {
   try {
     const { testId } = req.params;
-    const test = abTestsStorage.get(testId);
-    
-    if (!test) {
+    const doc = await ABTest.findOne({ testId });
+
+    if (!doc) {
       return res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
     }
-    
+
+    const test = toWireFormat(doc);
+
     // Calculate current metrics
     await calculateTestMetrics(test);
-    
+
+    // Persist updated metrics back to DB
+    doc.metrics = test.metrics;
+    await doc.save();
+
     // Calculate statistical significance
     const significance = calculateStatisticalSignificance(test);
-    
+
     res.json({
       success: true,
       data: {
@@ -399,7 +412,7 @@ router.get('/ab-tests/:testId/metrics', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve test metrics',
-      error: error.message
+      error: (error as Error).message
     });
   }
 });
@@ -531,38 +544,41 @@ function calculateStatisticalSignificance(test: ABTestWithVariants): {
 }
 
 async function completeABTestAutomatically(testId: string): Promise<void> {
-  const test = abTestsStorage.get(testId);
-  if (!test || test.status !== 'running') {
+  const doc = await ABTest.findOne({ testId });
+  if (!doc || doc.status !== 'running') {
     return;
   }
-  
+
+  const test = toWireFormat(doc);
   await calculateTestMetrics(test);
-  
+
   // Determine winner
   let bestScore = -Infinity;
   let winnerId: string | undefined;
-  
+
   for (const variant of test.variants) {
     const metrics = test.metrics[variant.id];
     if (metrics && metrics.requests > 0) {
       const normalizedLatency = Math.min(metrics.avgLatency / 5000, 1);
       const normalizedCost = Math.min(metrics.avgCost / 0.1, 1);
-      const score = 
+      const score =
         (metrics.successRate / 100) * 0.4 +
         (1 - normalizedLatency) * 0.3 +
         (1 - normalizedCost) * 0.3;
-      
+
       if (score > bestScore) {
         bestScore = score;
         winnerId = variant.id;
       }
     }
   }
-  
-  test.status = 'completed';
-  test.completedAt = new Date();
-  test.winner = winnerId;
-  
+
+  doc.status = 'completed';
+  doc.completedAt = new Date();
+  doc.winner = winnerId;
+  doc.metrics = test.metrics;
+  await doc.save();
+
   logger.info(`A/B test ${testId} auto-completed. Winner: ${winnerId}`);
 }
 

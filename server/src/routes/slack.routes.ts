@@ -6,6 +6,7 @@
 import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
+import { slackService } from '../services/slack.service.js';
 
 const router = express.Router();
 
@@ -25,37 +26,18 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/slack/callback`;
-    
-    // Slack OAuth URL
-    const clientId = process.env.SLACK_CLIENT_ID;
-    if (!clientId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Slack integration not configured. Please set SLACK_CLIENT_ID environment variable.'
-      });
-    }
 
-    const scopes = ['chat:write', 'channels:read', 'users:read'];
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
-    
-    const authUrl = `https://slack.com/oauth/v2/authorize?` +
-      `client_id=${clientId}&` +
-      `scope=${scopes.join(',')}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `state=${state}`;
+    const authUrl = slackService.getAuthUrl(userId, redirectUri);
 
     res.json({
       success: true,
-      data: {
-        authUrl,
-        state
-      }
+      data: { authUrl }
     });
   } catch (error: unknown) {
     logger.error('Failed to initiate Slack OAuth:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to initiate Slack OAuth'
+      message: (error as Error).message || 'Failed to initiate Slack OAuth'
     });
   }
 });
@@ -66,7 +48,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { code, state } = req.query;
+    const { code } = req.query;
 
     if (!code) {
       return res.status(400).json({
@@ -75,54 +57,24 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    // Exchange code for access token
-    const clientId = process.env.SLACK_CLIENT_ID;
-    const clientSecret = process.env.SLACK_CLIENT_SECRET;
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/slack/callback`;
+    const tokenData = await slackService.exchangeCode(code as string, redirectUri);
 
-    if (!clientId || !clientSecret) {
-      return res.status(400).json({
-        success: false,
-        message: 'Slack integration not configured'
-      });
-    }
-
-    // Exchange code for token (simplified - in production, store tokens securely)
-    const tokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: code as string,
-        redirect_uri: redirectUri
-      })
-    });
-
-    const tokenData = await tokenResponse.json();
-
-    if (!tokenData.ok) {
-      throw new Error(tokenData.error || 'Failed to exchange code for token');
-    }
-
-    // Store token (in production, save to database)
     logger.info(`Slack OAuth successful for user ${req.user!.id}`);
 
     res.json({
       success: true,
       message: 'Slack integration connected successfully',
       data: {
-        teamId: tokenData.team?.id,
-        teamName: tokenData.team?.name
+        teamId: tokenData.teamId,
+        teamName: tokenData.teamName
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to handle Slack OAuth callback:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to complete Slack OAuth'
+      message: (error as Error).message || 'Failed to complete Slack OAuth'
     });
   }
 });
@@ -135,7 +87,17 @@ router.post('/webhook', async (req, res) => {
   try {
     const { type, challenge, event } = req.body;
 
-    // Slack URL verification
+    // Verify webhook signature when signing secret is configured
+    const signature = req.headers['x-slack-signature'] as string;
+    const timestamp = req.headers['x-slack-request-timestamp'] as string;
+    if (signature && timestamp) {
+      const rawBody = JSON.stringify(req.body);
+      if (!slackService.verifyWebhookSignature(signature, timestamp, rawBody)) {
+        return res.status(401).json({ success: false, message: 'Invalid webhook signature' });
+      }
+    }
+
+    // Slack URL verification challenge
     if (type === 'url_verification') {
       return res.json({ challenge });
     }
@@ -143,7 +105,6 @@ router.post('/webhook', async (req, res) => {
     // Handle events
     if (event) {
       logger.info(`Slack webhook event received: ${event.type}`);
-      // Process event (e.g., message received, user joined, etc.)
     }
 
     res.json({ success: true });
@@ -151,7 +112,7 @@ router.post('/webhook', async (req, res) => {
     logger.error('Failed to handle Slack webhook:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to process webhook'
+      message: (error as Error).message || 'Failed to process webhook'
     });
   }
 });
@@ -171,48 +132,20 @@ router.post('/send-message', authenticateToken, async (req: AuthRequest, res) =>
       });
     }
 
-    // In production, retrieve stored token from database
-    const token = process.env.SLACK_BOT_TOKEN;
-
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: 'Slack bot token not configured'
-      });
-    }
-
-    const response = await fetch('https://slack.com/api/chat.postMessage', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        channel,
-        text: message
-      })
-    });
-
-    const data = await response.json();
-
-    if (!data.ok) {
-      throw new Error(data.error || 'Failed to send message');
-    }
+    const result = await slackService.sendMessage(channel, message);
 
     res.json({
       success: true,
-      data: {
-        ts: data.ts,
-        channel: data.channel
-      }
+      data: result
     });
   } catch (error: unknown) {
     logger.error('Failed to send Slack message:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to send message'
+      message: (error as Error).message || 'Failed to send message'
     });
   }
 });
 
 export default router;
+
