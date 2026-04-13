@@ -5,12 +5,10 @@
 
 import express, { Request, Response } from 'express';
 import { requireAdmin } from '../middleware/adminAuth.js';
-import { llmRouterAutoTuneService, ABTestConfiguration, PerformanceMetrics } from '../services/llmRouterAutoTune.service.js';
 import { llmRouterSettingsService } from '../services/llmRouterSettings.service.js';
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { ABTest, IABTest } from '../models/ABTest.model.js';
 import { logger } from '../utils/logger.js';
-import mongoose from 'mongoose';
 
 const router = express.Router();
 

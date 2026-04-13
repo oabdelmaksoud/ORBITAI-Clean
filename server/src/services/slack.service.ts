@@ -3,6 +3,7 @@
  * Encapsulates all Slack OAuth and messaging business logic.
  */
 
+import { createHmac, timingSafeEqual } from 'crypto';
 import { logger } from '../utils/logger.js';
 
 export interface SlackTokenData {
@@ -100,13 +101,12 @@ export class SlackService {
       return false;
     }
 
-    // Node.js crypto is a built-in — no additional dependency needed
-    const crypto = require('crypto');
+    // Node.js crypto built-in
     const baseString = `v0:${timestamp}:${rawBody}`;
-    const hmac = crypto.createHmac('sha256', signingSecret);
+    const hmac = createHmac('sha256', signingSecret);
     const computed = `v0=${hmac.update(baseString).digest('hex')}`;
 
-    return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
+    return timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
   }
 
   /**
