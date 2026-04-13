@@ -1,4 +1,4 @@
-name: Manage Issues — Triage, Close Fixed, Create New
+name: Manage Issues
 
 on:
   workflow_dispatch:
@@ -17,347 +17,207 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up GitHub CLI
-        run: gh --version
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create labels and milestones
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [
+              {name:"fixed",color:"0e8a16",description:"Issue has been resolved"},
+              {name:"bug",color:"d73a4a",description:"Something is not working"},
+              {name:"documentation",color:"0075ca",description:"Documentation improvements"},
+              {name:"tech-debt",color:"e4e669",description:"Technical debt needing refactoring"},
+              {name:"test-coverage",color:"e05d44",description:"Missing or insufficient test coverage"},
+              {name:"feature-gap",color:"7057ff",description:"Feature is missing or incomplete"},
+              {name:"improvement",color:"84b6eb",description:"Enhancement to existing functionality"},
+              {name:"priority:high",color:"b60205",description:"High priority"},
+              {name:"priority:medium",color:"e99695",description:"Medium priority"},
+              {name:"priority:low",color:"f9d0c4",description:"Low priority"},
+              {name:"v1.1.0",color:"1d76db",description:"Targeted for v1.1.0"},
+              {name:"v1.2.0",color:"0052cc",description:"Targeted for v1.2.0"},
+              {name:"v1.3.0",color:"003366",description:"Targeted for v1.3.0"},
+            ];
+            for (const l of labels) {
+              try {
+                await github.rest.issues.createLabel({owner:context.repo.owner,repo:context.repo.repo,...l});
+              } catch(e) {
+                try {
+                  await github.rest.issues.updateLabel({owner:context.repo.owner,repo:context.repo.repo,...l});
+                } catch(e2) {}
+              }
+            }
+            console.log('Labels done');
+            const milestones = [
+              {title:"v1.1.0 — Bug Fixes and Service Layers",description:"MongoDB persistence, service layers, docs, agent tests"},
+              {title:"v1.2.0 — Test Coverage",description:"Unit tests for LLM router, WebSocket, voice, CUA, test-gen"},
+              {title:"v1.3.0 — Frontend and Feature Completion",description:"i18n, monolith refactor, cloud deployments"},
+            ];
+            for (const m of milestones) {
+              try {
+                await github.rest.issues.createMilestone({owner:context.repo.owner,repo:context.repo.repo,...m});
+              } catch(e) {}
+            }
+            console.log('Milestones done');
 
-      # ─────────────────────────────────────────────────────────────
-      # STEP 1: Create Labels
-      # ─────────────────────────────────────────────────────────────
-      - name: Create labels
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REPO="${{ github.repository }}"
-          create_label() {
-            local name="$1" color="$2" desc="$3"
-            gh label create "$name" --color "$color" --description "$desc" --repo "$REPO" 2>/dev/null || \
-            gh label edit "$name" --color "$color" --description "$desc" --repo "$REPO" 2>/dev/null || true
-          }
-          create_label "fixed"          "0e8a16" "Issue has been resolved"
-          create_label "bug"            "d73a4a" "Something isn't working"
-          create_label "documentation"  "0075ca" "Improvements or additions to documentation"
-          create_label "tech-debt"      "e4e669" "Technical debt that needs refactoring"
-          create_label "test-coverage"  "e05d44" "Missing or insufficient test coverage"
-          create_label "feature-gap"    "7057ff" "Feature is missing or incomplete"
-          create_label "improvement"    "84b6eb" "Enhancement to existing functionality"
-          create_label "priority:high"  "b60205" "High priority issue"
-          create_label "priority:medium" "e99695" "Medium priority issue"
-          create_label "priority:low"   "f9d0c4" "Low priority issue"
-          create_label "v1.1.0"         "1d76db" "Targeted for v1.1.0 release"
-          create_label "v1.2.0"         "0052cc" "Targeted for v1.2.0 release"
-          create_label "v1.3.0"         "003366" "Targeted for v1.3.0 release"
-          echo "Labels created/updated"
+      - name: Close fixed issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Issue #24
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:24,body:"## Fixed in PR #49\n\nA proper MongoDB-backed `ABTest` model (`server/src/models/ABTest.model.ts`) has been added with full Mongoose schema, indexes, and persistence. A/B test configurations are now persisted to MongoDB and survive server restarts.\n\n**Changes:**\n- Added `server/src/models/ABTest.model.ts` with Mongoose schema and indexes\n- Updated `server/src/routes/routerABTest.routes.ts` to use the model for all CRUD operations"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:24,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:24,labels:['fixed','v1.1.0']});
+              console.log('Closed #24');
+            } catch(e) { console.error('Error #24:', e.message); }
+            // Issue #27
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:27,body:"## Fixed in PR #49\n\nThe MCP tool execution protocol has been fully implemented. The `MCPService` now has a `callTool(serverId, toolName, args)` method at line 577 that routes tool calls to the appropriate MCP server instance (E2B, knowledge graph, Google Search).\n\n**Changes:**\n- `server/src/services/mcp.service.ts` \u2014 added `callTool()` with routing to live MCP client instances"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:27,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:27,labels:['fixed','v1.1.0']});
+              console.log('Closed #27');
+            } catch(e) { console.error('Error #27:', e.message); }
+            // Issue #28
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:28,body:"## Fixed in PR #49\n\nA fully-featured Neo4j knowledge graph service has been implemented with node creation/querying, relationship traversal, shortest-path algorithms, community detection, and PageRank.\n\n**Changes:**\n- Added `server/src/services/neo4j.service.ts` (116 LOC) with full graph operations\n- Added `server/src/routes/neo4j.routes.ts` with REST API endpoints"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:28,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:28,labels:['fixed','v1.1.0']});
+              console.log('Closed #28');
+            } catch(e) { console.error('Error #28:', e.message); }
+            // Issue #29
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:29,body:"## Fixed in PR #49\n\nAll AWS and GCP provider credential environment variables are now fully documented in `.env.example`.\n\n**Changes:**\n- Added `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `GCP_PROJECT_ID`, `GCP_SERVICE_ACCOUNT_KEY`, and all related multi-cloud variables"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:29,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:29,labels:['fixed','v1.1.0']});
+              console.log('Closed #29');
+            } catch(e) { console.error('Error #29:', e.message); }
+            // Issue #30
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:30,body:"## Fixed in PR #49\n\nThe LangGraph RAG workflow endpoint now builds a real retrieval-augmented generation pipeline using `vectorSearchService`.\n\n**Changes:**\n- Updated `server/src/routes/langgraph.routes.ts` \u2014 `POST /api/langgraph/workflows/rag` now delegates to `vectorSearchService` and creates a live LangGraph workflow"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:30,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:30,labels:['fixed','v1.1.0']});
+              console.log('Closed #30');
+            } catch(e) { console.error('Error #30:', e.message); }
+            // Issue #33
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:33,body:"## Fixed in PR #49\n\nA dedicated `MsTeamsService` class has been created with `getAuthUrl()`, `exchangeCode()`, `refreshToken()`, `sendNotification()`, and `adaptiveCard()` methods.\n\n**Changes:**\n- Added `server/src/services/msteams.service.ts` (182 LOC)\n- Updated `server/src/routes/msteams.routes.ts` to delegate to the service layer"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:33,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:33,labels:['fixed','v1.1.0']});
+              console.log('Closed #33');
+            } catch(e) { console.error('Error #33:', e.message); }
+            // Issue #34
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:34,body:"## Fixed in PR #49\n\nA dedicated `SlackService` class has been created with `getAuthUrl()`, `exchangeCode()`, `sendMessage()`, `postBlock()`, and `verifySignature()` methods.\n\n**Changes:**\n- Added `server/src/services/slack.service.ts`\n- Updated `server/src/routes/slack.routes.ts` to delegate to the service layer"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:34,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:34,labels:['fixed','v1.1.0']});
+              console.log('Closed #34');
+            } catch(e) { console.error('Error #34:', e.message); }
+            // Issue #40
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:40,body:"## Fixed in PR #49\n\nBoth missing documentation files have been created.\n\n**Changes:**\n- Created `docs/ARCHITECTURE.md` (179 lines) with full system architecture\n- Created `docs/PROJECT_REVIEW.md` (147 lines) with project status review and roadmap"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:40,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:40,labels:['fixed','v1.1.0']});
+              console.log('Closed #40');
+            } catch(e) { console.error('Error #40:', e.message); }
+            // Issue #41
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:41,body:"## Fixed in PR #49\n\nThe `.env.example` file has been fully expanded from ~50 to 128 lines with complete coverage of all services including Pipecat, Weaviate, Neo4j, Redis, AWS, GCP, Slack, MS Teams, and all LLM providers."});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:41,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:41,labels:['fixed','v1.1.0']});
+              console.log('Closed #41');
+            } catch(e) { console.error('Error #41:', e.message); }
+            // Issue #42
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:42,body:"## Fixed in PR #49\n\n`POLICY.md` has been created with full content covering usage policies, acceptable use, data handling, and contribution guidelines.\n\n**Changes:**\n- Created `POLICY.md` (65 lines) \u2014 resolves the broken link referenced in `README.md`"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:42,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:42,labels:['fixed','v1.1.0']});
+              console.log('Closed #42');
+            } catch(e) { console.error('Error #42:', e.message); }
+            // Issue #43
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:43,body:"## Fixed in PR #49\n\nThe Pipecat Python voice service deployment is now fully documented in `DEPLOYMENT.md` with prerequisites, installation, configuration, running the service, and environment variables."});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:43,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:43,labels:['fixed','v1.1.0']});
+              console.log('Closed #43');
+            } catch(e) { console.error('Error #43:', e.message); }
+            // Issue #47
+            try {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:47,body:"## Fixed in PR #49\n\nThe agent routes test file has been rewritten with real, meaningful assertions replacing all placeholder stubs.\n\n**Changes:**\n- Rewrote `server/src/__tests__/routes/agent.routes.test.ts` to 175 lines with proper `expect()` assertions"});
+              await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:47,state:'closed'});
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:47,labels:['fixed','v1.1.0']});
+              console.log('Closed #47');
+            } catch(e) { console.error('Error #47:', e.message); }
 
-      # ─────────────────────────────────────────────────────────────
-      # STEP 2: Create Milestones
-      # ─────────────────────────────────────────────────────────────
-      - name: Create milestones
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REPO="${{ github.repository }}"
-          create_ms() {
-            local title="$1" desc="$2"
-            gh api repos/$REPO/milestones \
-              --method POST \
-              -f title="$title" \
-              -f description="$desc" \
-              -f state="open" 2>/dev/null || true
-          }
-          create_ms "v1.1.0 — Bug Fixes & Service Layers" \
-            "MongoDB persistence, service layer extractions, documentation gaps, and agent test coverage"
-          create_ms "v1.2.0 — Test Coverage" \
-            "Unit and integration tests for LLM router, WebSocket, voice/Pipecat, CUA, and test-generation services"
-          create_ms "v1.3.0 — Frontend & Feature Completion" \
-            "Frontend API integration, i18n coverage, refactoring monolithic components, cloud deployments"
-          echo "Milestones created"
-
-      # ─────────────────────────────────────────────────────────────
-      # STEP 3: Close fixed issues with comments
-      # ─────────────────────────────────────────────────────────────
-      - name: Close fixed issues with comments
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REPO="${{ github.repository }}"
-          close_issue() {
-            local num="$1" comment="$2"
-            echo "Closing issue #$num..."
-            gh issue comment "$num" --body "$comment" --repo "$REPO" || true
-            gh issue close "$num" --repo "$REPO" || true
-            gh issue edit "$num" --add-label "fixed,v1.1.0" --repo "$REPO" || true
-          }
-
-          close_issue 24 "## ✅ Fixed in PR #49
-
-This issue has been resolved. A proper MongoDB-backed \`ABTest\` model (\`server/src/models/ABTest.model.ts\`) has been added with full Mongoose schema, indexes, and persistence. A/B test configurations are now persisted to MongoDB and survive server restarts.
-
-**Changes:**
-- Added \`server/src/models/ABTest.model.ts\` with Mongoose schema and indexes
-- Updated \`server/src/routes/routerABTest.routes.ts\` to use the model for all CRUD operations
-- A/B tests are now stored in MongoDB and restored on startup"
-
-          close_issue 27 "## ✅ Fixed in PR #49
-
-The MCP tool execution protocol has been fully implemented. The \`MCPService\` now has a \`callTool(serverId, toolName, args)\` method at line 577 that routes tool calls to the appropriate MCP server instance (E2B, knowledge graph, Google Search, database-backed). Tool execution is no longer health-check-only.
-
-**Changes:**
-- \`server/src/services/mcp.service.ts\` — added \`callTool()\` with routing to live MCP client instances"
-
-          close_issue 28 "## ✅ Fixed in PR #49
-
-A fully-featured Neo4j knowledge graph service has been implemented. The integration now goes far beyond a basic connection — it exposes node creation/querying, relationship traversal, shortest-path algorithms, community detection, PageRank, and pattern matching.
-
-**Changes:**
-- Added \`server/src/services/neo4j.service.ts\` (116 LOC) with full graph operations
-- Added \`server/src/routes/neo4j.routes.ts\` with REST API endpoints for nodes, relationships, and paths"
-
-          close_issue 29 "## ✅ Fixed in PR #49
-
-All AWS and GCP provider credential environment variables are now fully documented in \`.env.example\` with clear descriptions and examples.
-
-**Changes:**
-- Updated \`.env.example\` with \`AWS_ACCESS_KEY_ID\`, \`AWS_SECRET_ACCESS_KEY\`, \`AWS_REGION\`, \`GCP_PROJECT_ID\`, \`GCP_SERVICE_ACCOUNT_KEY\`, and all related multi-cloud variables"
-
-          close_issue 30 "## ✅ Fixed in PR #49
-
-The LangGraph RAG workflow endpoint now builds a real retrieval-augmented generation pipeline. It creates a stateful LangGraph workflow that retrieves relevant documents using the vector search service and generates grounded responses.
-
-**Changes:**
-- Updated \`server/src/routes/langgraph.routes.ts\` — \`POST /api/langgraph/workflows/rag\` now delegates to \`vectorSearchService\` and creates a live LangGraph workflow"
-
-          close_issue 33 "## ✅ Fixed in PR #49
-
-A dedicated \`MsTeamsService\` class has been created, extracting all OAuth and messaging business logic out of the route handler.
-
-**Changes:**
-- Added \`server/src/services/msteams.service.ts\` (182 LOC) with \`getAuthUrl()\`, \`exchangeCode()\`, \`refreshToken()\`, \`sendNotification()\`, and \`adaptiveCard()\` methods
-- Updated \`server/src/routes/msteams.routes.ts\` to delegate to the service layer"
-
-          close_issue 34 "## ✅ Fixed in PR #49
-
-A dedicated \`SlackService\` class has been created, extracting all OAuth and messaging business logic out of the route handler.
-
-**Changes:**
-- Added \`server/src/services/slack.service.ts\` with \`getAuthUrl()\`, \`exchangeCode()\`, \`sendMessage()\`, \`postBlock()\`, and \`verifySignature()\` methods
-- Updated \`server/src/routes/slack.routes.ts\` to delegate to the service layer"
-
-          close_issue 40 "## ✅ Fixed in PR #49
-
-Both missing documentation files have been created with comprehensive content.
-
-**Changes:**
-- Created \`docs/ARCHITECTURE.md\` (179 lines) — full system architecture including frontend/backend/infra layers, data flow, and component diagrams
-- Created \`docs/PROJECT_REVIEW.md\` (147 lines) — project status review, feature completion matrix, and roadmap"
-
-          close_issue 41 "## ✅ Fixed in PR #49
-
-The \`.env.example\` file has been fully expanded. It now documents all required and optional environment variables for Pipecat, Weaviate, Neo4j, Redis, AWS, GCP, Slack, MS Teams, and all LLM providers.
-
-**Changes:**
-- Updated \`.env.example\` from ~50 variables to 128 lines with complete coverage of all services"
-
-          close_issue 42 "## ✅ Fixed in PR #49
-
-\`POLICY.md\` has been created with full content covering usage policies, acceptable use, data handling, and contribution guidelines.
-
-**Changes:**
-- Created \`POLICY.md\` (65 lines) — resolves the broken link referenced in \`README.md\`"
-
-          close_issue 43 "## ✅ Fixed in PR #49
-
-The Pipecat Python voice service deployment is now fully documented in \`DEPLOYMENT.md\`.
-
-**Changes:**
-- Updated \`DEPLOYMENT.md\` with a dedicated Pipecat section covering: prerequisites, installation, configuration, running the service, and environment variables"
-
-          close_issue 47 "## ✅ Fixed in PR #49
-
-The agent routes test file has been rewritten with real, meaningful assertions. All placeholder \`expect(true)\` stubs have been replaced.
-
-**Changes:**
-- Rewrote \`server/src/__tests__/routes/agent.routes.test.ts\` from placeholder stubs to 175 lines of tests with proper \`expect()\` assertions covering status codes, response body shapes, redirect endpoints, and agent state fields"
-
-          echo "Fixed issues closed"
-
-      # ─────────────────────────────────────────────────────────────
-      # STEP 4: Label and milestone remaining open issues
-      # ─────────────────────────────────────────────────────────────
       - name: Label open issues
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REPO="${{ github.repository }}"
-          label_issue() {
-            local num="$1" labels="$2"
-            echo "Labelling issue #$num with: $labels"
-            gh issue edit "$num" --add-label "$labels" --repo "$REPO" || true
-          }
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:25,labels:["feature-gap", "priority:medium", "v1.3.0"]});
+              console.log('Labelled #25');
+            } catch(e) { console.error('Error #25:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:26,labels:["feature-gap", "priority:medium", "v1.3.0"]});
+              console.log('Labelled #26');
+            } catch(e) { console.error('Error #26:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:31,labels:["tech-debt", "priority:high", "v1.3.0"]});
+              console.log('Labelled #31');
+            } catch(e) { console.error('Error #31:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:32,labels:["tech-debt", "priority:high", "v1.3.0"]});
+              console.log('Labelled #32');
+            } catch(e) { console.error('Error #32:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:35,labels:["test-coverage", "priority:high", "v1.2.0"]});
+              console.log('Labelled #35');
+            } catch(e) { console.error('Error #35:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:36,labels:["test-coverage", "priority:high", "v1.2.0"]});
+              console.log('Labelled #36');
+            } catch(e) { console.error('Error #36:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:37,labels:["test-coverage", "priority:high", "v1.2.0"]});
+              console.log('Labelled #37');
+            } catch(e) { console.error('Error #37:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:38,labels:["test-coverage", "priority:high", "v1.2.0"]});
+              console.log('Labelled #38');
+            } catch(e) { console.error('Error #38:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:39,labels:["test-coverage", "priority:high", "v1.2.0"]});
+              console.log('Labelled #39');
+            } catch(e) { console.error('Error #39:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:44,labels:["feature-gap", "priority:medium", "v1.3.0"]});
+              console.log('Labelled #44');
+            } catch(e) { console.error('Error #44:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:45,labels:["feature-gap", "priority:medium", "v1.3.0"]});
+              console.log('Labelled #45');
+            } catch(e) { console.error('Error #45:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:46,labels:["feature-gap", "priority:high", "v1.3.0"]});
+              console.log('Labelled #46');
+            } catch(e) { console.error('Error #46:', e.message); }
+            try {
+              await github.rest.issues.addLabels({owner:context.repo.owner,repo:context.repo.repo,issue_number:48,labels:["test-coverage", "priority:high", "v1.2.0"]});
+              console.log('Labelled #48');
+            } catch(e) { console.error('Error #48:', e.message); }
 
-          label_issue 25 "feature-gap,priority:medium,v1.3.0"
-          label_issue 26 "feature-gap,priority:medium,v1.3.0"
-          label_issue 31 "tech-debt,priority:high,v1.3.0"
-          label_issue 32 "tech-debt,priority:high,v1.3.0"
-          label_issue 35 "test-coverage,priority:high,v1.2.0"
-          label_issue 36 "test-coverage,priority:high,v1.2.0"
-          label_issue 37 "test-coverage,priority:high,v1.2.0"
-          label_issue 38 "test-coverage,priority:high,v1.2.0"
-          label_issue 39 "test-coverage,priority:high,v1.2.0"
-          label_issue 44 "feature-gap,priority:medium,v1.3.0"
-          label_issue 45 "feature-gap,priority:medium,v1.3.0"
-          label_issue 46 "feature-gap,priority:high,v1.3.0"
-          label_issue 48 "test-coverage,priority:high,v1.2.0"
-          echo "Open issues labelled"
-
-      # ─────────────────────────────────────────────────────────────
-      # STEP 5: Create new issues for newly discovered problems
-      # ─────────────────────────────────────────────────────────────
       - name: Create new issues
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          REPO="${{ github.repository }}"
-
-          gh issue create \
-            --title "[Regression] i18n Key Count Reduced from 36 to 27 — Translation Coverage Further Degraded" \
-            --body "## Summary
-
-The i18n locale files were restructured during PR #49 but the number of translation keys **decreased** from 36 to 27 (leaf keys). This is a regression from the already-insufficient coverage reported in issue #46.
-
-Note: A subsequent fix expanded the keys to **639** across 22 namespaces (en/fr/de/es/ar), but this issue is kept for tracking the regression event.
-
-## Evidence (before fix)
-
-\`\`\`json
-// client/public/i18n/locales/en.json had only 27 leaf keys in 4 namespaces
-{ \"common\": {...9 keys}, \"project\": {...9 keys}, \"workspace\": {...5 keys}, \"navigation\": {...4 keys} }
-\`\`\`
-
-## Fix Applied
-
-In a follow-up commit, all 5 locale files were expanded to **639 keys across 22 namespaces** covering: auth, navigation, project, workspace, agent, llm, code, deployment, analytics, settings, notifications, task, knowledge, integrations, errors, forms, table, modal, admin, voice, and search.
-
-## Related Issues
-- Supersedes/worsens #46 (now resolved by the fix)" \
-            --label "feature-gap,priority:high,v1.3.0" \
-            --repo "$REPO" || true
-
-          gh issue create \
-            --title "[Tech Debt] Orphan File \`enhancedPreviewGenerator.service.ts.new\` Cleaned Up" \
-            --body "## Summary
-
-An orphan file named \`enhancedPreviewGenerator.service.ts.new\` existed in \`server/src/services/\`. This was a leftover from a manual edit/merge operation.
-
-## Status: ✅ Fixed
-
-The file has been removed in the follow-up commit to PR #49.
-
-## What it was
-
-The \`.new\` file contained an **older** version of \`enhancedPreviewGenerator.service.ts\` (missing anchor tag handling, arrow function syntax fixes, and percentage style fixes that were present in the current \`.ts\` file)." \
-            --label "tech-debt,priority:low,fixed" \
-            --repo "$REPO" || true
-
-          gh issue create \
-            --title "[Tech Debt] \`multiCloudOrchestrator.service.md\` Markdown File Misplaced in services/ Directory" \
-            --body "## Summary
-
-A Markdown documentation file named \`multiCloudOrchestrator.service.md\` existed in \`server/src/services/\` alongside TypeScript service files. This is a misplaced documentation file.
-
-## Status: ✅ Fixed
-
-The file has been removed from the \`services/\` directory in the follow-up commit to PR #49. The actual TypeScript implementation (\`multiCloudOrchestrator.service.ts\`) remains.
-
-## Why it was a problem
-- Confusing to developers navigating the services directory  
-- TypeScript tooling may warn on non-TS files in a \`src/\` directory
-- Documentation belongs in \`docs/\` not \`server/src/services/\`" \
-            --label "tech-debt,priority:low,fixed" \
-            --repo "$REPO" || true
-
-          gh issue create \
-            --title "[Test Coverage] LLM Router Services Have No Unit Tests — 6 Service Files, ~1,400 LOC Untested" \
-            --body "## Summary
-
-Six LLM router service files implementing core AI routing logic have **zero unit tests**. These services control how all LLM requests are routed across 14 providers and are mission-critical to the platform's reliability.
-
-## Untested Services
-
-| File | Approx. LOC |
-|------|-------------|
-| \`server/src/services/llmRouterAI.service.ts\` | ~200 |
-| \`server/src/services/llmRouterAutoTune.service.ts\` | ~250 |
-| \`server/src/services/llmRouterNL.service.ts\` | ~200 |
-| \`server/src/services/llmRouterPredictive.service.ts\` | ~300 |
-| \`server/src/services/llmRouterRL.service.ts\` | ~250 |
-| \`server/src/services/llmRouterSettings.service.ts\` | ~200 |
-
-**Total: ~1,400 LOC untested**
-
-## Verification
-
-\`\`\`bash
-ls server/src/__tests__/services/ | grep llmRouter
-# (no output — no test files exist)
-\`\`\`
-
-## Impact
-
-- Routing decisions (which LLM to call, at what cost) are completely untested
-- Regressions in routing logic go undetected
-- Reinforcement learning and auto-tune logic have no coverage
-
-## Acceptance Criteria
-- Unit tests for each of the 6 LLM router services
-- Cover: route selection logic, fallback chains, cost thresholds, auto-tune triggers
-
-## Related Issues
-- Related to #35" \
-            --label "test-coverage,priority:high,v1.2.0" \
-            --repo "$REPO" || true
-
-          gh issue create \
-            --title "[Feature Gap] AWS App Runner and GCP Cloud Run Deployments Return Simulated URLs — No Real SDK Calls Made" \
-            --body "## Summary
-
-While issue #29 (missing env vars documentation) has been fixed, the actual deployment implementations in \`deployToAWS()\` and \`deployToGCP()\` still return **simulated/constructed URLs** without making real AWS SDK or GCP SDK API calls. The credentials are now validated, but no actual deployment happens.
-
-## Evidence
-
-From \`server/src/services/deployment.service.ts\` (lines 449–580):
-
-\`\`\`typescript
-// AWS deployment
-logs.push('[AWS] App Runner service creation initiated');
-logs.push('[AWS] Build in progress...');
-
-return {
-  success: true,
-  deploymentId: \`aws-apprunner-\${Date.now()}\`,
-  url: \`https://\${projectName}.\${awsRegion}.awsapprunner.com\`,  // ← FAKE URL
-  logs,
-  metadata: { status: 'building' }  // ← Never actually builds
-};
-\`\`\`
-
-The URL is constructed from the project name but no App Runner service is actually created.
-
-## Impact
-
-- Users who deploy to AWS/GCP get a success response and a URL that doesn't work
-- No real infrastructure is provisioned
-- Credentials are validated but not actually used
-
-## Acceptance Criteria
-- AWS deployment should call \`@aws-sdk/client-apprunner\` to create a real service
-- GCP deployment should call \`@google-cloud/run\` to create a real Cloud Run service
-- Return only real, live deployment URLs
-
-## Related Issues
-- Supersedes/extends #45" \
-            --label "feature-gap,priority:medium,v1.3.0" \
-            --repo "$REPO" || true
-
-          echo "New issues created"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const newIssues = [
+              {title:"[Regression] i18n Key Count Reduced from 36 to 27 \u2014 Translation Coverage Regressed (Fixed in Follow-up)",body:"The i18n locale files were restructured during PR #49 but the number of translation keys decreased from 36 to 27. A follow-up commit expanded all 5 locale files to 639 keys across 22 namespaces (en/fr/de/es/ar) covering auth, navigation, project, workspace, agent, llm, code, deployment, analytics, settings, notifications, task, knowledge, integrations, errors, forms, table, modal, admin, voice, and search. Related to #46.",labels:["feature-gap", "priority:high", "v1.3.0"]},
+              {title:"[Tech Debt] Orphan File enhancedPreviewGenerator.service.ts.new Removed from services/",body:"An orphan file `enhancedPreviewGenerator.service.ts.new` existed in `server/src/services/` containing an older version of the service. It has been removed in the commit following PR #49.",labels:["tech-debt", "priority:low", "fixed"]},
+              {title:"[Tech Debt] multiCloudOrchestrator.service.md Markdown File Removed from services/",body:"A Markdown documentation file `multiCloudOrchestrator.service.md` existed in `server/src/services/` alongside TypeScript files. It has been removed (the actual `.ts` implementation was not affected). Documentation belongs in `docs/`.",labels:["tech-debt", "priority:low", "fixed"]},
+              {title:"[Test Coverage] LLM Router Services Have No Unit Tests \u2014 6 Service Files ~1400 LOC Untested",body:"Six LLM router service files have zero unit tests: `llmRouterAI.service.ts`, `llmRouterAutoTune.service.ts`, `llmRouterNL.service.ts`, `llmRouterPredictive.service.ts`, `llmRouterRL.service.ts`, `llmRouterSettings.service.ts`. These control how all LLM requests are routed across 14 providers (~1,400 LOC total untested). Related to #35.",labels:["test-coverage", "priority:high", "v1.2.0"]},
+              {title:"[Feature Gap] AWS and GCP Deployments Return Simulated URLs \u2014 No Real SDK Calls Made",body:"While issue #29 (missing env vars documentation) has been fixed, `deployToAWS()` and `deployToGCP()` in `deployment.service.ts` still return constructed/fake URLs without making real AWS App Runner or GCP Cloud Run SDK calls. Credentials are validated but not used. Acceptance criteria: implement real `@aws-sdk/client-apprunner` and `@google-cloud/run` calls. Supersedes #45.",labels:["feature-gap", "priority:medium", "v1.3.0"]},
+            ];
+            for (const issue of newIssues) {
+              try {
+                const result = await github.rest.issues.create({owner:context.repo.owner,repo:context.repo.repo,...issue});
+                console.log('Created #' + result.data.number + ': ' + issue.title);
+              } catch(e) { console.error('Error creating issue:', e.message); }
+            }
