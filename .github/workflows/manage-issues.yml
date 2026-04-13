@@ -1,0 +1,363 @@
+name: Manage Issues — Triage, Close Fixed, Create New
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - copilot/update-issues
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  manage-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up GitHub CLI
+        run: gh --version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ─────────────────────────────────────────────────────────────
+      # STEP 1: Create Labels
+      # ─────────────────────────────────────────────────────────────
+      - name: Create labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          create_label() {
+            local name="$1" color="$2" desc="$3"
+            gh label create "$name" --color "$color" --description "$desc" --repo "$REPO" 2>/dev/null || \
+            gh label edit "$name" --color "$color" --description "$desc" --repo "$REPO" 2>/dev/null || true
+          }
+          create_label "fixed"          "0e8a16" "Issue has been resolved"
+          create_label "bug"            "d73a4a" "Something isn't working"
+          create_label "documentation"  "0075ca" "Improvements or additions to documentation"
+          create_label "tech-debt"      "e4e669" "Technical debt that needs refactoring"
+          create_label "test-coverage"  "e05d44" "Missing or insufficient test coverage"
+          create_label "feature-gap"    "7057ff" "Feature is missing or incomplete"
+          create_label "improvement"    "84b6eb" "Enhancement to existing functionality"
+          create_label "priority:high"  "b60205" "High priority issue"
+          create_label "priority:medium" "e99695" "Medium priority issue"
+          create_label "priority:low"   "f9d0c4" "Low priority issue"
+          create_label "v1.1.0"         "1d76db" "Targeted for v1.1.0 release"
+          create_label "v1.2.0"         "0052cc" "Targeted for v1.2.0 release"
+          create_label "v1.3.0"         "003366" "Targeted for v1.3.0 release"
+          echo "Labels created/updated"
+
+      # ─────────────────────────────────────────────────────────────
+      # STEP 2: Create Milestones
+      # ─────────────────────────────────────────────────────────────
+      - name: Create milestones
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          create_ms() {
+            local title="$1" desc="$2"
+            gh api repos/$REPO/milestones \
+              --method POST \
+              -f title="$title" \
+              -f description="$desc" \
+              -f state="open" 2>/dev/null || true
+          }
+          create_ms "v1.1.0 — Bug Fixes & Service Layers" \
+            "MongoDB persistence, service layer extractions, documentation gaps, and agent test coverage"
+          create_ms "v1.2.0 — Test Coverage" \
+            "Unit and integration tests for LLM router, WebSocket, voice/Pipecat, CUA, and test-generation services"
+          create_ms "v1.3.0 — Frontend & Feature Completion" \
+            "Frontend API integration, i18n coverage, refactoring monolithic components, cloud deployments"
+          echo "Milestones created"
+
+      # ─────────────────────────────────────────────────────────────
+      # STEP 3: Close fixed issues with comments
+      # ─────────────────────────────────────────────────────────────
+      - name: Close fixed issues with comments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          close_issue() {
+            local num="$1" comment="$2"
+            echo "Closing issue #$num..."
+            gh issue comment "$num" --body "$comment" --repo "$REPO" || true
+            gh issue close "$num" --repo "$REPO" || true
+            gh issue edit "$num" --add-label "fixed,v1.1.0" --repo "$REPO" || true
+          }
+
+          close_issue 24 "## ✅ Fixed in PR #49
+
+This issue has been resolved. A proper MongoDB-backed \`ABTest\` model (\`server/src/models/ABTest.model.ts\`) has been added with full Mongoose schema, indexes, and persistence. A/B test configurations are now persisted to MongoDB and survive server restarts.
+
+**Changes:**
+- Added \`server/src/models/ABTest.model.ts\` with Mongoose schema and indexes
+- Updated \`server/src/routes/routerABTest.routes.ts\` to use the model for all CRUD operations
+- A/B tests are now stored in MongoDB and restored on startup"
+
+          close_issue 27 "## ✅ Fixed in PR #49
+
+The MCP tool execution protocol has been fully implemented. The \`MCPService\` now has a \`callTool(serverId, toolName, args)\` method at line 577 that routes tool calls to the appropriate MCP server instance (E2B, knowledge graph, Google Search, database-backed). Tool execution is no longer health-check-only.
+
+**Changes:**
+- \`server/src/services/mcp.service.ts\` — added \`callTool()\` with routing to live MCP client instances"
+
+          close_issue 28 "## ✅ Fixed in PR #49
+
+A fully-featured Neo4j knowledge graph service has been implemented. The integration now goes far beyond a basic connection — it exposes node creation/querying, relationship traversal, shortest-path algorithms, community detection, PageRank, and pattern matching.
+
+**Changes:**
+- Added \`server/src/services/neo4j.service.ts\` (116 LOC) with full graph operations
+- Added \`server/src/routes/neo4j.routes.ts\` with REST API endpoints for nodes, relationships, and paths"
+
+          close_issue 29 "## ✅ Fixed in PR #49
+
+All AWS and GCP provider credential environment variables are now fully documented in \`.env.example\` with clear descriptions and examples.
+
+**Changes:**
+- Updated \`.env.example\` with \`AWS_ACCESS_KEY_ID\`, \`AWS_SECRET_ACCESS_KEY\`, \`AWS_REGION\`, \`GCP_PROJECT_ID\`, \`GCP_SERVICE_ACCOUNT_KEY\`, and all related multi-cloud variables"
+
+          close_issue 30 "## ✅ Fixed in PR #49
+
+The LangGraph RAG workflow endpoint now builds a real retrieval-augmented generation pipeline. It creates a stateful LangGraph workflow that retrieves relevant documents using the vector search service and generates grounded responses.
+
+**Changes:**
+- Updated \`server/src/routes/langgraph.routes.ts\` — \`POST /api/langgraph/workflows/rag\` now delegates to \`vectorSearchService\` and creates a live LangGraph workflow"
+
+          close_issue 33 "## ✅ Fixed in PR #49
+
+A dedicated \`MsTeamsService\` class has been created, extracting all OAuth and messaging business logic out of the route handler.
+
+**Changes:**
+- Added \`server/src/services/msteams.service.ts\` (182 LOC) with \`getAuthUrl()\`, \`exchangeCode()\`, \`refreshToken()\`, \`sendNotification()\`, and \`adaptiveCard()\` methods
+- Updated \`server/src/routes/msteams.routes.ts\` to delegate to the service layer"
+
+          close_issue 34 "## ✅ Fixed in PR #49
+
+A dedicated \`SlackService\` class has been created, extracting all OAuth and messaging business logic out of the route handler.
+
+**Changes:**
+- Added \`server/src/services/slack.service.ts\` with \`getAuthUrl()\`, \`exchangeCode()\`, \`sendMessage()\`, \`postBlock()\`, and \`verifySignature()\` methods
+- Updated \`server/src/routes/slack.routes.ts\` to delegate to the service layer"
+
+          close_issue 40 "## ✅ Fixed in PR #49
+
+Both missing documentation files have been created with comprehensive content.
+
+**Changes:**
+- Created \`docs/ARCHITECTURE.md\` (179 lines) — full system architecture including frontend/backend/infra layers, data flow, and component diagrams
+- Created \`docs/PROJECT_REVIEW.md\` (147 lines) — project status review, feature completion matrix, and roadmap"
+
+          close_issue 41 "## ✅ Fixed in PR #49
+
+The \`.env.example\` file has been fully expanded. It now documents all required and optional environment variables for Pipecat, Weaviate, Neo4j, Redis, AWS, GCP, Slack, MS Teams, and all LLM providers.
+
+**Changes:**
+- Updated \`.env.example\` from ~50 variables to 128 lines with complete coverage of all services"
+
+          close_issue 42 "## ✅ Fixed in PR #49
+
+\`POLICY.md\` has been created with full content covering usage policies, acceptable use, data handling, and contribution guidelines.
+
+**Changes:**
+- Created \`POLICY.md\` (65 lines) — resolves the broken link referenced in \`README.md\`"
+
+          close_issue 43 "## ✅ Fixed in PR #49
+
+The Pipecat Python voice service deployment is now fully documented in \`DEPLOYMENT.md\`.
+
+**Changes:**
+- Updated \`DEPLOYMENT.md\` with a dedicated Pipecat section covering: prerequisites, installation, configuration, running the service, and environment variables"
+
+          close_issue 47 "## ✅ Fixed in PR #49
+
+The agent routes test file has been rewritten with real, meaningful assertions. All placeholder \`expect(true)\` stubs have been replaced.
+
+**Changes:**
+- Rewrote \`server/src/__tests__/routes/agent.routes.test.ts\` from placeholder stubs to 175 lines of tests with proper \`expect()\` assertions covering status codes, response body shapes, redirect endpoints, and agent state fields"
+
+          echo "Fixed issues closed"
+
+      # ─────────────────────────────────────────────────────────────
+      # STEP 4: Label and milestone remaining open issues
+      # ─────────────────────────────────────────────────────────────
+      - name: Label open issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          label_issue() {
+            local num="$1" labels="$2"
+            echo "Labelling issue #$num with: $labels"
+            gh issue edit "$num" --add-label "$labels" --repo "$REPO" || true
+          }
+
+          label_issue 25 "feature-gap,priority:medium,v1.3.0"
+          label_issue 26 "feature-gap,priority:medium,v1.3.0"
+          label_issue 31 "tech-debt,priority:high,v1.3.0"
+          label_issue 32 "tech-debt,priority:high,v1.3.0"
+          label_issue 35 "test-coverage,priority:high,v1.2.0"
+          label_issue 36 "test-coverage,priority:high,v1.2.0"
+          label_issue 37 "test-coverage,priority:high,v1.2.0"
+          label_issue 38 "test-coverage,priority:high,v1.2.0"
+          label_issue 39 "test-coverage,priority:high,v1.2.0"
+          label_issue 44 "feature-gap,priority:medium,v1.3.0"
+          label_issue 45 "feature-gap,priority:medium,v1.3.0"
+          label_issue 46 "feature-gap,priority:high,v1.3.0"
+          label_issue 48 "test-coverage,priority:high,v1.2.0"
+          echo "Open issues labelled"
+
+      # ─────────────────────────────────────────────────────────────
+      # STEP 5: Create new issues for newly discovered problems
+      # ─────────────────────────────────────────────────────────────
+      - name: Create new issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+
+          gh issue create \
+            --title "[Regression] i18n Key Count Reduced from 36 to 27 — Translation Coverage Further Degraded" \
+            --body "## Summary
+
+The i18n locale files were restructured during PR #49 but the number of translation keys **decreased** from 36 to 27 (leaf keys). This is a regression from the already-insufficient coverage reported in issue #46.
+
+Note: A subsequent fix expanded the keys to **639** across 22 namespaces (en/fr/de/es/ar), but this issue is kept for tracking the regression event.
+
+## Evidence (before fix)
+
+\`\`\`json
+// client/public/i18n/locales/en.json had only 27 leaf keys in 4 namespaces
+{ \"common\": {...9 keys}, \"project\": {...9 keys}, \"workspace\": {...5 keys}, \"navigation\": {...4 keys} }
+\`\`\`
+
+## Fix Applied
+
+In a follow-up commit, all 5 locale files were expanded to **639 keys across 22 namespaces** covering: auth, navigation, project, workspace, agent, llm, code, deployment, analytics, settings, notifications, task, knowledge, integrations, errors, forms, table, modal, admin, voice, and search.
+
+## Related Issues
+- Supersedes/worsens #46 (now resolved by the fix)" \
+            --label "feature-gap,priority:high,v1.3.0" \
+            --repo "$REPO" || true
+
+          gh issue create \
+            --title "[Tech Debt] Orphan File \`enhancedPreviewGenerator.service.ts.new\` Cleaned Up" \
+            --body "## Summary
+
+An orphan file named \`enhancedPreviewGenerator.service.ts.new\` existed in \`server/src/services/\`. This was a leftover from a manual edit/merge operation.
+
+## Status: ✅ Fixed
+
+The file has been removed in the follow-up commit to PR #49.
+
+## What it was
+
+The \`.new\` file contained an **older** version of \`enhancedPreviewGenerator.service.ts\` (missing anchor tag handling, arrow function syntax fixes, and percentage style fixes that were present in the current \`.ts\` file)." \
+            --label "tech-debt,priority:low,fixed" \
+            --repo "$REPO" || true
+
+          gh issue create \
+            --title "[Tech Debt] \`multiCloudOrchestrator.service.md\` Markdown File Misplaced in services/ Directory" \
+            --body "## Summary
+
+A Markdown documentation file named \`multiCloudOrchestrator.service.md\` existed in \`server/src/services/\` alongside TypeScript service files. This is a misplaced documentation file.
+
+## Status: ✅ Fixed
+
+The file has been removed from the \`services/\` directory in the follow-up commit to PR #49. The actual TypeScript implementation (\`multiCloudOrchestrator.service.ts\`) remains.
+
+## Why it was a problem
+- Confusing to developers navigating the services directory  
+- TypeScript tooling may warn on non-TS files in a \`src/\` directory
+- Documentation belongs in \`docs/\` not \`server/src/services/\`" \
+            --label "tech-debt,priority:low,fixed" \
+            --repo "$REPO" || true
+
+          gh issue create \
+            --title "[Test Coverage] LLM Router Services Have No Unit Tests — 6 Service Files, ~1,400 LOC Untested" \
+            --body "## Summary
+
+Six LLM router service files implementing core AI routing logic have **zero unit tests**. These services control how all LLM requests are routed across 14 providers and are mission-critical to the platform's reliability.
+
+## Untested Services
+
+| File | Approx. LOC |
+|------|-------------|
+| \`server/src/services/llmRouterAI.service.ts\` | ~200 |
+| \`server/src/services/llmRouterAutoTune.service.ts\` | ~250 |
+| \`server/src/services/llmRouterNL.service.ts\` | ~200 |
+| \`server/src/services/llmRouterPredictive.service.ts\` | ~300 |
+| \`server/src/services/llmRouterRL.service.ts\` | ~250 |
+| \`server/src/services/llmRouterSettings.service.ts\` | ~200 |
+
+**Total: ~1,400 LOC untested**
+
+## Verification
+
+\`\`\`bash
+ls server/src/__tests__/services/ | grep llmRouter
+# (no output — no test files exist)
+\`\`\`
+
+## Impact
+
+- Routing decisions (which LLM to call, at what cost) are completely untested
+- Regressions in routing logic go undetected
+- Reinforcement learning and auto-tune logic have no coverage
+
+## Acceptance Criteria
+- Unit tests for each of the 6 LLM router services
+- Cover: route selection logic, fallback chains, cost thresholds, auto-tune triggers
+
+## Related Issues
+- Related to #35" \
+            --label "test-coverage,priority:high,v1.2.0" \
+            --repo "$REPO" || true
+
+          gh issue create \
+            --title "[Feature Gap] AWS App Runner and GCP Cloud Run Deployments Return Simulated URLs — No Real SDK Calls Made" \
+            --body "## Summary
+
+While issue #29 (missing env vars documentation) has been fixed, the actual deployment implementations in \`deployToAWS()\` and \`deployToGCP()\` still return **simulated/constructed URLs** without making real AWS SDK or GCP SDK API calls. The credentials are now validated, but no actual deployment happens.
+
+## Evidence
+
+From \`server/src/services/deployment.service.ts\` (lines 449–580):
+
+\`\`\`typescript
+// AWS deployment
+logs.push('[AWS] App Runner service creation initiated');
+logs.push('[AWS] Build in progress...');
+
+return {
+  success: true,
+  deploymentId: \`aws-apprunner-\${Date.now()}\`,
+  url: \`https://\${projectName}.\${awsRegion}.awsapprunner.com\`,  // ← FAKE URL
+  logs,
+  metadata: { status: 'building' }  // ← Never actually builds
+};
+\`\`\`
+
+The URL is constructed from the project name but no App Runner service is actually created.
+
+## Impact
+
+- Users who deploy to AWS/GCP get a success response and a URL that doesn't work
+- No real infrastructure is provisioned
+- Credentials are validated but not actually used
+
+## Acceptance Criteria
+- AWS deployment should call \`@aws-sdk/client-apprunner\` to create a real service
+- GCP deployment should call \`@google-cloud/run\` to create a real Cloud Run service
+- Return only real, live deployment URLs
+
+## Related Issues
+- Supersedes/extends #45" \
+            --label "feature-gap,priority:medium,v1.3.0" \
+            --repo "$REPO" || true
+
+          echo "New issues created"
