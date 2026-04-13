@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
 import { BrainstormingRoom } from '../models/BrainstormingRoom.model.js';
+import { msTeamsService } from '../services/msteams.service.js';
 
 const router = express.Router();
 
@@ -26,44 +27,18 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/msteams/callback`;
-    
-    const clientId = process.env.MSTEAMS_CLIENT_ID || process.env.AZURE_CLIENT_ID;
-    if (!clientId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Microsoft Teams integration not configured. Please set MSTEAMS_CLIENT_ID or AZURE_CLIENT_ID environment variable.'
-      });
-    }
 
-    // Microsoft Teams OAuth scopes
-    const scopes = [
-      'https://graph.microsoft.com/User.Read',
-      'https://graph.microsoft.com/OnlineMeetings.ReadWrite',
-      'https://graph.microsoft.com/ChannelMessage.Send',
-      'https://graph.microsoft.com/Chat.ReadWrite'
-    ];
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
-    
-    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-      `client_id=${clientId}&` +
-      `response_type=code&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_mode=query&` +
-      `scope=${scopes.join(' ')}&` +
-      `state=${state}`;
+    const authUrl = msTeamsService.getAuthUrl(userId, redirectUri);
 
     res.json({
       success: true,
-      data: {
-        authUrl,
-        state
-      }
+      data: { authUrl }
     });
   } catch (error: unknown) {
     logger.error('Failed to initiate Microsoft Teams OAuth:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to initiate Microsoft Teams OAuth'
+      message: (error as Error).message || 'Failed to initiate Microsoft Teams OAuth'
     });
   }
 });
@@ -74,7 +49,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { code, state } = req.query;
+    const { code } = req.query;
 
     if (!code) {
       return res.status(400).json({
@@ -83,55 +58,25 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    const clientId = process.env.MSTEAMS_CLIENT_ID || process.env.AZURE_CLIENT_ID;
-    const clientSecret = process.env.MSTEAMS_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET;
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/msteams/callback`;
+    const tokenData = await msTeamsService.exchangeCode(code as string, redirectUri);
 
-    if (!clientId || !clientSecret) {
-      return res.status(400).json({
-        success: false,
-        message: 'Microsoft Teams integration not configured'
-      });
-    }
-
-    // Exchange code for access token
-    const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: code as string,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code'
-      })
-    });
-
-    const tokenData = await tokenResponse.json();
-
-    if (tokenData.error) {
-      throw new Error(tokenData.error_description || 'Failed to exchange code for token');
-    }
-
-    // Store token (in production, save to database with encryption)
     logger.info(`Microsoft Teams OAuth successful for user ${req.user!.id}`);
 
     res.json({
       success: true,
       message: 'Microsoft Teams integration connected successfully',
       data: {
-        accessToken: tokenData.access_token ? '***' : undefined, // Don't expose token
-        refreshToken: tokenData.refresh_token ? '***' : undefined,
-        expiresIn: tokenData.expires_in
+        accessToken: tokenData.accessToken ? '***' : undefined,
+        refreshToken: tokenData.refreshToken ? '***' : undefined,
+        expiresIn: tokenData.expiresIn
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to handle Microsoft Teams OAuth callback:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to complete Microsoft Teams OAuth'
+      message: (error as Error).message || 'Failed to complete Microsoft Teams OAuth'
     });
   }
 });
@@ -142,7 +87,7 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.post('/share-room', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { roomId, teamId, channelId, message } = req.body;
+    const { roomId, teamId, channelId, message, accessToken } = req.body;
     const userId = req.user!.id;
 
     if (!roomId) {
@@ -162,8 +107,9 @@ router.post('/share-room', authenticateToken, async (req: AuthRequest, res) => {
     }
 
     // Check if user has access
-    const hasAccess = room.createdBy === userId || 
-                     room.participants.some(p => p.userId === userId);
+    const hasAccess =
+      room.createdBy === userId ||
+      room.participants.some((p: any) => p.userId === userId);
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
@@ -171,11 +117,27 @@ router.post('/share-room', authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    // Create share link
     const shareUrl = `${process.env.APP_URL || 'http://localhost:5173'}/brainstorming-rooms/${roomId}`;
-    
-    // In production, use stored access token to send message to Teams
-    // For now, return the share URL
+
+    // If caller provides a Teams access token and channel info, post the message via Graph API
+    if (accessToken && teamId && channelId) {
+      const result = await msTeamsService.shareRoom(
+        accessToken,
+        teamId,
+        channelId,
+        room.name,
+        shareUrl,
+        message
+      );
+
+      return res.json({
+        success: true,
+        message: 'Room shared to Microsoft Teams channel',
+        data: { shareUrl, roomName: room.name, messageId: result.messageId }
+      });
+    }
+
+    // Fallback: return the share URL for the client to use
     res.json({
       success: true,
       message: 'Room share link generated',
@@ -189,7 +151,7 @@ router.post('/share-room', authenticateToken, async (req: AuthRequest, res) => {
     logger.error('Failed to share room via Teams:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to share room'
+      message: (error as Error).message || 'Failed to share room'
     });
   }
 });
@@ -200,7 +162,7 @@ router.post('/share-room', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.post('/send-notification', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { roomId, recipientId, recipientType } = req.body; // recipientType: 'channel' | 'user'
+    const { roomId, recipientId, recipientType, teamId, accessToken } = req.body;
     const userId = req.user!.id;
 
     if (!roomId || !recipientId) {
@@ -218,23 +180,39 @@ router.post('/send-notification', authenticateToken, async (req: AuthRequest, re
       });
     }
 
-    // In production, use Microsoft Graph API to send message
-    // POST https://graph.microsoft.com/v1.0/teams/{team-id}/channels/{channel-id}/messages
-    // or
-    // POST https://graph.microsoft.com/v1.0/users/{user-id}/chats
+    const shareUrl = `${process.env.APP_URL || 'http://localhost:5173'}/brainstorming-rooms/${roomId}`;
+    const text = `You have been invited to a brainstorming session: "${room.name}"\n${shareUrl}`;
+
+    if (accessToken) {
+      const result = await msTeamsService.sendNotification(
+        accessToken,
+        recipientId,
+        recipientType || 'channel',
+        teamId,
+        text
+      );
+
+      return res.json({
+        success: true,
+        message: 'Notification sent successfully',
+        data: { messageId: result.messageId }
+      });
+    }
 
     res.json({
       success: true,
-      message: 'Notification sent successfully'
+      message: 'Notification prepared (provide accessToken to send via Teams API)',
+      data: { text }
     });
   } catch (error: unknown) {
     logger.error('Failed to send Teams notification:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to send notification'
+      message: (error as Error).message || 'Failed to send notification'
     });
   }
 });
 
 export default router;
+
 

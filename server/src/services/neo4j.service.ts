@@ -463,6 +463,122 @@ class Neo4jService {
   }
 
   /**
+   * Get the full knowledge graph for a project — all nodes and their relationships.
+   */
+  async getKnowledgeGraph(projectId: string): Promise<GraphQueryResult> {
+    if (!this.driver) {
+      await this.initialize();
+    }
+
+    const session = this.driver!.session();
+    try {
+      // Fetch all nodes associated with this project
+      const nodeResult = await session.run(
+        `MATCH (n)
+         WHERE n.projectId = $projectId OR n.id = $projectId
+         RETURN n
+         LIMIT 500`,
+        { projectId }
+      );
+
+      const nodes: GraphNode[] = nodeResult.records.map(record => {
+        const node = record.get('n');
+        return {
+          id: node.properties.id || node.identity.toString(),
+          labels: node.labels,
+          properties: node.properties
+        };
+      });
+
+      const nodeIds = nodes.map(n => n.id);
+
+      // Fetch relationships between these nodes
+      const relResult = await session.run(
+        `MATCH (a)-[r]->(b)
+         WHERE (a.projectId = $projectId OR a.id = $projectId)
+           AND (b.projectId = $projectId OR b.id = $projectId)
+         RETURN r, a.id AS startId, b.id AS endId
+         LIMIT 1000`,
+        { projectId }
+      );
+
+      const relationships: GraphRelationship[] = relResult.records.map(record => {
+        const rel = record.get('r');
+        return {
+          id: rel.identity.toString(),
+          type: rel.type,
+          startNodeId: record.get('startId') || rel.start.toString(),
+          endNodeId: record.get('endId') || rel.end.toString(),
+          properties: rel.properties || {}
+        };
+      });
+
+      return { nodes, relationships, paths: [] };
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Find nodes across all projects that share a given label or property,
+   * enabling cross-project knowledge discovery.
+   */
+  async getCrossProjectRelationships(
+    label: string,
+    limit: number = 100
+  ): Promise<GraphQueryResult> {
+    if (!this.driver) {
+      await this.initialize();
+    }
+
+    const session = this.driver!.session();
+    try {
+      const result = await session.run(
+        `MATCH (a:\`${label}\`)-[r]->(b:\`${label}\`)
+         WHERE a.projectId <> b.projectId
+         RETURN a, r, b
+         LIMIT $limit`,
+        { limit }
+      );
+
+      const nodeMap = new Map<string, GraphNode>();
+      const relationships: GraphRelationship[] = [];
+
+      result.records.forEach(record => {
+        const nodeA = record.get('a');
+        const nodeB = record.get('b');
+        const rel = record.get('r');
+
+        const idA = nodeA.properties.id || nodeA.identity.toString();
+        const idB = nodeB.properties.id || nodeB.identity.toString();
+
+        if (!nodeMap.has(idA)) {
+          nodeMap.set(idA, { id: idA, labels: nodeA.labels, properties: nodeA.properties });
+        }
+        if (!nodeMap.has(idB)) {
+          nodeMap.set(idB, { id: idB, labels: nodeB.labels, properties: nodeB.properties });
+        }
+
+        relationships.push({
+          id: rel.identity.toString(),
+          type: rel.type,
+          startNodeId: idA,
+          endNodeId: idB,
+          properties: rel.properties || {}
+        });
+      });
+
+      return {
+        nodes: Array.from(nodeMap.values()),
+        relationships,
+        paths: []
+      };
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
    * Check if Neo4j is available
    */
   isAvailable(): boolean {
