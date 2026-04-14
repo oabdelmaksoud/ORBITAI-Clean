@@ -326,7 +326,7 @@ describe('RoutingEngine', () => {
 
     it('uses RL routing when predictive gives no result and confidence > 0.5', async () => {
       const rlModel = makeModel({ id: 'rl-selected-model' });
-      vi.mocked(predictiveRoutingService.predictOptimalModel).mockResolvedValue(null as any);
+      vi.mocked(predictiveRoutingService.predictOptimalModel).mockRejectedValue(new Error("no prediction"));
       vi.mocked(modelRegistry.getActiveModels).mockReturnValue([rlModel]);
       vi.mocked(modelRegistry.getModel).mockReturnValue(rlModel);
       vi.mocked(rlRouterService.selectModel).mockResolvedValue({
@@ -365,7 +365,7 @@ describe('RoutingEngine', () => {
         })
       );
       vi.mocked(llmRouterSettingsService.testRoutingRule).mockResolvedValue({ matches: true });
-      vi.mocked(predictiveRoutingService.predictOptimalModel).mockResolvedValue(null as any);
+      vi.mocked(predictiveRoutingService.predictOptimalModel).mockRejectedValue(new Error("no prediction"));
       vi.mocked(rlRouterService.selectModel).mockRejectedValue(new Error('skip'));
       vi.mocked(llmRouterAIService.predictOptimalModel).mockRejectedValue(new Error('skip'));
 
@@ -386,7 +386,7 @@ describe('RoutingEngine', () => {
         })
       );
       vi.mocked(llmRouterSettingsService.testRoutingRule).mockResolvedValue({ matches: false });
-      vi.mocked(predictiveRoutingService.predictOptimalModel).mockResolvedValue(null as any);
+      vi.mocked(predictiveRoutingService.predictOptimalModel).mockRejectedValue(new Error("no prediction"));
       vi.mocked(rlRouterService.selectModel).mockRejectedValue(new Error('skip'));
       vi.mocked(llmRouterAIService.predictOptimalModel).mockRejectedValue(new Error('skip'));
       vi.mocked(modelRegistry.getRecommendedModels).mockReturnValue([standardModel]);
