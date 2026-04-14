@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import { apiKeyProvider } from './apiKeyProvider.service.js';
 import { config } from '../config/env.js';
 import { ChatConversation } from '../models/ChatConversation.model.js';
+import { VoiceSessionModel } from '../models/VoiceSession.model.js';
 import crypto from 'crypto';
 
 export interface VoiceSession {
@@ -104,6 +105,21 @@ class PipecatBridgeService {
     };
 
     this.sessions.set(sessionId, session);
+
+    try {
+      await VoiceSessionModel.create({
+        sessionId,
+        userId: params.userId,
+        conversationId: params.conversationId,
+        createdAt: session.createdAt,
+        metadata: session.metadata,
+        transcripts: [],
+        status: 'active'
+      });
+    } catch (error: unknown) {
+      logger.error(`[PipecatBridge] Failed to persist session ${sessionId} to MongoDB: ${(error as Error).message}`, error);
+    }
+
     logger.info(`[PipecatBridge] Created voice session: ${sessionId} for user: ${params.userId}`);
 
     return session;
@@ -168,6 +184,13 @@ class PipecatBridgeService {
       aiText,
       timestamp: Date.now()
     });
+
+    VoiceSessionModel.updateOne(
+      { sessionId },
+      { $push: { transcripts: { userText, aiText, timestamp: Date.now() } } }
+    ).catch((error: unknown) => {
+      logger.error(`[PipecatBridge] Failed to persist transcript for session ${sessionId}: ${(error as Error).message}`, error);
+    });
   }
 
   /**
@@ -217,19 +240,48 @@ class PipecatBridgeService {
         }
       }
     } catch (error: unknown) {
-      logger.error(`[PipecatBridge] Error saving voice conversation: ${error.message}`, error);
+      logger.error(`[PipecatBridge] Error saving voice conversation: ${(error as Error).message}`, error);
     }
 
     // Remove session from memory
     this.sessions.delete(sessionId);
+
+    try {
+      await VoiceSessionModel.updateOne(
+        { sessionId },
+        { $set: { status: 'ended', endedAt: new Date() } }
+      );
+    } catch (error: unknown) {
+      logger.error(`[PipecatBridge] Failed to mark session ${sessionId} as ended in MongoDB: ${(error as Error).message}`, error);
+    }
+
     logger.info(`[PipecatBridge] Ended session: ${sessionId}`);
   }
 
   /**
-   * Get all active sessions for a user
+   * Get all active sessions for a user.
+   * Returns from in-memory cache when available; falls back to MongoDB for recovery after restart.
    */
-  getSessionsForUser(userId: string): VoiceSession[] {
-    return Array.from(this.sessions.values()).filter(s => s.userId === userId);
+  async getSessionsForUser(userId: string): Promise<VoiceSession[]> {
+    const cached = Array.from(this.sessions.values()).filter(s => s.userId === userId);
+    if (cached.length > 0) {
+      return cached;
+    }
+
+    try {
+      const docs = await VoiceSessionModel.find({ userId, status: 'active' }).lean();
+      return docs.map(doc => ({
+        sessionId: doc.sessionId,
+        userId: doc.userId,
+        conversationId: doc.conversationId,
+        createdAt: doc.createdAt,
+        metadata: doc.metadata,
+        transcripts: doc.transcripts
+      }));
+    } catch (error: unknown) {
+      logger.error(`[PipecatBridge] Failed to fetch sessions for user ${userId} from MongoDB: ${(error as Error).message}`, error);
+      return [];
+    }
   }
 
   /**
@@ -248,6 +300,19 @@ class PipecatBridgeService {
 
     for (const sessionId of sessionsToDelete) {
       await this.endSession(sessionId);
+    }
+
+    try {
+      const cutoff = new Date(now - maxAge);
+      const result = await VoiceSessionModel.deleteMany({
+        status: 'ended',
+        endedAt: { $lt: cutoff }
+      });
+      if (result.deletedCount > 0) {
+        logger.info(`[PipecatBridge] Removed ${result.deletedCount} expired session(s) from MongoDB`);
+      }
+    } catch (error: unknown) {
+      logger.error(`[PipecatBridge] Failed to cleanup expired sessions in MongoDB: ${(error as Error).message}`, error);
     }
 
     if (sessionsToDelete.length > 0) {
