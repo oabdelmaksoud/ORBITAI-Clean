@@ -179,16 +179,17 @@ class PipecatBridgeService {
       return;
     }
 
+    const timestamp = Date.now();
     session.transcripts.push({
       userText,
       aiText,
-      timestamp: Date.now()
+      timestamp
     });
 
     VoiceSessionModel.updateOne(
       { sessionId },
-      { $push: { transcripts: { userText, aiText, timestamp: Date.now() } } }
-    ).catch((error: unknown) => {
+      { $push: { transcripts: { userText, aiText, timestamp } } }
+    ).exec().catch((error: unknown) => {
       logger.error(`[PipecatBridge] Failed to persist transcript for session ${sessionId}: ${(error as Error).message}`, error);
     });
   }
@@ -270,7 +271,7 @@ class PipecatBridgeService {
 
     try {
       const docs = await VoiceSessionModel.find({ userId, status: 'active' }).lean();
-      return docs.map(doc => ({
+      const sessions = docs.map(doc => ({
         sessionId: doc.sessionId,
         userId: doc.userId,
         conversationId: doc.conversationId,
@@ -278,6 +279,11 @@ class PipecatBridgeService {
         metadata: doc.metadata,
         transcripts: doc.transcripts
       }));
+      // Repopulate the in-memory cache so subsequent calls are served from memory
+      for (const session of sessions) {
+        this.sessions.set(session.sessionId, session);
+      }
+      return sessions;
     } catch (error: unknown) {
       logger.error(`[PipecatBridge] Failed to fetch sessions for user ${userId} from MongoDB: ${(error as Error).message}`, error);
       return [];
