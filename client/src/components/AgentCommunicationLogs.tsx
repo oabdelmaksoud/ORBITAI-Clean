@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, RefreshCw, Filter, Clock } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface AgentCommunicationLogsProps {
   projectId: string;
@@ -33,13 +33,16 @@ const AgentCommunicationLogs: React.FC<AgentCommunicationLogsProps> = ({ project
 
   useEffect(() => {
     loadMessages();
-  }, [projectId]);
+  }, [projectId, filterType]);
 
   const loadMessages = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setMessages([]);
+      const typeParam = filterType !== 'all' ? filterType : '';
+      const data = await apiRequest<AgentMessage[]>(
+        '/api/agentMonitoring/messages?projectId=' + projectId + '&type=' + typeParam
+      );
+      setMessages(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load messages');
     } finally {

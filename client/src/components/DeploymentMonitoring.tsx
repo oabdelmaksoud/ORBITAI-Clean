@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Activity, CheckCircle, XCircle, AlertTriangle, RefreshCw, BarChart3 } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface DeploymentMonitoringProps {
   deploymentId: string;
@@ -45,8 +45,24 @@ const DeploymentMonitoring: React.FC<DeploymentMonitoringProps> = ({ deploymentI
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setMetrics(null);
+      const dep = await apiRequest<any>('/api/deployments/' + deploymentId);
+      const logsRes = await apiRequest<any>('/api/deployments/' + deploymentId + '/logs');
+      setMetrics({
+        deploymentId,
+        healthStatus:
+          dep.status === 'running'
+            ? 'healthy'
+            : dep.status === 'failed'
+            ? 'unhealthy'
+            : 'degraded',
+        healthScore:
+          dep.status === 'running' ? 100 : dep.status === 'failed' ? 0 : 50,
+        responseTime: dep.metrics?.responseTime || 0,
+        errorRate: dep.metrics?.errorRate || 0,
+        throughput: dep.metrics?.throughput || 0,
+        logs: logsRes?.logs || [],
+        alerts: dep.alerts || [],
+      });
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load monitoring metrics');
     } finally {

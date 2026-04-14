@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { RotateCcw, AlertTriangle, CheckCircle, RefreshCw, Clock } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface AgentRollbackHistoryProps {
   projectId: string;
@@ -38,8 +38,10 @@ const AgentRollbackHistory: React.FC<AgentRollbackHistoryProps> = ({ projectId }
   const loadRollbacks = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setRollbacks([]);
+      const data = await apiRequest<RollbackRecord[]>(
+        '/api/agentMonitoring/rollbacks?projectId=' + projectId
+      );
+      setRollbacks(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load rollback history');
     } finally {

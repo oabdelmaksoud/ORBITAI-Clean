@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingDown, TrendingUp, RefreshCw, Download, Lightbulb } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { getAuthToken } from '@src/services/api';
+import { getCostAnalysis } from '@src/services/llmAnalyticsApi';
 
 interface LLMCostOptimizationProps {
   userId?: string;
@@ -51,8 +52,34 @@ const LLMCostOptimization: React.FC<LLMCostOptimizationProps> = ({ userId, days 
   const loadAnalysis = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setAnalysis(null);
+      const token = getAuthToken() || '';
+      const period = days <= 7 ? '7d' : days <= 30 ? '30d' : '90d';
+      const result = await getCostAnalysis(token, period);
+      const byProvider = result.analysis.flatMap(point =>
+        (point.byProvider || []).map(p => ({ provider: p.provider, cost: p.cost, percentage: 0 }))
+      );
+      const totalCost = result.totals?.totalCost ?? result.analysis.reduce((s, p) => s + p.totalCost, 0);
+      // Compute percentages
+      byProvider.forEach(p => {
+        p.percentage = totalCost > 0 ? (p.cost / totalCost) * 100 : 0;
+      });
+      const byModel = result.analysis.flatMap(point =>
+        (point.byModel || []).map(m => ({ model: m.model, cost: m.cost, usage: 0 }))
+      );
+      setAnalysis({
+        totalCost,
+        byProvider,
+        byModel,
+        trends: {
+          daily: result.analysis.map(p => ({ date: p.date, cost: p.totalCost })),
+          weekly: [],
+        },
+        forecast: {
+          nextMonth: result.projections?.projectedMonthly ?? 0,
+          nextQuarter: (result.projections?.projectedMonthly ?? 0) * 3,
+        },
+        suggestions: [],
+      });
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load cost analysis');
     } finally {

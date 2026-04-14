@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Shield, Clock, Download, RefreshCw, AlertTriangle } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface DisasterRecoveryPlanViewerProps {
   projectId: string;
@@ -47,8 +47,10 @@ const DisasterRecoveryPlanViewer: React.FC<DisasterRecoveryPlanViewerProps> = ({
   const loadPlan = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setPlan(null);
+      const data = await apiRequest<DisasterRecoveryPlan>(
+        '/api/projectResources/disaster-recovery?projectId=' + projectId
+      );
+      setPlan(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load disaster recovery plan');
     } finally {

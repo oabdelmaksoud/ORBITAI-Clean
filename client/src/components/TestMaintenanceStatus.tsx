@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Wrench, CheckCircle, Clock, AlertTriangle, RefreshCw, Download, XCircle } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface TestMaintenanceStatusProps {
   projectId: string;
@@ -47,8 +47,10 @@ const TestMaintenanceStatus: React.FC<TestMaintenanceStatusProps> = ({ projectId
   const loadStatus = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setReport(null);
+      const data = await apiRequest<TestMaintenanceReport>(
+        '/api/projectResources/test-maintenance?projectId=' + projectId
+      );
+      setReport(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load test maintenance status');
     } finally {

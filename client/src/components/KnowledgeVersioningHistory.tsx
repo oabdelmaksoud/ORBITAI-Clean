@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GitBranch, Clock, User, RefreshCw, Download, Eye } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface KnowledgeVersioningHistoryProps {
   knowledgeId: string;
@@ -33,8 +33,12 @@ const KnowledgeVersioningHistory: React.FC<KnowledgeVersioningHistoryProps> = ({
   const loadVersions = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setVersions([]);
+      const params = new URLSearchParams();
+      if (knowledgeId) params.set('agentId', knowledgeId);
+      const data = await apiRequest<KnowledgeVersion[]>(
+        '/api/agentKnowledgeEnhanced/versions?' + params.toString()
+      );
+      setVersions(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load version history');
     } finally {

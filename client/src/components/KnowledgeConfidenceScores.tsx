@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Target, TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface KnowledgeConfidenceScoresProps {
   agentId?: string;
@@ -32,8 +32,13 @@ const KnowledgeConfidenceScores: React.FC<KnowledgeConfidenceScoresProps> = ({ a
   const loadScores = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setScores([]);
+      const params = new URLSearchParams();
+      if (agentId) params.set('agentId', agentId);
+      if (knowledgeId) params.set('agentId', knowledgeId);
+      const data = await apiRequest<ConfidenceScore[]>(
+        '/api/agentKnowledgeEnhanced/confidence?' + params.toString()
+      );
+      setScores(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load confidence scores');
     } finally {

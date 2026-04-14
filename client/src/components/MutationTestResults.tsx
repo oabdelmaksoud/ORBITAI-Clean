@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Dna, Activity, CheckCircle, XCircle, RefreshCw, Download, AlertTriangle } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface MutationTestResultsProps {
   projectId: string;
@@ -46,8 +46,10 @@ const MutationTestResults: React.FC<MutationTestResultsProps> = ({ projectId, ar
   const loadResults = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setResults([]);
+      const data = await apiRequest<MutationTestResult[]>(
+        '/api/projectResources/mutation-tests?projectId=' + projectId
+      );
+      setResults(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load mutation test results');
     } finally {

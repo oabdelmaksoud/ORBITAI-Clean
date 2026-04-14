@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Share2, CheckCircle, XCircle, RefreshCw, Filter } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface CrossProjectKnowledgeSharingProps {
   projectId: string;
@@ -35,8 +35,11 @@ const CrossProjectKnowledgeSharing: React.FC<CrossProjectKnowledgeSharingProps> 
   const loadSharedKnowledge = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setSharedKnowledge([]);
+      const scopeParam = filterScope !== 'all' ? '&scope=' + filterScope : '';
+      const data = await apiRequest<SharedKnowledge[]>(
+        '/api/agentKnowledgeEnhanced/shared?projectId=' + projectId + scopeParam
+      );
+      setSharedKnowledge(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load shared knowledge');
     } finally {

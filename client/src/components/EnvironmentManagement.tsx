@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Server, CheckCircle, XCircle, RefreshCw, Plus, Settings } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface EnvironmentManagementProps {
   projectId: string;
@@ -33,12 +33,25 @@ const EnvironmentManagement: React.FC<EnvironmentManagementProps> = ({ projectId
   const loadEnvironments = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setEnvironments([]);
+      const data = await apiRequest<Environment[]>(
+        '/api/projectResources/environments?projectId=' + projectId
+      );
+      setEnvironments(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load environments');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deployEnvironment = async (envId: string) => {
+    try {
+      await apiRequest('/api/projectResources/environments/' + envId + '/deploy', {
+        method: 'POST',
+      });
+      await loadEnvironments();
+    } catch (err: any) {
+      setError(err.message || 'Failed to deploy environment');
     }
   };
 
@@ -116,7 +129,10 @@ const EnvironmentManagement: React.FC<EnvironmentManagementProps> = ({ projectId
               <div className="text-xs text-gray-500">
                 Created: {new Date(env.createdAt).toLocaleDateString()}
               </div>
-              <button className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200">
+              <button className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => deployEnvironment(env._id)}>
+                Deploy
+              </button>
+              <button className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200">
                 <Settings className="w-4 h-4" />
                 Configure
               </button>

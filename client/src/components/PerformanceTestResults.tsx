@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Zap, Activity, TrendingUp, Clock, Users, AlertTriangle, Download, RefreshCw, Play } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { Zap, Activity, TrendingUp, Clock, Users, AlertTriangle, CheckCircle, Download, RefreshCw, Play } from 'lucide-react';
+import { apiRequest } from '@src/services/api';
 
 interface PerformanceTestResultsProps {
   projectId: string;
@@ -47,8 +47,10 @@ const PerformanceTestResults: React.FC<PerformanceTestResultsProps> = ({ project
   const loadTests = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setTests([]);
+      const data = await apiRequest<PerformanceTest[]>(
+        '/api/projectResources/performance-tests?projectId=' + projectId
+      );
+      setTests(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load test results');
     } finally {

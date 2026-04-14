@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Activity, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, BarChart3 } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface AgentHealthMonitoringProps {
   projectId?: string;
@@ -48,8 +48,14 @@ const AgentHealthMonitoring: React.FC<AgentHealthMonitoringProps> = ({ projectId
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setMetrics(null);
+      const params = new URLSearchParams();
+      if (projectId) params.set('projectId', projectId);
+      if (agentId) params.set('agentId', agentId);
+      if (agentRole) params.set('agentRole', agentRole);
+      const data = await apiRequest<AgentHealthMetrics>(
+        '/api/agentMonitoring/health?' + params.toString()
+      );
+      setMetrics(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load agent health metrics');
     } finally {

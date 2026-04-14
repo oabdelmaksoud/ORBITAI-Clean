@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Activity, CheckCircle, XCircle, AlertTriangle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface LLMProviderHealthProps {
   provider?: string;
@@ -44,8 +44,11 @@ const LLMProviderHealth: React.FC<LLMProviderHealthProps> = ({ provider }) => {
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setMetrics([]);
+      const providerParam = provider ? '?provider=' + provider : '';
+      const data = await apiRequest<ProviderHealthMetrics[]>(
+        '/api/llmProviderHealth/provider-health' + providerParam
+      );
+      setMetrics(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load provider health');
     } finally {

@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, RefreshCw, CheckCircle, XCircle, Download, Wrench } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface FlakyTestDashboardProps {
   projectId: string;
@@ -31,16 +31,21 @@ const FlakyTestDashboard: React.FC<FlakyTestDashboardProps> = ({ projectId }) =>
   const [loading, setLoading] = useState(false);
   const [tests, setTests] = useState<FlakyTest[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
     loadFlakyTests();
-  }, [projectId]);
+  }, [projectId, filterStatus]);
 
   const loadFlakyTests = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setTests([]);
+      const data = await apiRequest<FlakyTest[]>(
+        '/api/projectResources/flaky-tests?projectId=' +
+          projectId +
+          (filterStatus !== 'all' ? '&status=' + filterStatus : '')
+      );
+      setTests(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load flaky tests');
     } finally {
@@ -80,6 +85,20 @@ const FlakyTestDashboard: React.FC<FlakyTestDashboardProps> = ({ projectId }) =>
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
+
+      <div className="flex gap-2 mb-4">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+        >
+          <option value="all">All Statuses</option>
+          <option value="detected">Detected</option>
+          <option value="fixing">Fixing</option>
+          <option value="fixed">Fixed</option>
+          <option value="ignored">Ignored</option>
+        </select>
+      </div>
 
       {loading ? (
         <div className="text-center py-8">

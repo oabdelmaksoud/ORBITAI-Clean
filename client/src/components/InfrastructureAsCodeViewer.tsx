@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Code, Download, RefreshCw, FileText, Cloud } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface InfrastructureAsCodeViewerProps {
   projectId: string;
@@ -37,8 +37,10 @@ const InfrastructureAsCodeViewer: React.FC<InfrastructureAsCodeViewerProps> = ({
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setTemplates([]);
+      const data = await apiRequest<IaCTemplate[]>(
+        '/api/projectResources/templates?projectId=' + projectId
+      );
+      setTemplates(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load IaC templates');
     } finally {

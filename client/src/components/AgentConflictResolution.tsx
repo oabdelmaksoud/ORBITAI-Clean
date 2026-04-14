@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, XCircle, RefreshCw, Vote, Target } from 'lucide-react';
-import { projectsApi } from '@src/services/api';
+import { apiRequest } from '@src/services/api';
 
 interface AgentConflictResolutionProps {
   projectId: string;
@@ -42,8 +42,10 @@ const AgentConflictResolution: React.FC<AgentConflictResolutionProps> = ({ proje
   const loadConflicts = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
-      setConflicts([]);
+      const data = await apiRequest<AgentConflict[]>(
+        '/api/agentMonitoring/conflicts?projectId=' + projectId
+      );
+      setConflicts(data);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load conflicts');
     } finally {
@@ -53,7 +55,10 @@ const AgentConflictResolution: React.FC<AgentConflictResolutionProps> = ({ proje
 
   const resolveConflict = async (conflictId: string, strategy: string) => {
     try {
-      // In real implementation, call backend to resolve
+      await apiRequest('/api/agentMonitoring/conflicts/' + conflictId + '/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ strategy }),
+      });
       await loadConflicts();
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to resolve conflict');
