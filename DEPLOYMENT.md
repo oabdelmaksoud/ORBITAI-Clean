@@ -461,6 +461,138 @@ proxy_cache_valid 200 60m;
 2. Restart application
 3. Consider increasing server resources
 
+---
+
+## Optional Services
+
+The following services are not required for core functionality but enable additional features.
+
+### Voice Service (Pipecat)
+
+Voice-enabled AI agents use a separately deployed Python service based on [Pipecat](https://github.com/pipecat-ai/pipecat). Without this service all voice endpoints return connection errors.
+
+#### Requirements
+
+- Python 3.11+
+- The `pipecat-ai` package and its audio dependencies
+
+#### Installation
+
+```bash
+# Navigate to the Pipecat service directory (bundled in cua-main/)
+cd cua-main
+
+# Create a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install pipecat-ai
+# or, if a requirements.txt is present:
+pip install -r requirements.txt
+```
+
+#### Configuration
+
+Add the following variables to your `.env` file:
+
+```bash
+PIPECAT_HOST=localhost   # hostname where the Python service runs
+PIPECAT_PORT=8000        # port the Python service listens on
+PIPECAT_ENABLED=true     # set to true to enable voice features
+```
+
+#### Starting the Service
+
+```bash
+# From cua-main/
+source .venv/bin/activate
+python main.py          # or the entry-point script provided in cua-main/
+```
+
+The service exposes a health check at `http://<PIPECAT_HOST>:<PIPECAT_PORT>/health`.
+
+#### Docker (optional)
+
+Add Pipecat to your Compose stack by creating `docker/pipecat.Dockerfile`:
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY cua-main/ .
+RUN pip install pipecat-ai
+CMD ["python", "main.py"]
+```
+
+Then reference it in `docker/docker-compose.yml`:
+
+```yaml
+  pipecat:
+    build:
+      context: ..
+      dockerfile: docker/pipecat.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    profiles:
+      - voice   # start with: docker compose --profile voice up
+```
+
+---
+
+### Neo4j Knowledge Graph (Optional)
+
+Enables cross-project relationship mapping and knowledge graph queries.
+
+```bash
+# Install the driver
+npm install neo4j-driver   # inside server/
+
+# Add to .env
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-neo4j-password
+```
+
+A local Neo4j instance can be started with Docker:
+
+```bash
+docker run -d \
+  --name neo4j \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/your-neo4j-password \
+  neo4j:5
+```
+
+---
+
+### Weaviate Vector Database (Optional)
+
+Enables persistent vector search for the knowledge graph MCP server.
+
+```bash
+# Install the client
+npm install weaviate-client   # inside server/
+
+# Add to .env
+WEAVIATE_URL=http://localhost:8080
+WEAVIATE_API_KEY=your-weaviate-api-key   # leave blank for local unauthenticated instance
+WEAVIATE_CLASS_NAME=KnowledgeBase
+```
+
+A local Weaviate instance can be started with Docker:
+
+```bash
+docker run -d \
+  --name weaviate \
+  -p 8080:8080 \
+  -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true \
+  semitechnologies/weaviate:latest
+```
+
+---
+
 ## Scaling
 
 ### Horizontal Scaling

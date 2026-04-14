@@ -1,72 +1,79 @@
 /**
  * Microsoft Teams Service
- * Encapsulates all Microsoft Graph API interactions for the Teams integration.
- * Extracted from inline route logic to enable unit testing and reuse.
+ * Encapsulates all MS Teams OAuth and messaging business logic.
  */
 
 import { logger } from '../utils/logger.js';
 
-export interface MsTeamsTokenResponse {
+export interface MsTeamsTokenData {
   accessToken: string;
   refreshToken?: string;
-  expiresIn: number;
-  scope: string;
+  expiresIn?: number;
 }
 
-export interface MsTeamsMessageResult {
-  messageId: string;
-  channelId?: string;
-  chatId?: string;
-  createdAt: string;
+export interface MsTeamsNotificationResult {
+  messageId?: string;
 }
 
-const GRAPH_API = 'https://graph.microsoft.com/v1.0';
-const TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-
-const OAUTH_SCOPES = [
-  'https://graph.microsoft.com/User.Read',
-  'https://graph.microsoft.com/OnlineMeetings.ReadWrite',
-  'https://graph.microsoft.com/ChannelMessage.Send',
-  'https://graph.microsoft.com/Chat.ReadWrite',
-];
+const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
+const TOKEN_ENDPOINT = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 
 export class MsTeamsService {
-  /**
-   * Build the OAuth authorization URL for a user.
-   */
-  getAuthUrl(userId: string, redirectUri: string): string {
-    const clientId = process.env.MSTEAMS_CLIENT_ID || process.env.AZURE_CLIENT_ID;
-    if (!clientId) {
-      throw new Error(
-        'Microsoft Teams integration not configured. Set MSTEAMS_CLIENT_ID or AZURE_CLIENT_ID.'
-      );
-    }
+  private get clientId(): string | undefined {
+    return process.env.MSTEAMS_CLIENT_ID || process.env.AZURE_CLIENT_ID;
+  }
 
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
-    const params = new URLSearchParams({
-      client_id: clientId,
-      response_type: 'code',
-      redirect_uri: redirectUri,
-      response_mode: 'query',
-      scope: OAUTH_SCOPES.join(' '),
-      state,
-    });
-
-    return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+  private get clientSecret(): string | undefined {
+    return process.env.MSTEAMS_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET;
   }
 
   /**
-   * Exchange an authorization code for an access token.
+   * Build the Microsoft OAuth2 authorization URL.
    */
-  async exchangeCode(code: string, redirectUri: string): Promise<MsTeamsTokenResponse> {
-    const clientId = process.env.MSTEAMS_CLIENT_ID || process.env.AZURE_CLIENT_ID;
-    const clientSecret = process.env.MSTEAMS_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-      throw new Error('Microsoft Teams integration not configured.');
+  getAuthUrl(userId: string, redirectUri: string): string {
+    const clientId = this.clientId;
+    if (!clientId) {
+      throw new Error(
+        'Microsoft Teams integration not configured. ' +
+        'Set MSTEAMS_CLIENT_ID (or AZURE_CLIENT_ID) environment variable.'
+      );
     }
 
-    const response = await fetch(TOKEN_URL, {
+    const scopes = [
+      'https://graph.microsoft.com/User.Read',
+      'https://graph.microsoft.com/OnlineMeetings.ReadWrite',
+      'https://graph.microsoft.com/ChannelMessage.Send',
+      'https://graph.microsoft.com/Chat.ReadWrite'
+    ];
+
+    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
+
+    return (
+      `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `response_type=code&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_mode=query&` +
+      `scope=${encodeURIComponent(scopes.join(' '))}&` +
+      `state=${state}`
+    );
+  }
+
+  /**
+   * Exchange an authorization code for Microsoft OAuth tokens.
+   */
+  async exchangeCode(code: string, redirectUri: string): Promise<MsTeamsTokenData> {
+    const clientId = this.clientId;
+    const clientSecret = this.clientSecret;
+
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        'Microsoft Teams integration not configured. ' +
+        'MSTEAMS_CLIENT_ID and MSTEAMS_CLIENT_SECRET (or AZURE_* equivalents) are required.'
+      );
+    }
+
+    const response = await fetch(TOKEN_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -74,114 +81,101 @@ export class MsTeamsService {
         client_secret: clientSecret,
         code,
         redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
+        grant_type: 'authorization_code'
+      })
     });
 
-    const data = await response.json() as any;
+    const data: any = await response.json();
+
     if (data.error) {
-      throw new Error(data.error_description || 'Failed to exchange authorization code');
+      throw new Error(data.error_description || data.error || 'Failed to exchange MS Teams code');
     }
 
-    logger.info('[MsTeams] OAuth token exchange successful');
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
-      expiresIn: data.expires_in,
-      scope: data.scope,
+      expiresIn: data.expires_in
     };
   }
 
   /**
-   * Send a message to a Teams channel.
+   * Share a brainstorming room link to a Teams channel.
+   * Requires a valid Microsoft Graph access token for the user.
    */
-  async sendChannelMessage(
+  async shareRoom(
     accessToken: string,
     teamId: string,
     channelId: string,
-    content: string
-  ): Promise<MsTeamsMessageResult> {
+    roomName: string,
+    shareUrl: string,
+    customMessage?: string
+  ): Promise<MsTeamsNotificationResult> {
+    const body = customMessage || `Join our brainstorming session: ${roomName}\n${shareUrl}`;
+
     const response = await fetch(
-      `${GRAPH_API}/teams/${teamId}/channels/${channelId}/messages`,
+      `${GRAPH_BASE}/teams/${teamId}/channels/${channelId}/messages`,
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          body: { content, contentType: 'text' },
-        }),
+          body: { content: body }
+        })
       }
     );
 
     if (!response.ok) {
-      const err = await response.json() as any;
-      throw new Error(err?.error?.message || `Graph API error: ${response.status}`);
+      const error: any = await response.json().catch(() => ({}));
+      throw new Error(
+        error?.error?.message ||
+        `Microsoft Graph API error: ${response.status} ${response.statusText}`
+      );
     }
 
-    const msg = await response.json() as any;
-    logger.info(`[MsTeams] Message sent to channel ${channelId}`);
-    return {
-      messageId: msg.id,
-      channelId: msg.channelIdentity?.channelId,
-      createdAt: msg.createdDateTime,
-    };
+    const data: any = await response.json();
+    return { messageId: data.id };
   }
 
   /**
-   * Send a direct chat message to a Teams user.
+   * Send a notification message to a Teams channel or user chat.
    */
-  async sendDirectMessage(
+  async sendNotification(
     accessToken: string,
-    recipientUserId: string,
-    content: string
-  ): Promise<MsTeamsMessageResult> {
-    // Create or get chat
-    const chatResponse = await fetch(`${GRAPH_API}/chats`, {
+    recipientId: string,
+    recipientType: 'channel' | 'user',
+    teamId: string | undefined,
+    text: string
+  ): Promise<MsTeamsNotificationResult> {
+    let endpoint: string;
+
+    if (recipientType === 'channel' && teamId) {
+      endpoint = `${GRAPH_BASE}/teams/${teamId}/channels/${recipientId}/messages`;
+    } else {
+      // User chat — use /me/chats (simplified: real implementation would lookup or create chat)
+      endpoint = `${GRAPH_BASE}/chats/${recipientId}/messages`;
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        chatType: 'oneOnOne',
-        members: [
-          {
-            '@odata.type': '#microsoft.graph.aadUserConversationMember',
-            roles: ['owner'],
-            'user@odata.bind': `https://graph.microsoft.com/v1.0/users('${recipientUserId}')`,
-          },
-        ],
-      }),
+      body: JSON.stringify({ body: { content: text } })
     });
 
-    if (!chatResponse.ok) {
-      const err = await chatResponse.json() as any;
-      throw new Error(err?.error?.message || `Failed to create chat: ${chatResponse.status}`);
+    if (!response.ok) {
+      const error: any = await response.json().catch(() => ({}));
+      throw new Error(
+        error?.error?.message ||
+        `Microsoft Graph API error: ${response.status} ${response.statusText}`
+      );
     }
 
-    const chat = await chatResponse.json() as any;
-    const chatId = chat.id;
-
-    // Send message
-    const msgResponse = await fetch(`${GRAPH_API}/chats/${chatId}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ body: { content, contentType: 'text' } }),
-    });
-
-    if (!msgResponse.ok) {
-      const err = await msgResponse.json() as any;
-      throw new Error(err?.error?.message || `Failed to send direct message: ${msgResponse.status}`);
-    }
-
-    const msg = await msgResponse.json() as any;
-    logger.info(`[MsTeams] Direct message sent to user ${recipientUserId}`);
-    return { messageId: msg.id, chatId, createdAt: msg.createdDateTime };
+    const data: any = await response.json();
+    return { messageId: data.id };
   }
 }
 

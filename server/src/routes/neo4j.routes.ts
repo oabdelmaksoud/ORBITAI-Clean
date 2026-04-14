@@ -217,6 +217,51 @@ router.post('/shortest-path', async (req: AdminRequest, res, next) => {
 });
 
 /**
+ * GET /api/admin/neo4j/knowledge-graph/:projectId
+ * Get all nodes and relationships for a specific project
+ */
+router.get('/knowledge-graph/:projectId', async (req: AdminRequest, res, next) => {
+  try {
+    if (!neo4jService.isAvailable()) {
+      throw new AppError('Neo4j service not available', 503);
+    }
+
+    const { projectId } = req.params;
+    const graph = await neo4jService.getKnowledgeGraph(projectId);
+
+    res.json({
+      success: true,
+      data: graph
+    });
+  } catch (error: unknown) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/neo4j/cross-project/:label
+ * Find cross-project relationships for nodes of a given label
+ */
+router.get('/cross-project/:label', async (req: AdminRequest, res, next) => {
+  try {
+    if (!neo4jService.isAvailable()) {
+      throw new AppError('Neo4j service not available', 503);
+    }
+
+    const { label } = req.params;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+    const graph = await neo4jService.getCrossProjectRelationships(label, limit);
+
+    res.json({
+      success: true,
+      data: graph
+    });
+  } catch (error: unknown) {
+    next(error);
+  }
+});
+
+/**
  * POST /api/admin/neo4j/query
  * Execute custom Cypher query
  */
