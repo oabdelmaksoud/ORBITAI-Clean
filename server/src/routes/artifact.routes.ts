@@ -9,6 +9,7 @@ import { validateArtifactCreation, getMaxFileSizeBytes } from '../utils/packageL
 import { requirementsValidationService } from '../services/requirementsValidation.service.js';
 import { Artifact } from '../models/Artifact.model.js';
 import { logger } from '../utils/logger.js';
+import { vectorSearchService } from '../services/vectorSearch.service.js';
 
 const router = express.Router();
 
@@ -94,6 +95,25 @@ router.post('/upload/:projectId',
       project.artifacts.push(artifact);
       project.lastModified = new Date();
       await project.save();
+
+      // Index artifact in vector search (Weaviate if configured, in-memory fallback otherwise)
+      try {
+        await vectorSearchService.addDocument({
+          id: artifact.id,
+          content: typeof artifact.content === 'string'
+            ? Buffer.from(artifact.content, 'base64').toString('utf8').substring(0, 8000)
+            : '',
+          metadata: {
+            title: artifact.title,
+            type: artifact.type,
+            projectId: String(project._id),
+            userId,
+          },
+        });
+      } catch (indexError: any) {
+        // Indexing is non-critical — don't fail the upload
+        logger.warn('Failed to index artifact in vector search:', indexError.message);
+      }
 
       // Auto-link to requirements if this is a code or test artifact
       let suggestedLinks: Array<{ requirementId: string; confidence: number; reason: string }> = [];

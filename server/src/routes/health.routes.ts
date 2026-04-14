@@ -10,6 +10,7 @@ import mongoose from 'mongoose';
 import { redisService } from '../services/redis.service.js';
 import { e2bService } from '../services/e2b.service.js';
 import { config } from '../config/env.js';
+import { weaviateService } from '../services/weaviate.service.js';
 
 const router = express.Router();
 
@@ -26,6 +27,10 @@ interface HealthStatus {
     redis?: {
       status: 'connected' | 'disconnected' | 'error';
       latency?: number;
+    };
+    weaviate?: {
+      status: 'available' | 'unavailable' | 'error';
+      configured: boolean;
     };
     externalApis?: {
       gemini?: {
@@ -133,6 +138,24 @@ router.get('/detailed', async (_req, res) => {
       status: 'error'
     };
     // Redis errors shouldn't degrade overall status since it's optional
+  }
+
+  // Check Weaviate vector database (optional service)
+  try {
+    const weaviateConfigured = !!config.weaviateUrl;
+    if (weaviateConfigured) {
+      await weaviateService.initialize();
+    }
+    healthStatus.dependencies.weaviate = {
+      status: weaviateConfigured && weaviateService.isAvailable() ? 'available' : 'unavailable',
+      configured: weaviateConfigured,
+    };
+  } catch (error) {
+    healthStatus.dependencies.weaviate = {
+      status: 'error',
+      configured: !!config.weaviateUrl,
+    };
+    // Weaviate is optional — don't degrade overall health
   }
 
   // Check external APIs
