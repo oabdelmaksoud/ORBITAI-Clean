@@ -331,6 +331,76 @@ docker stats
 htop
 ```
 
+## Pipecat Voice Service (Optional)
+
+OrbitAI's voice-agent feature (`/api/pipecat`) is a thin Node.js bridge to a **separate Python process** that runs on `PIPECAT_PORT` (default: 8000). You must start this service independently if you want voice conversations.
+
+### Requirements
+
+- Python 3.11+
+- An OpenAI API key (used for Whisper STT and TTS)
+
+### Setup
+
+1. **Navigate to the Pipecat service directory:**
+   ```bash
+   cd cua-main   # or the pipecat/ sub-directory if present
+   ```
+
+2. **Create and activate a virtual environment:**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate   # Windows: .venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set the OpenAI API key:**
+   ```bash
+   export OPENAI_API_KEY=sk-your-openai-key
+   ```
+
+5. **Start the Pipecat server:**
+   ```bash
+   python main.py --port 8000
+   ```
+
+6. **Configure the Node.js backend** (in your `.env`):
+   ```
+   PIPECAT_HOST=localhost
+   PIPECAT_PORT=8000
+   PIPECAT_ENABLED=true
+   OPENAI_API_KEY=sk-your-openai-key
+   ```
+
+### Docker Compose
+
+To include the Pipecat service in Docker Compose, add the following to `docker/docker-compose.yml`:
+
+```yaml
+  pipecat:
+    build:
+      context: ../cua-main
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: unless-stopped
+```
+
+### Verifying the Voice Service
+
+```bash
+curl http://localhost:3001/api/pipecat/health
+# Expected: { "success": true, "enabled": true, "serviceUrl": "http://localhost:8000" }
+```
+
+---
+
 ## Security Checklist
 
 - [ ] Change all default secrets

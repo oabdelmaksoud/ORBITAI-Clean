@@ -520,25 +520,13 @@ class DeploymentOrchestratorService {
 
       logger.info('🚀 Deploying to AWS...');
 
-      // AWS deployment would involve:
-      // 1. Create Elastic Beanstalk app
-      // 2. Upload code
-      // 3. Deploy
-      // 4. Configure domain
-
-      const liveUrl = `https://${config.projectName.toLowerCase().replace(/\s+/g, '-')}-${config.environment}.elasticbeanstalk.com`;
-
-      return {
-        success: true,
-        liveUrl,
-        metadata: {
-          platform: 'aws',
-          service: 'Elastic Beanstalk',
-          region: config.region || 'us-east-1',
-          cdn: true,
-          autoscaling: true,
-        },
-      };
+      // AWS SDK (Elastic Beanstalk) integration is not yet implemented.
+      // Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your environment,
+      // then implement the SDK calls to create/update an EB environment.
+      throw new Error(
+        'AWS Elastic Beanstalk deployment is not yet implemented. ' +
+        'AWS SDK integration is pending — contributions welcome.'
+      );
     } catch (error: unknown) {
       return {
         success: false,
@@ -558,24 +546,13 @@ class DeploymentOrchestratorService {
 
       logger.info('🚀 Deploying to Google Cloud...');
 
-      // GCP deployment would involve:
-      // 1. Build Docker image
-      // 2. Push to Container Registry
-      // 3. Deploy to Cloud Run
-      // 4. Configure domain
-
-      const liveUrl = `https://${config.projectName.toLowerCase().replace(/\s+/g, '-')}-${this.gcpProjectId}.run.app`;
-
-      return {
-        success: true,
-        liveUrl,
-        metadata: {
-          platform: 'gcp',
-          service: 'Cloud Run',
-          region: config.region || 'us-central1',
-          autoscaling: true,
-        },
-      };
+      // GCP Cloud Run deployment is not yet implemented.
+      // Set GCP_PROJECT_ID and configure gcloud credentials,
+      // then implement Cloud Build + Cloud Run deploy steps.
+      throw new Error(
+        'Google Cloud Run deployment is not yet implemented. ' +
+        'GCP SDK integration is pending — contributions welcome.'
+      );
     } catch (error: unknown) {
       return {
         success: false,

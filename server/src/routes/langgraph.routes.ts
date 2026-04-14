@@ -4,7 +4,9 @@
  */
 
 import express from 'express';
-import { langgraphService } from '../services/langgraph.service.js';
+import { HumanMessage } from '@langchain/core/messages';
+import { langgraphService, GraphState } from '../services/langgraph.service.js';
+import { vectorSearchService } from '../services/vectorSearch.service.js';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
@@ -191,28 +193,51 @@ router.post('/workflows/multi-agent', async (req, res, _next) => {
 });
 
 /**
- * Create a RAG workflow
+ * Create and execute a RAG workflow
  * POST /api/langgraph/workflows/rag
+ *
+ * Body: { workflowId, workflowName, query, model?, limit?, filters? }
+ * - query    : the user question to answer using retrieved context
+ * - limit    : max number of documents to retrieve (default 5)
+ * - filters  : optional { projectId, userId, type, phase }
  */
 router.post('/workflows/rag', async (req, res, _next) => {
   try {
-    const { workflowId, workflowName, retrievalHandler, model } = req.body;
+    const { workflowId, workflowName, query, model, limit = 5, filters } = req.body;
 
-    if (!workflowId || !workflowName) {
+    if (!workflowId || !workflowName || !query) {
       res.status(400).json({
         success: false,
-        message: 'workflowId and workflowName are required',
+        message: 'workflowId, workflowName, and query are required',
       });
       return;
     }
 
-    // Note: retrievalHandler would need to be a function reference
-    // In a real implementation, you'd store handlers and reference them
+    // Build retrieval handler backed by vectorSearch service
+    const retrievalHandler = async (state: GraphState): Promise<Partial<GraphState>> => {
+      const searchQuery = (state as any).query as string || query;
+      const results = await vectorSearchService.vectorSearch(searchQuery, limit, filters);
+      const context = results
+        .map((d: any, i: number) => `[${i + 1}] ${d.content}`)
+        .join('\n\n');
+      return { ...state, context, retrievedDocs: results };
+    };
+
+    await langgraphService.createRAGWorkflow(workflowId, workflowName, retrievalHandler, model);
+
+    const initialState: GraphState = {
+      messages: [new HumanMessage(query)],
+      query,
+    };
+
+    const result = await langgraphService.executeWorkflow(workflowId, initialState);
+
     res.json({
       success: true,
-      message: 'RAG workflow creation - retrieval handler must be implemented',
+      message: 'RAG workflow executed successfully',
+      data: result,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     logger.error('Failed to create RAG workflow:', error);
     res.status(500).json({
       success: false,
