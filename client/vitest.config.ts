@@ -49,6 +49,7 @@ export default defineConfig({
         alias: {
             '@': path.resolve(__dirname, '.'),
             '@src': path.resolve(__dirname, './src'),
+            '@orbitai/shared': path.resolve(__dirname, '../shared/index.ts'),
         },
     },
 });
