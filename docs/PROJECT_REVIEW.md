@@ -5,6 +5,26 @@
 
 ---
 
+## Gap Resolution Status
+
+| # | Area | Issue | Status |
+|---|------|--------|--------|
+| 1 | A/B Tests | Data lost on restart (in-memory Map) | **Fixed** — `ABTest.model.ts` |
+| 2 | Voice Sessions | Lost on restart (in-memory Map) | **Fixed** — `VoiceSession.model.ts` |
+| 3 | Pipecat | No docs on Python service setup | **Fixed** — `DEPLOYMENT.md §Pipecat` |
+| 4 | Pipecat | Missing env vars in `.env.example` | **Fixed** — `PIPECAT_HOST/PORT/ENABLED` added |
+| 5 | LangGraph | RAG workflow returned stub | **Fixed** — `vectorSearch` wired to `createRAGWorkflow` |
+| 6 | Teams | Logic inline in routes | **Fixed** — `msteams.service.ts` extracted |
+| 7 | Slack | Logic inline in routes | **Fixed** — `slack.service.ts` extracted |
+| 8 | AWS/GCP | Fake success URL returned | **Fixed** — throws "not yet implemented" |
+| 9 | Multi-cloud | Load-balancer route propagated 500 | **Fixed** — returns 501 |
+| 10 | `.env.example` | 19 env vars missing | **Fixed** — all optional services documented |
+| 11 | POLICY.md | Referenced in README but missing | **Fixed** — `POLICY.md` created |
+| 12 | ARCHITECTURE.md | Referenced in WALKTHROUGH but missing | **Fixed** — `docs/ARCHITECTURE.md` created |
+| 13 | PROJECT_REVIEW.md | Referenced in WALKTHROUGH but missing | **Fixed** — this file |
+
+---
+
 ## Code Quality Metrics
 
 | Area | Files | LOC (approx.) | Notes |

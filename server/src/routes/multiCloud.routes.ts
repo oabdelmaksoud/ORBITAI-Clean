@@ -21,13 +21,8 @@ router.post('/deploy', authenticateToken, checkFeatureAccess('multi-cloud'), asy
 });
 
 // POST /api/multi-cloud/load-balancer
-router.post('/load-balancer', authenticateToken, checkFeatureAccess('multi-cloud'), async (req, res, next) => {
-  try {
-    const result = await multiCloudService.configureLoadBalancer(req.body);
-    res.status(200).json({ success: result });
-  } catch (err) {
-    next(err);
-  }
+router.post('/load-balancer', authenticateToken, checkFeatureAccess('multi-cloud'), async (_req, res) => {
+  res.status(501).json({ success: false, error: 'Not yet implemented: load balancer configuration' });
 });
 
 // GET /api/multi-cloud/status/:deploymentId

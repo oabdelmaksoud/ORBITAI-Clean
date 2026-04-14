@@ -97,6 +97,27 @@ The LLM Router is a central component that intelligently distributes AI workload
 2. **Internal Router** — used by backend services (LangChain, LangGraph, agents) to auto-select a model.
 3. **A/B Test Engine** — persists test configurations and metrics in MongoDB (`ABTest` collection).
 
+Supported providers:
+
+| Provider | Identifier |
+|----------|------------|
+| OpenAI | `openai` |
+| Anthropic | `anthropic` |
+| Google Gemini | `gemini` |
+| DeepSeek | `deepseek` |
+| Grok (xAI) | `grok` |
+| Mistral | `mistral` |
+| Qwen (Alibaba) | `qwen` |
+| OpenRouter | `openrouter` |
+| Groq | `groq` |
+| Vertex AI | `vertex` |
+| Azure OpenAI | `azure` |
+| Ollama (local) | `ollama` |
+| VLLM (local) | `vllm` |
+| OpenAI-Compatible | `openai-compatible` |
+
+Routing pipeline: `TaskAnalyzer` → `RoutingEngine` → provider adapter → `ResponseCache` / `CircuitBreaker`
+
 ### Agent Engine
 
 The multi-agent system is built on top of LangGraph and CrewAI:
