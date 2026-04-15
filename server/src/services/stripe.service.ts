@@ -21,7 +21,7 @@ async function getStripe() {
       const stripeImport = await import('stripe');
       StripeModule = stripeImport.default || stripeImport;
     }
-    
+
     if (!process.env.STRIPE_SECRET_KEY) {
       logger.warn('STRIPE_SECRET_KEY not configured. Stripe integration will be disabled.');
       return null;
@@ -30,7 +30,7 @@ async function getStripe() {
     stripeInstance = new StripeModule(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2024-12-18.acacia',
     });
-    
+
     return stripeInstance;
   } catch (error: unknown) {
     logger.warn('Stripe package not installed. Run: npm install stripe');
@@ -57,7 +57,9 @@ class StripeService {
   async createCheckoutSession(params: CreateCheckoutSessionParams): Promise<any> {
     const stripe = await getStripe();
     if (!stripe) {
-      throw new Error('Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.');
+      throw new Error(
+        'Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.'
+      );
     }
 
     try {
@@ -78,8 +80,8 @@ class StripeService {
           email: user.email,
           name: user.name,
           metadata: {
-            userId: user._id.toString()
-          }
+            userId: user._id.toString(),
+          },
         });
         customerId = customer.id;
         user.stripeCustomerId = customerId;
@@ -95,25 +97,25 @@ class StripeService {
             price_data: {
               currency: 'usd',
               product_data: {
-                name: pkg.displayName || pkg.name,
-                description: pkg.description || ''
+                name: pkg.displayName || (pkg as any).name,
+                description: pkg.description || '',
               },
               recurring: {
                 interval: pkg.billingCycle === 'monthly' ? 'month' : 'year',
-                interval_count: 1
+                interval_count: 1,
               },
-              unit_amount: Math.round(pkg.price * 100) // Convert to cents
+              unit_amount: Math.round(pkg.price * 100), // Convert to cents
             },
-            quantity: 1
-          }
+            quantity: 1,
+          },
         ],
         mode: 'subscription',
         success_url: params.successUrl,
         cancel_url: params.cancelUrl,
         metadata: {
           userId: params.userId,
-          packageId: params.packageId
-        }
+          packageId: params.packageId,
+        },
       });
 
       logger.info(`Created Stripe checkout session: ${session.id} for user: ${params.userId}`);
@@ -136,20 +138,20 @@ class StripeService {
     try {
       switch (event.type) {
         case 'checkout.session.completed':
-          await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+          await this.handleCheckoutCompleted(event.data.object as any);
           break;
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
-          await this.handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+          await this.handleSubscriptionUpdated(event.data.object as any);
           break;
         case 'customer.subscription.deleted':
-          await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+          await this.handleSubscriptionDeleted(event.data.object as any);
           break;
         case 'invoice.payment_succeeded':
-          await this.handlePaymentSucceeded(event.data.object as Stripe.Invoice);
+          await this.handlePaymentSucceeded(event.data.object as any);
           break;
         case 'invoice.payment_failed':
-          await this.handlePaymentFailed(event.data.object as Stripe.Invoice);
+          await this.handlePaymentFailed(event.data.object as any);
           break;
         default:
           logger.debug(`Unhandled Stripe webhook event: ${event.type}`);
@@ -290,32 +292,36 @@ class StripeService {
 
       // Update subscription with new price
       const updated = await stripe.subscriptions.update(params.subscriptionId, {
-        items: [{
-          id: subscription.items.data[0].id,
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: pkg.displayName || pkg.name,
-              description: pkg.description || ''
+        items: [
+          {
+            id: subscription.items.data[0].id,
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: pkg.displayName || (pkg as any).name,
+                description: pkg.description || '',
+              },
+              recurring: {
+                interval: pkg.billingCycle === 'monthly' ? 'month' : 'year',
+                interval_count: 1,
+              },
+              unit_amount: Math.round(pkg.price * 100),
             },
-            recurring: {
-              interval: pkg.billingCycle === 'monthly' ? 'month' : 'year',
-              interval_count: 1
-            },
-            unit_amount: Math.round(pkg.price * 100)
-          }
-        }],
-        proration_behavior: 'always_invoice'
+          },
+        ],
+        proration_behavior: 'always_invoice',
       });
 
       // Update user package
       const user = await User.findOne({ stripeSubscriptionId: params.subscriptionId });
       if (user) {
-        user.plan = params.newPackageId;
+        user.plan = params.newPackageId as any;
         await user.save();
       }
 
-      logger.info(`Updated subscription ${params.subscriptionId} to package ${params.newPackageId}`);
+      logger.info(
+        `Updated subscription ${params.subscriptionId} to package ${params.newPackageId}`
+      );
       return updated;
     } catch (error: unknown) {
       logger.error(`Failed to update subscription:`, error);
@@ -325,7 +331,3 @@ class StripeService {
 }
 
 export const stripeService = new StripeService();
-
-
-
-

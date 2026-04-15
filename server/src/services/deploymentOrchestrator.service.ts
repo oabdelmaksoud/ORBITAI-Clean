@@ -4,10 +4,8 @@
  * Week 2 Implementation - Deployment Automation
  */
 
+import { infrastructureAsCodeService } from './infrastructureAsCode.service.js';
 import { logger } from '../utils/logger.js';
-import { codeGeneratorService } from './codeGenerator.service.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
 
@@ -129,7 +127,7 @@ class DeploymentOrchestratorService {
           // IaC templates would be added to the code repository
         }
       } catch (error: unknown) {
-        logger.warn('IaC generation failed (non-critical):', error.message);
+        logger.warn('IaC generation failed (non-critical):', (error instanceof Error ? error.message : String(error)));
       }
 
       // Step 4: Deploy to platform
@@ -217,15 +215,15 @@ class DeploymentOrchestratorService {
         estimatedCost: this.estimateMonthlyCost(config.platform),
       };
     } catch (error: unknown) {
-      logger.error(`❌ Deployment failed: ${error.message}`);
-      logs.push(`❌ Error: ${error.message}`);
+      logger.error(`❌ Deployment failed: ${(error instanceof Error ? error.message : String(error))}`);
+      logs.push(`❌ Error: ${(error instanceof Error ? error.message : String(error))}`);
 
       return {
         deploymentId,
         projectId: config.projectId,
         platform: config.platform,
         status: 'failed',
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
         logs,
       };
     }
@@ -276,7 +274,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -285,7 +283,7 @@ class DeploymentOrchestratorService {
    * Push generated code to GitHub
    */
   private async pushCodeToGithub(
-    codeArtifactId: string,
+    _codeArtifactId: string,
     repoUrl: string,
     projectName: string
   ): Promise<any> {
@@ -322,7 +320,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -411,7 +409,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -447,7 +445,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to Railway
    */
-  private async deployToRailway(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToRailway(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       if (!this.railwayToken) {
         throw new Error('RAILWAY_API_TOKEN not configured');
@@ -504,7 +502,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -512,7 +510,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to AWS
    */
-  private async deployToAws(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToAws(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       if (!this.awsAccessKey || !this.awsSecretKey) {
         throw new Error('AWS credentials not configured');
@@ -542,7 +540,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -550,7 +548,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to Google Cloud
    */
-  private async deployToGcp(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToGcp(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       if (!this.gcpProjectId) {
         throw new Error('GCP_PROJECT_ID not configured');
@@ -579,7 +577,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -587,7 +585,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to Render
    */
-  private async deployToRender(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToRender(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       logger.info('🚀 Deploying to Render...');
 
@@ -610,7 +608,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }
@@ -642,7 +640,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       };
     }
   }

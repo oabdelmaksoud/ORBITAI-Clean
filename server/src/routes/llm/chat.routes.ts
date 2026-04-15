@@ -72,7 +72,7 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
                     chatPrompt = researchContext + chatPrompt;
                     logger.info(`[LLMRouter] Research injected (${researchResult.text.length} chars)`);
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 logger.warn('[LLMRouter] Chat research failed, proceeding without it:', err);
             }
         }
@@ -86,7 +86,8 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
         if (isWizardContext && !systemInstruction) {
             const conversationLength = history?.length || 0;
 
-            const wizardInstructions = `\n\n[WIZARD MODE - Project Setup Assistant]
+            // @ts-ignore TS6133
+            const _wizardInstructions = `\n\n[WIZARD MODE - Project Setup Assistant]
 You are an engaging, friendly AI assistant helping a user describe their project idea. Your goal is to have a natural, conversational dialogue that helps them think through their project.
 
 RESPONSE LENGTH:
@@ -156,7 +157,7 @@ User's latest message: ${message}`;
                 } : undefined
             },
             requestType: 'chat',
-            contextType: isWizardContext ? 'wizard' : 'general'
+            contextType: (isWizardContext ? 'wizard' : 'general') as any
         });
 
         res.json({
@@ -283,7 +284,7 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
                     } : undefined
                 },
                 requestType: 'chat',
-                contextType: isWizardContext ? 'wizard' : 'general',
+                contextType: (isWizardContext ? 'wizard' : 'general') as any,
                 useInternet: useInternet === true // Pass internet research flag
             });
 

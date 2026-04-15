@@ -23,8 +23,9 @@ router.use(requireAdmin);
  */
 router.post('/recommendations', async (req, res) => {
   try {
+    // @ts-ignore TS6198
     const { timeRange, filters } = req.body;
-    
+
     const currentSettings = await llmRouterSettingsService.getEffectiveSettings();
     const recommendations = await llmRouterAIService.generateRecommendations(currentSettings);
 
@@ -40,14 +41,14 @@ router.post('/recommendations', async (req, res) => {
         recommendationType: rec.type,
         suggestedChanges: rec.suggestedChanges,
         detectedAt: new Date(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Expire after 7 days
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expire after 7 days
       });
     }
 
     res.json({ recommendations });
   } catch (error: unknown) {
     logger.error('Failed to get AI recommendations:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -60,7 +61,8 @@ router.post('/generate-rule', async (req, res) => {
     const { description, context } = req.body;
 
     if (!description || typeof description !== 'string') {
-      return res.status(400).json({ error: 'Description is required' });
+      res.status(400).json({ error: 'Description is required' });
+      return;
     }
 
     const result = await llmRouterNLService.generateRuleFromDescription(description, context);
@@ -68,7 +70,7 @@ router.post('/generate-rule', async (req, res) => {
     res.json(result);
   } catch (error: unknown) {
     logger.error('Failed to generate rule from natural language:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -79,10 +81,10 @@ router.post('/generate-rule', async (req, res) => {
 router.get('/insights', async (req, res) => {
   try {
     const { start, end } = req.query;
-    
+
     const timeRange = {
       start: start ? new Date(start as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      end: end ? new Date(end as string) : new Date()
+      end: end ? new Date(end as string) : new Date(),
     };
 
     const insights = await llmRouterAIService.getInsights(timeRange);
@@ -90,11 +92,11 @@ router.get('/insights', async (req, res) => {
 
     res.json({
       insights,
-      patterns: patterns.slice(0, 20) // Top 20 patterns
+      patterns: patterns.slice(0, 20), // Top 20 patterns
     });
   } catch (error: unknown) {
     logger.error('Failed to get AI insights:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -105,10 +107,10 @@ router.get('/insights', async (req, res) => {
 router.get('/anomalies', async (req, res) => {
   try {
     const { start, end } = req.query;
-    
+
     const timeRange = {
       start: start ? new Date(start as string) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      end: end ? new Date(end as string) : new Date()
+      end: end ? new Date(end as string) : new Date(),
     };
 
     const anomalies = await llmRouterAIService.detectAnomalies(timeRange);
@@ -119,21 +121,26 @@ router.get('/anomalies', async (req, res) => {
         type: 'anomaly',
         title: `${anomaly.type}: ${anomaly.description}`,
         description: anomaly.description,
-        priority: anomaly.severity === 'critical' ? 'high' : anomaly.severity === 'warning' ? 'medium' : 'low',
+        priority:
+          anomaly.severity === 'critical'
+            ? 'high'
+            : anomaly.severity === 'warning'
+              ? 'medium'
+              : 'low',
         confidence: 0.8,
         status: 'pending',
         anomalyType: anomaly.type,
         severity: anomaly.severity,
         metrics: anomaly.metrics,
         detectedAt: anomaly.detectedAt,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Expire after 30 days
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Expire after 30 days
       });
     }
 
     res.json({ anomalies });
   } catch (error: unknown) {
     logger.error('Failed to get anomalies:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -144,15 +151,17 @@ router.get('/anomalies', async (req, res) => {
 router.post('/auto-tune', async (req, res) => {
   try {
     const { timeRange, options } = req.body;
-    
+
     const defaultTimeRange = {
       start: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      end: new Date()
+      end: new Date(),
     };
 
-    const metrics = await llmRouterAutoTuneService.monitorPerformance(timeRange || defaultTimeRange);
+    const metrics = await llmRouterAutoTuneService.monitorPerformance(
+      timeRange || defaultTimeRange
+    );
     const currentSettings = await llmRouterSettingsService.getEffectiveSettings();
-    
+
     const result = await llmRouterAutoTuneService.autoTune(currentSettings, metrics, options);
 
     // Store auto-tune result
@@ -168,16 +177,16 @@ router.post('/auto-tune', async (req, res) => {
         previousMetrics: {
           avgLatency: metrics.avgLatency,
           avgCost: metrics.avgCost,
-          successRate: metrics.successRate
+          successRate: metrics.successRate,
         },
-        detectedAt: new Date()
+        detectedAt: new Date(),
       });
     }
 
     res.json(result);
   } catch (error: unknown) {
     logger.error('Failed to trigger auto-tuning:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -187,20 +196,31 @@ router.post('/auto-tune', async (req, res) => {
  */
 router.get('/predict', async (req, res) => {
   try {
-    const { agentRole, taskType, complexity, estimatedTokens, requiredCapabilities, userId, costPreference, maxLatency } = req.query;
+    const {
+      agentRole,
+      taskType,
+      complexity,
+      estimatedTokens,
+      requiredCapabilities,
+      userId,
+      costPreference,
+      maxLatency,
+    } = req.query;
 
     const taskAnalysis = {
       agentRole: agentRole as string | undefined,
       taskType: taskType as string | undefined,
       complexity: complexity as 'simple' | 'moderate' | 'complex' | undefined,
       estimatedTokens: estimatedTokens ? parseInt(estimatedTokens as string) : undefined,
-      requiredCapabilities: requiredCapabilities ? (requiredCapabilities as string).split(',') : undefined
+      requiredCapabilities: requiredCapabilities
+        ? (requiredCapabilities as string).split(',')
+        : undefined,
     };
 
     const context = {
       userId: userId as string | undefined,
       costPreference: costPreference as 'low' | 'balanced' | 'quality' | undefined,
-      maxLatency: maxLatency ? parseInt(maxLatency as string) : undefined
+      maxLatency: maxLatency ? parseInt(maxLatency as string) : undefined,
     };
 
     const prediction = await llmRouterAIService.predictOptimalModel(taskAnalysis, context);
@@ -217,13 +237,13 @@ router.get('/predict', async (req, res) => {
       predictedCost: prediction.estimatedCost,
       predictedLatency: prediction.estimatedLatency,
       detectedAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expire after 24 hours
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Expire after 24 hours
     });
 
     res.json({ prediction });
   } catch (error: unknown) {
     logger.error('Failed to predict optimal model:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -236,13 +256,14 @@ router.post('/apply-recommendations', async (req, res) => {
     const { recommendationIds } = req.body;
 
     if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
-      return res.status(400).json({ error: 'recommendationIds array is required' });
+      res.status(400).json({ error: 'recommendationIds array is required' });
+      return;
     }
 
     const recommendations = await RouterAIInsights.find({
       _id: { $in: recommendationIds },
       type: 'recommendation',
-      status: 'pending'
+      status: 'pending',
     });
 
     const currentSettings = await llmRouterSettingsService.getEffectiveSettings();
@@ -254,7 +275,7 @@ router.post('/apply-recommendations', async (req, res) => {
         // This is a simplified version - in production, you'd need more sophisticated merging logic
         const updatedSettings = {
           ...currentSettings,
-          ...rec.suggestedChanges
+          ...rec.suggestedChanges,
         };
 
         // Update global settings
@@ -268,7 +289,7 @@ router.post('/apply-recommendations', async (req, res) => {
         appliedChanges.push({
           recommendationId: rec._id,
           title: rec.title,
-          changes: rec.suggestedChanges
+          changes: rec.suggestedChanges,
         });
       }
     }
@@ -276,11 +297,11 @@ router.post('/apply-recommendations', async (req, res) => {
     res.json({
       success: true,
       applied: appliedChanges.length,
-      changes: appliedChanges
+      changes: appliedChanges,
     });
   } catch (error: unknown) {
     logger.error('Failed to apply recommendations:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -291,12 +312,13 @@ router.post('/apply-recommendations', async (req, res) => {
 router.get('/explain-rule/:ruleId', async (req, res) => {
   try {
     const { ruleId } = req.params;
-    
+
     const { RoutingRule } = await import('../models/RoutingRule.model.js');
     const rule = await RoutingRule.findById(ruleId);
 
     if (!rule) {
-      return res.status(404).json({ error: 'Rule not found' });
+      res.status(404).json({ error: 'Rule not found' });
+      return;
     }
 
     const explanation = await llmRouterNLService.explainRule(rule);
@@ -304,7 +326,7 @@ router.get('/explain-rule/:ruleId', async (req, res) => {
     res.json({ explanation });
   } catch (error: unknown) {
     logger.error('Failed to explain rule:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -312,13 +334,13 @@ router.get('/explain-rule/:ruleId', async (req, res) => {
  * GET /api/admin/llm-router/ai/auto-tune/history
  * Get auto-tuning history
  */
-router.get('/auto-tune/history', async (req, res) => {
+router.get('/auto-tune/history', async (_req, res) => {
   try {
     const history = llmRouterAutoTuneService.getTuningHistory();
     res.json({ history });
   } catch (error: unknown) {
     logger.error('Failed to get auto-tuning history:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -326,13 +348,13 @@ router.get('/auto-tune/history', async (req, res) => {
  * GET /api/admin/llm-router/ai/ab-tests
  * Get active A/B tests
  */
-router.get('/ab-tests', async (req, res) => {
+router.get('/ab-tests', async (_req, res) => {
   try {
     const tests = llmRouterAutoTuneService.getActiveABTests();
     res.json({ tests });
   } catch (error: unknown) {
     logger.error('Failed to get A/B tests:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -345,7 +367,8 @@ router.post('/ab-tests', async (req, res) => {
     const { config, durationHours, name } = req.body;
 
     if (!config) {
-      return res.status(400).json({ error: 'Configuration is required' });
+      res.status(400).json({ error: 'Configuration is required' });
+      return;
     }
 
     const test = await llmRouterAutoTuneService.testConfiguration(
@@ -357,12 +380,8 @@ router.post('/ab-tests', async (req, res) => {
     res.json({ test });
   } catch (error: unknown) {
     logger.error('Failed to start A/B test:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 
 export default router;
-
-
-
-

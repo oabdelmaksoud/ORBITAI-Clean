@@ -1,7 +1,7 @@
 /**
  * Routing Engine - Selects the best LLM model for a given task
  * Enhanced with configurable routing rules, cost controls, and model priorities
- * 
+ *
  * IMPORTANT: This is for END USER ROUTER only.
  * - Uses RoutingRule model with routerType='end-user'
  * - Completely independent from Internal Router
@@ -62,7 +62,8 @@ interface CircuitBreakerState {
 }
 
 export class RoutingEngine {
-  private settingsCache: Map<string, { settings: EffectiveRouterSettings; timestamp: number }> = new Map();
+  private settingsCache: Map<string, { settings: EffectiveRouterSettings; timestamp: number }> =
+    new Map();
   private readonly CACHE_TTL = 60000; // 1 minute cache
 
   // Circuit breaker state for fallback chains
@@ -82,10 +83,7 @@ export class RoutingEngine {
     }
   }
 
-  async selectModel(
-    task: TaskAnalysis,
-    context: RoutingContext
-  ): Promise<ModelSelection> {
+  async selectModel(task: TaskAnalysis, context: RoutingContext): Promise<ModelSelection> {
     // Load effective router settings
     const settings = await this.getEffectiveSettings(context.userId);
 
@@ -100,27 +98,30 @@ export class RoutingEngine {
           estimatedTokens: task.estimatedTokens,
           requiredCapabilities: task.requiredCapabilities,
           timeOfDay: new Date().getHours(),
-          dayOfWeek: new Date().getDay()
+          dayOfWeek: new Date().getDay(),
         });
 
         // If predictive routing has high confidence (>0.6), use it
         if (predictivePrediction && predictivePrediction.confidence > 0.6) {
           const predictedModel = modelRegistry.getModel(predictivePrediction.modelId);
           if (predictedModel && predictedModel.status === 'active' && predictedModel.isEnabled) {
-            const meetsRequirements = task.requiredCapabilities.length === 0 ||
+            const meetsRequirements =
+              task.requiredCapabilities.length === 0 ||
               task.requiredCapabilities.every(cap => {
                 const capKey = cap as keyof ModelCapabilities['capabilities'];
                 return predictedModel.capabilities[capKey] === true;
               });
 
             if (meetsRequirements) {
-              logger.debug(`Using predictive routing model: ${predictivePrediction.modelId} (confidence: ${predictivePrediction.confidence})`);
+              logger.debug(
+                `Using predictive routing model: ${predictivePrediction.modelId} (confidence: ${predictivePrediction.confidence})`
+              );
               return {
                 primaryModel: predictedModel,
                 fallbackModel: this.selectFallback(predictedModel, []),
                 reasoning: `Predictive routing: ${predictivePrediction.reasoning}`,
                 estimatedCost: predictivePrediction.predictedCost,
-                estimatedLatency: predictivePrediction.predictedLatency
+                estimatedLatency: predictivePrediction.predictedLatency,
               };
             }
           }
@@ -135,7 +136,8 @@ export class RoutingEngine {
     let rlSelection = null;
     if (settings.enabled && settings.enableIntelligentRouting && !predictivePrediction) {
       try {
-        const availableModelIds = modelRegistry.getActiveModels()
+        const availableModelIds = modelRegistry
+          .getActiveModels()
           .filter(model => {
             // Filter by required capabilities
             if (task.requiredCapabilities.length > 0) {
@@ -154,25 +156,35 @@ export class RoutingEngine {
           if (rlSelection && rlSelection.confidence > 0.5) {
             const rlModel = modelRegistry.getModel(rlSelection.modelId);
             if (rlModel && rlModel.status === 'active' && rlModel.isEnabled) {
-              logger.debug(`Using RL-selected model: ${rlSelection.modelId} (confidence: ${rlSelection.confidence})`);
+              logger.debug(
+                `Using RL-selected model: ${rlSelection.modelId} (confidence: ${rlSelection.confidence})`
+              );
               return {
                 primaryModel: rlModel,
                 fallbackModel: this.selectFallback(rlModel, []),
                 reasoning: `RL optimization: ${rlSelection.reasoning}`,
                 estimatedCost: this.estimateCost(rlModel, task.estimatedTokens),
-                estimatedLatency: rlModel.performance.avgLatencyMs
+                estimatedLatency: rlModel.performance.avgLatencyMs,
               };
             }
           }
         }
       } catch (error: unknown) {
-        logger.debug('RL routing failed, falling back to standard routing:', toApiError(error).message);
+        logger.debug(
+          'RL routing failed, falling back to standard routing:',
+          toApiError(error).message
+        );
       }
     }
 
     // Try AI prediction if enabled (non-blocking, fallback to predictive/RL)
     let aiPrediction = null;
-    if (settings.enabled && settings.enableIntelligentRouting && !predictivePrediction && !rlSelection) {
+    if (
+      settings.enabled &&
+      settings.enableIntelligentRouting &&
+      !predictivePrediction &&
+      !rlSelection
+    ) {
       try {
         aiPrediction = await llmRouterAIService.predictOptimalModel(
           {
@@ -180,12 +192,13 @@ export class RoutingEngine {
             taskType: task.taskType,
             complexity: task.complexity,
             estimatedTokens: task.estimatedTokens,
-            requiredCapabilities: task.requiredCapabilities
+            requiredCapabilities: task.requiredCapabilities,
           },
           {
             userId: context.userId,
-            costPreference: context.userPreferences?.costPreference || settings.defaultCostPreference,
-            maxLatency: undefined
+            costPreference:
+              context.userPreferences?.costPreference || settings.defaultCostPreference,
+            maxLatency: undefined,
           }
         );
 
@@ -194,20 +207,23 @@ export class RoutingEngine {
           const predictedModel = modelRegistry.getModel(aiPrediction.modelId);
           if (predictedModel && predictedModel.status === 'active' && predictedModel.isEnabled) {
             // Check if predicted model meets requirements
-            const meetsRequirements = task.requiredCapabilities.length === 0 ||
+            const meetsRequirements =
+              task.requiredCapabilities.length === 0 ||
               task.requiredCapabilities.every(cap => {
                 const capKey = cap as keyof ModelCapabilities['capabilities'];
                 return predictedModel.capabilities[capKey] === true;
               });
 
             if (meetsRequirements) {
-              logger.debug(`Using AI-predicted model: ${aiPrediction.modelId} (confidence: ${aiPrediction.confidence})`);
+              logger.debug(
+                `Using AI-predicted model: ${aiPrediction.modelId} (confidence: ${aiPrediction.confidence})`
+              );
               return {
                 primaryModel: predictedModel,
                 fallbackModel: this.selectFallback(predictedModel, []),
                 reasoning: `AI prediction: ${aiPrediction.reasoning}`,
                 estimatedCost: aiPrediction.estimatedCost,
-                estimatedLatency: aiPrediction.estimatedLatency
+                estimatedLatency: aiPrediction.estimatedLatency,
               };
             }
           }
@@ -239,40 +255,49 @@ export class RoutingEngine {
         if (ruleResult.preferredModel) {
           const preferredModel = modelRegistry.getModel(ruleResult.preferredModel);
           if (preferredModel && preferredModel.status === 'active' && preferredModel.isEnabled) {
-            logger.info(`[RoutingEngine] Rule "${ruleResult.ruleName}" selected model: ${preferredModel.name}`);
+            logger.info(
+              `[RoutingEngine] Rule "${ruleResult.ruleName}" selected model: ${preferredModel.name}`
+            );
             return {
               primaryModel: preferredModel,
               fallbackModel: this.selectFallback(preferredModel, []),
               reasoning: `Applied routing rule: ${ruleResult.ruleName}`,
               estimatedCost: this.estimateCost(preferredModel, task.estimatedTokens),
-              estimatedLatency: preferredModel.performance.avgLatencyMs
+              estimatedLatency: preferredModel.performance.avgLatencyMs,
             };
           }
         }
 
         // If rule specifies a forced provider, filter to only that provider
         if (ruleResult.forceProvider) {
-          const providerModels = modelRegistry.getActiveModels()
+          const providerModels = modelRegistry
+            .getActiveModels()
             .filter(m => m.provider === ruleResult.forceProvider && m.isEnabled);
           if (providerModels.length > 0) {
             const bestModel = providerModels[0];
-            logger.info(`[RoutingEngine] Rule "${ruleResult.ruleName}" forced provider: ${ruleResult.forceProvider}`);
+            logger.info(
+              `[RoutingEngine] Rule "${ruleResult.ruleName}" forced provider: ${ruleResult.forceProvider}`
+            );
             return {
               primaryModel: bestModel,
               fallbackModel: this.selectFallback(bestModel, []),
               reasoning: `Applied routing rule: ${ruleResult.ruleName} (forced provider: ${ruleResult.forceProvider})`,
               estimatedCost: this.estimateCost(bestModel, task.estimatedTokens),
-              estimatedLatency: bestModel.performance.avgLatencyMs
+              estimatedLatency: bestModel.performance.avgLatencyMs,
             };
           }
         }
 
         // Log other rule actions that will be applied during scoring
         if (ruleResult.blockedModels?.length || ruleResult.blockedProviders?.length) {
-          logger.info(`[RoutingEngine] Rule "${ruleResult.ruleName}" blocking: models=${ruleResult.blockedModels?.join(',') || 'none'}, providers=${ruleResult.blockedProviders?.join(',') || 'none'}`);
+          logger.info(
+            `[RoutingEngine] Rule "${ruleResult.ruleName}" blocking: models=${ruleResult.blockedModels?.join(',') || 'none'}, providers=${ruleResult.blockedProviders?.join(',') || 'none'}`
+          );
         }
         if (ruleResult.costLimit || ruleResult.maxLatency) {
-          logger.info(`[RoutingEngine] Rule "${ruleResult.ruleName}" constraints: costLimit=$${ruleResult.costLimit || 'none'}, maxLatency=${ruleResult.maxLatency || 'none'}ms`);
+          logger.info(
+            `[RoutingEngine] Rule "${ruleResult.ruleName}" constraints: costLimit=$${ruleResult.costLimit || 'none'}, maxLatency=${ruleResult.maxLatency || 'none'}ms`
+          );
         }
       }
     }
@@ -311,7 +336,9 @@ export class RoutingEngine {
 
     // Apply blocked providers from routing rule
     if (ruleActions.blockedProviders && ruleActions.blockedProviders.length > 0) {
-      candidates = candidates.filter(model => !ruleActions.blockedProviders!.includes(model.provider));
+      candidates = candidates.filter(
+        model => !ruleActions.blockedProviders!.includes(model.provider)
+      );
     }
 
     // Filter by subscription package limits (premium model access)
@@ -319,21 +346,32 @@ export class RoutingEngine {
       const packageLimits = context.packageLimits as any;
 
       // If user has allowedLLMModels list, filter to only those models
-      if (packageLimits.allowedLLMModels && Array.isArray(packageLimits.allowedLLMModels) && packageLimits.allowedLLMModels.length > 0) {
+      if (
+        packageLimits.allowedLLMModels &&
+        Array.isArray(packageLimits.allowedLLMModels) &&
+        packageLimits.allowedLLMModels.length > 0
+      ) {
         candidates = candidates.filter(model => {
           // Check if model ID is in allowed list, or if it's a standard model (not premium)
-          const isAllowed = packageLimits.allowedLLMModels.includes(model.id) ||
+          const isAllowed =
+            packageLimits.allowedLLMModels.includes(model.id) ||
             packageLimits.allowedLLMModels.includes(model.modelIdentifier);
 
           // If premium models are disabled, exclude premium models
           if (!packageLimits.premiumModelsEnabled) {
             const premiumModelPatterns = [
-              'gpt-4', 'gpt-4o', 'claude-3-opus', 'claude-3-5-sonnet',
-              'gemini-3-pro', 'gemini-3-pro-preview', 'mistral-large'
+              'gpt-4',
+              'gpt-4o',
+              'claude-3-opus',
+              'claude-3-5-sonnet',
+              'gemini-3-pro',
+              'gemini-3-pro-preview',
+              'mistral-large',
             ];
-            const isPremium = premiumModelPatterns.some(pattern =>
-              model.id.toLowerCase().includes(pattern) ||
-              model.modelIdentifier.toLowerCase().includes(pattern)
+            const isPremium = premiumModelPatterns.some(
+              pattern =>
+                model.id.toLowerCase().includes(pattern) ||
+                model.modelIdentifier.toLowerCase().includes(pattern)
             );
             return isAllowed && !isPremium;
           }
@@ -345,17 +383,25 @@ export class RoutingEngine {
       } else if (packageLimits.premiumModelsEnabled === false) {
         // If premium models are explicitly disabled, filter out premium models
         const premiumModelPatterns = [
-          'gpt-4', 'gpt-4o', 'claude-3-opus', 'claude-3-5-sonnet',
-          'gemini-3-pro', 'gemini-3-pro-preview', 'mistral-large'
+          'gpt-4',
+          'gpt-4o',
+          'claude-3-opus',
+          'claude-3-5-sonnet',
+          'gemini-3-pro',
+          'gemini-3-pro-preview',
+          'mistral-large',
         ];
         candidates = candidates.filter(model => {
-          const isPremium = premiumModelPatterns.some(pattern =>
-            model.id.toLowerCase().includes(pattern) ||
-            model.modelIdentifier.toLowerCase().includes(pattern)
+          const isPremium = premiumModelPatterns.some(
+            pattern =>
+              model.id.toLowerCase().includes(pattern) ||
+              model.modelIdentifier.toLowerCase().includes(pattern)
           );
           return !isPremium;
         });
-        logger.debug(`[RoutingEngine] Premium models disabled, filtered to ${candidates.length} candidates`);
+        logger.debug(
+          `[RoutingEngine] Premium models disabled, filtered to ${candidates.length} candidates`
+        );
       }
     }
 
@@ -368,12 +414,23 @@ export class RoutingEngine {
     const routingSignals = buildRoutingSignals(task, context);
 
     // 3. Filter by cost constraints (enhanced with routing signals and rule constraints)
-    candidates = await this.filterByCost(candidates, task, context, settings, routingSignals, ruleActions);
+    candidates = await this.filterByCost(
+      candidates,
+      task,
+      context,
+      settings,
+      routingSignals,
+      ruleActions
+    );
 
     // 4. Filter by latency constraints from rules
     if (ruleActions.maxLatency) {
-      candidates = candidates.filter(model => model.performance.avgLatencyMs <= ruleActions.maxLatency!);
-      logger.debug(`[RoutingEngine] After latency filter (max ${ruleActions.maxLatency}ms): ${candidates.length} candidates`);
+      candidates = candidates.filter(
+        model => model.performance.avgLatencyMs <= ruleActions.maxLatency!
+      );
+      logger.debug(
+        `[RoutingEngine] After latency filter (max ${ruleActions.maxLatency}ms): ${candidates.length} candidates`
+      );
     }
 
     // 5. Score models (enhanced with weighted cost/performance engine)
@@ -387,9 +444,13 @@ export class RoutingEngine {
     const primaryModel = scoredModels[0].model;
 
     // Log model selection with context
-    logger.info(`[RoutingEngine] Selected model: ${primaryModel.name} (${primaryModel.modelIdentifier})`);
+    logger.info(
+      `[RoutingEngine] Selected model: ${primaryModel.name} (${primaryModel.modelIdentifier})`
+    );
     logger.info(`[RoutingEngine] Selection reasoning: ${scoredModels[0].reasoning}`);
-    logger.info(`[RoutingEngine] Context: costPressure=${(routingSignals.costPressure * 100).toFixed(0)}%, qualityNeed=${(routingSignals.qualityNeed * 100).toFixed(0)}%, latencyTarget=${routingSignals.latencyTarget}ms`);
+    logger.info(
+      `[RoutingEngine] Context: costPressure=${(routingSignals.costPressure * 100).toFixed(0)}%, qualityNeed=${(routingSignals.qualityNeed * 100).toFixed(0)}%, latencyTarget=${routingSignals.latencyTarget}ms`
+    );
 
     // 6. Select fallback model (different provider if possible)
     const fallbackModel = this.selectFallback(primaryModel, scoredModels);
@@ -403,7 +464,7 @@ export class RoutingEngine {
       fallbackModel,
       reasoning: scoredModels[0].reasoning + (ruleApplied ? ' (rule applied)' : ''),
       estimatedCost,
-      estimatedLatency
+      estimatedLatency,
     };
   }
 
@@ -431,7 +492,7 @@ export class RoutingEngine {
    */
   private async applyRoutingRules(
     task: TaskAnalysis,
-    context: RoutingContext,
+    _context: RoutingContext,
     rules: IRoutingRule[]
   ): Promise<{
     preferredModel?: string;
@@ -443,7 +504,7 @@ export class RoutingEngine {
     maxLatency?: number;
     costPreference?: 'low' | 'balanced' | 'quality';
     fallbackChain?: IFallbackStep[];
-    ruleName: string
+    ruleName: string;
   } | null> {
     // Sort rules by priority (highest first)
     const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
@@ -461,7 +522,7 @@ export class RoutingEngine {
         agentRole: task.agentRole,
         taskType: task.taskType,
         complexity: task.complexity,
-        estimatedTokens: task.estimatedTokens
+        estimatedTokens: task.estimatedTokens,
       });
 
       if (testResult.matches) {
@@ -481,7 +542,7 @@ export class RoutingEngine {
           maxLatency: rule.actions.maxLatency,
           costPreference: rule.actions.costPreference,
           fallbackChain: fallbackChain.length > 0 ? fallbackChain : undefined,
-          ruleName: rule.name
+          ruleName: rule.name,
         };
       }
     }
@@ -558,7 +619,9 @@ export class RoutingEngine {
         const estimatedCost = this.estimateCost(model, task.estimatedTokens);
         return estimatedCost <= ruleActions.costLimit!;
       });
-      logger.debug(`[RoutingEngine] After rule cost limit ($${ruleActions.costLimit}): ${filtered.length} candidates`);
+      logger.debug(
+        `[RoutingEngine] After rule cost limit ($${ruleActions.costLimit}): ${filtered.length} candidates`
+      );
     }
 
     // Apply cost controls from settings
@@ -566,13 +629,15 @@ export class RoutingEngine {
       const { globalBudget, userBudgets } = settings.costControls;
 
       // Check global budget
-      if (globalBudget?.perRequestLimit) {
+      if ((globalBudget as any)?.perRequestLimit) {
         // Dynamically adjust limit based on cost pressure
-        let effectiveLimit = globalBudget.perRequestLimit;
+        let effectiveLimit = (globalBudget as any).perRequestLimit;
         if (routingSignals.costPressure > 0.7) {
           // Reduce limit by 30% when cost pressure is high
           effectiveLimit = effectiveLimit * 0.7;
-          logger.info(`[RoutingEngine] High cost pressure detected (${(routingSignals.costPressure * 100).toFixed(0)}%), reducing per-request limit to $${effectiveLimit.toFixed(4)}`);
+          logger.info(
+            `[RoutingEngine] High cost pressure detected (${(routingSignals.costPressure * 100).toFixed(0)}%), reducing per-request limit to $${effectiveLimit.toFixed(4)}`
+          );
         }
 
         filtered = filtered.filter(model => {
@@ -584,9 +649,9 @@ export class RoutingEngine {
       // Check user budget if applicable
       if (context.userId && userBudgets) {
         const userBudget = userBudgets[context.userId];
-        if (userBudget?.perRequestLimit) {
+        if ((userBudget as any)?.perRequestLimit) {
           // Apply same cost pressure adjustment
-          let effectiveLimit = userBudget.perRequestLimit;
+          let effectiveLimit = (userBudget as any).perRequestLimit;
           if (routingSignals.costPressure > 0.7) {
             effectiveLimit = effectiveLimit * 0.7;
           }
@@ -607,14 +672,22 @@ export class RoutingEngine {
 
       // When quality need is high and budget allows, relax cost constraints slightly
       let effectiveBudgetRemaining = budgetRemaining;
-      if (routingSignals.qualityNeed > 0.7 && routingSignals.budgetUsageRatio !== undefined && routingSignals.budgetUsageRatio < 0.5) {
+      if (
+        routingSignals.qualityNeed > 0.7 &&
+        routingSignals.budgetUsageRatio !== undefined &&
+        routingSignals.budgetUsageRatio < 0.5
+      ) {
         // Allow 20% more cost for high-quality tasks when budget is healthy
         effectiveBudgetRemaining = budgetRemaining * 1.2;
-        logger.info(`[RoutingEngine] High quality need (${(routingSignals.qualityNeed * 100).toFixed(0)}%) with healthy budget, allowing up to $${effectiveBudgetRemaining.toFixed(4)} per request`);
+        logger.info(
+          `[RoutingEngine] High quality need (${(routingSignals.qualityNeed * 100).toFixed(0)}%) with healthy budget, allowing up to $${effectiveBudgetRemaining.toFixed(4)} per request`
+        );
       } else if (routingSignals.costPressure > 0.7) {
         // Reduce effective budget when cost pressure is high
         effectiveBudgetRemaining = budgetRemaining * 0.8;
-        logger.info(`[RoutingEngine] High cost pressure, reducing effective budget to $${effectiveBudgetRemaining.toFixed(4)}`);
+        logger.info(
+          `[RoutingEngine] High cost pressure, reducing effective budget to $${effectiveBudgetRemaining.toFixed(4)}`
+        );
       }
 
       filtered = filtered.filter(model => {
@@ -636,7 +709,7 @@ export class RoutingEngine {
     // Merge preferred models from settings and context
     const preferredModels = [
       ...(settings.defaultPreferredModels || []),
-      ...(context.userPreferences?.preferredModels || [])
+      ...(context.userPreferences?.preferredModels || []),
     ];
 
     return models
@@ -653,7 +726,7 @@ export class RoutingEngine {
         return {
           model,
           score: scoreResult.score,
-          reasoning: scoreResult.reasoning
+          reasoning: scoreResult.reasoning,
         };
       })
       .sort((a, b) => b.score - a.score); // Sort by score descending
@@ -665,7 +738,7 @@ export class RoutingEngine {
   private computeModelScore(
     model: ModelCapabilities,
     task: TaskAnalysis,
-    context: RoutingContext,
+    _context: RoutingContext,
     settings: EffectiveRouterSettings,
     routingSignals: RoutingSignals,
     preferredModels: string[]
@@ -688,7 +761,7 @@ export class RoutingEngine {
 
     // Normalize metrics to 0-1 scale for scoring
     // Cost: lower is better, normalize against max expected cost ($0.10 per request)
-    const normalizedCost = Math.min(estimatedCost / 0.10, 1.0);
+    const normalizedCost = Math.min(estimatedCost / 0.1, 1.0);
     const costScore = 1.0 - normalizedCost; // Invert so lower cost = higher score
 
     // Latency: lower is better, normalize against target latency
@@ -698,19 +771,20 @@ export class RoutingEngine {
     const latencyScore = 1.0 - normalizedLatency; // Invert so lower latency = higher score
 
     // Quality: reliability + capability match
-    const capabilityMatch = task.requiredCapabilities.length > 0
-      ? task.requiredCapabilities.filter(cap => {
-        const capKey = cap as keyof ModelCapabilities['capabilities'];
-        return model.capabilities[capKey] === true;
-      }).length / task.requiredCapabilities.length
-      : 0.5; // Default if no specific requirements
-    const qualityScore = (reliability * 0.6) + (capabilityMatch * 0.4);
+    const capabilityMatch =
+      task.requiredCapabilities.length > 0
+        ? task.requiredCapabilities.filter(cap => {
+            const capKey = cap as keyof ModelCapabilities['capabilities'];
+            return model.capabilities[capKey] === true;
+          }).length / task.requiredCapabilities.length
+        : 0.5; // Default if no specific requirements
+    const qualityScore = reliability * 0.6 + capabilityMatch * 0.4;
 
     // Apply weighted scoring
     let weightedScore =
-      (costScore * normalizedCostWeight) +
-      (latencyScore * normalizedLatencyWeight) +
-      (qualityScore * normalizedQualityWeight);
+      costScore * normalizedCostWeight +
+      latencyScore * normalizedLatencyWeight +
+      qualityScore * normalizedQualityWeight;
 
     // Context-driven boosts/penalties
     const boosts: string[] = [];
@@ -737,7 +811,7 @@ export class RoutingEngine {
 
     // Agent role match boost
     if (task.agentRole && model.recommendedFor?.agentRoles?.includes(task.agentRole)) {
-      const roleBoost = 0.15 * routingSignals.agentRolePriority || 1.0;
+      const roleBoost = 0.15 * routingSignals.agentRolePriority! || 1.0;
       weightedScore += roleBoost;
       boosts.push(`Recommended for ${task.agentRole}`);
     }
@@ -761,14 +835,20 @@ export class RoutingEngine {
     }
 
     // Latency constraint penalty
-    if (settings.performanceTuning?.maxLatencyMs && avgLatency > settings.performanceTuning.maxLatencyMs) {
-      const latencyPenalty = (avgLatency - settings.performanceTuning.maxLatencyMs) / 1000 * 0.1;
+    if (
+      settings.performanceTuning?.maxLatencyMs &&
+      avgLatency > settings.performanceTuning.maxLatencyMs
+    ) {
+      const latencyPenalty = ((avgLatency - settings.performanceTuning.maxLatencyMs) / 1000) * 0.1;
       weightedScore -= Math.min(latencyPenalty, 0.3);
       penalties.push(`Exceeds max latency (${settings.performanceTuning.maxLatencyMs}ms)`);
     }
 
     // Budget constraint penalty
-    if (routingSignals.budgetRemaining !== undefined && estimatedCost > routingSignals.budgetRemaining) {
+    if (
+      routingSignals.budgetRemaining !== undefined &&
+      estimatedCost > routingSignals.budgetRemaining
+    ) {
       weightedScore -= 0.5; // Heavy penalty if exceeds remaining budget
       penalties.push(`Exceeds remaining budget ($${routingSignals.budgetRemaining.toFixed(4)})`);
     }
@@ -784,9 +864,15 @@ export class RoutingEngine {
       reasoningParts.push(`Penalties: ${penalties.slice(0, 2).join(', ')}`);
     }
 
-    reasoningParts.push(`Cost: $${estimatedCost.toFixed(4)} (weight: ${(normalizedCostWeight * 100).toFixed(0)}%)`);
-    reasoningParts.push(`Latency: ${avgLatency}ms (weight: ${(normalizedLatencyWeight * 100).toFixed(0)}%)`);
-    reasoningParts.push(`Quality: ${(qualityScore * 100).toFixed(0)}% (weight: ${(normalizedQualityWeight * 100).toFixed(0)}%)`);
+    reasoningParts.push(
+      `Cost: $${estimatedCost.toFixed(4)} (weight: ${(normalizedCostWeight * 100).toFixed(0)}%)`
+    );
+    reasoningParts.push(
+      `Latency: ${avgLatency}ms (weight: ${(normalizedLatencyWeight * 100).toFixed(0)}%)`
+    );
+    reasoningParts.push(
+      `Quality: ${(qualityScore * 100).toFixed(0)}% (weight: ${(normalizedQualityWeight * 100).toFixed(0)}%)`
+    );
 
     const reasoning = reasoningParts.join('; ');
 
@@ -795,7 +881,7 @@ export class RoutingEngine {
 
     return {
       score: finalScore,
-      reasoning
+      reasoning,
     };
   }
 
@@ -803,10 +889,11 @@ export class RoutingEngine {
    * Build reasoning string (legacy method, now handled by computeModelScore)
    * Kept for backwards compatibility
    */
-  private buildReasoning(
+  // @ts-ignore TS6133
+  private _buildReasoning(
     model: ModelCapabilities,
     task: TaskAnalysis,
-    context: RoutingContext,
+    _context: RoutingContext,
     estimatedCost: number
   ): string {
     const reasons: string[] = [];
@@ -843,7 +930,8 @@ export class RoutingEngine {
   ): ModelCapabilities | undefined {
     // Prefer fallback from different provider
     const differentProvider = scoredModels.find(
-      sm => sm.model.provider !== primary.provider && sm.model.status === 'active' && sm.model.isEnabled
+      sm =>
+        sm.model.provider !== primary.provider && sm.model.status === 'active' && sm.model.isEnabled
     );
 
     if (differentProvider) {
@@ -895,7 +983,13 @@ export class RoutingEngine {
 
       // Get day of week (0 = Sunday)
       const dayMap: Record<string, number> = {
-        'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+        Sun: 0,
+        Mon: 1,
+        Tue: 2,
+        Wed: 3,
+        Thu: 4,
+        Fri: 5,
+        Sat: 6,
       };
       const weekdayPart = parts.find(p => p.type === 'weekday');
       const currentDay = weekdayPart ? dayMap[weekdayPart.value] : now.getDay();
@@ -956,7 +1050,7 @@ export class RoutingEngine {
   /**
    * Record a failure for circuit breaker
    */
-  recordFailure(modelId: string, threshold: number = 50): void {
+  recordFailure(modelId: string, _threshold: number = 50): void {
     const state = this.getCircuitBreakerState(modelId);
     state.failures++;
     state.lastFailure = Date.now();
@@ -1013,10 +1107,7 @@ export class RoutingEngine {
   /**
    * Get the next model in the fallback chain
    */
-  getNextFallback(
-    fallbackChain: IFallbackStep[],
-    failedModels: string[]
-  ): IFallbackStep | null {
+  getNextFallback(fallbackChain: IFallbackStep[], failedModels: string[]): IFallbackStep | null {
     for (const step of fallbackChain) {
       if (!failedModels.includes(step.modelId) && !this.isCircuitBreakerOpen(step.modelId)) {
         return step;
@@ -1050,8 +1141,11 @@ export class RoutingEngine {
           const result = await Promise.race([
             executor(step.modelId, step.timeoutMs),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after ${step.timeoutMs}ms`)), step.timeoutMs)
-            )
+              setTimeout(
+                () => reject(new Error(`Timeout after ${step.timeoutMs}ms`)),
+                step.timeoutMs
+              )
+            ),
           ]);
 
           this.recordSuccess(step.modelId);
@@ -1059,7 +1153,9 @@ export class RoutingEngine {
         } catch (error: any) {
           retries++;
           lastError = error;
-          logger.warn(`[RoutingEngine] Model ${step.modelId} failed (attempt ${retries}/${step.maxRetries + 1}): ${error.message}`);
+          logger.warn(
+            `[RoutingEngine] Model ${step.modelId} failed (attempt ${retries}/${step.maxRetries + 1}): ${error.message}`
+          );
         }
       }
 
@@ -1095,4 +1191,3 @@ export class RoutingEngine {
 }
 
 export const routingEngine = new RoutingEngine();
-

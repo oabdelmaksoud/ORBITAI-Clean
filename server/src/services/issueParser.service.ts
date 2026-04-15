@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../utils/logger.js';
-import { AgentRoleType } from '../../../types.js';
+type AgentRoleType = string;
 import { DetectedIssue } from './issueTaskCreation.service.js';
 
 class IssueParserService {
@@ -79,7 +79,9 @@ class IssueParserService {
     const issues: DetectedIssue[] = [];
 
     // Pattern: ## Issues or ### Issues or **Issues:**
-    const issuesSection = output.match(/(?:##|###|\*\*)\s*Issues?[:\s]*\n([\s\S]*?)(?=\n##|\n###|\n\*\*|$)/i);
+    const issuesSection = output.match(
+      /(?:##|###|\*\*)\s*Issues?[:\s]*\n([\s\S]*?)(?=\n##|\n###|\n\*\*|$)/i
+    );
     if (issuesSection) {
       const issuesText = issuesSection[1];
       const lines = issuesText.split('\n').filter(line => line.trim());
@@ -100,7 +102,7 @@ class IssueParserService {
             title: this.extractTitle(description),
             description,
             agentRole,
-            artifactId
+            artifactId,
           });
         }
       }
@@ -119,9 +121,19 @@ class IssueParserService {
   ): DetectedIssue[] {
     const issues: DetectedIssue[] = [];
     const securityKeywords = [
-      'sql injection', 'xss', 'csrf', 'authentication', 'authorization',
-      'sensitive data', 'insecure', 'vulnerability', 'security flaw',
-      'password', 'token', 'session', 'encryption'
+      'sql injection',
+      'xss',
+      'csrf',
+      'authentication',
+      'authorization',
+      'sensitive data',
+      'insecure',
+      'vulnerability',
+      'security flaw',
+      'password',
+      'token',
+      'session',
+      'encryption',
     ];
 
     const securityPattern = new RegExp(
@@ -140,7 +152,7 @@ class IssueParserService {
         title: `Security: ${this.extractTitle(match[0])}`,
         description: context,
         agentRole,
-        artifactId
+        artifactId,
       });
     }
 
@@ -157,8 +169,14 @@ class IssueParserService {
   ): DetectedIssue[] {
     const issues: DetectedIssue[] = [];
     const performanceKeywords = [
-      'slow', 'bottleneck', 'performance', 'optimization',
-      'memory leak', 'inefficient', 'timeout', 'latency'
+      'slow',
+      'bottleneck',
+      'performance',
+      'optimization',
+      'memory leak',
+      'inefficient',
+      'timeout',
+      'latency',
     ];
 
     const performancePattern = new RegExp(
@@ -177,7 +195,7 @@ class IssueParserService {
         title: `Performance: ${this.extractTitle(match[0])}`,
         description: context,
         agentRole,
-        artifactId
+        artifactId,
       });
     }
 
@@ -193,7 +211,8 @@ class IssueParserService {
     artifactId?: string
   ): DetectedIssue[] {
     const issues: DetectedIssue[] = [];
-    const bugPattern = /(?:bug|error|exception|crash|fails?|broken)[^.!?]*(?:in|at|line|file)[^.!?]*/gi;
+    const bugPattern =
+      /(?:bug|error|exception|crash|fails?|broken)[^.!?]*(?:in|at|line|file)[^.!?]*/gi;
 
     const matches = output.matchAll(bugPattern);
     for (const match of matches) {
@@ -208,7 +227,7 @@ class IssueParserService {
         description: context,
         location,
         agentRole,
-        artifactId
+        artifactId,
       });
     }
 
@@ -225,8 +244,15 @@ class IssueParserService {
   ): DetectedIssue[] {
     const issues: DetectedIssue[] = [];
     const qualityKeywords = [
-      'violates', 'does not follow', 'missing', 'should use',
-      'SOLID', 'DRY', 'KISS', 'best practice', 'code smell'
+      'violates',
+      'does not follow',
+      'missing',
+      'should use',
+      'SOLID',
+      'DRY',
+      'KISS',
+      'best practice',
+      'code smell',
     ];
 
     const qualityPattern = new RegExp(
@@ -244,7 +270,7 @@ class IssueParserService {
         title: `Code Quality: ${this.extractTitle(match[0])}`,
         description: context,
         agentRole,
-        artifactId
+        artifactId,
       });
     }
 
@@ -268,7 +294,7 @@ class IssueParserService {
       recommendation: issueData.recommendation,
       agentRole: issueData.agentRole || agentRole,
       artifactId: issueData.artifactId || artifactId,
-      relatedTaskId: issueData.relatedTaskId
+      relatedTaskId: issueData.relatedTaskId,
     };
   }
 
@@ -278,12 +304,21 @@ class IssueParserService {
   private detectIssueType(description: string): DetectedIssue['type'] {
     const lower = description.toLowerCase();
 
-    if (lower.includes('security') || lower.includes('vulnerability') || 
-        lower.includes('injection') || lower.includes('xss') || lower.includes('csrf')) {
+    if (
+      lower.includes('security') ||
+      lower.includes('vulnerability') ||
+      lower.includes('injection') ||
+      lower.includes('xss') ||
+      lower.includes('csrf')
+    ) {
       return 'security';
     }
-    if (lower.includes('performance') || lower.includes('slow') || 
-        lower.includes('bottleneck') || lower.includes('optimize')) {
+    if (
+      lower.includes('performance') ||
+      lower.includes('slow') ||
+      lower.includes('bottleneck') ||
+      lower.includes('optimize')
+    ) {
       return 'performance';
     }
     if (lower.includes('bug') || lower.includes('error') || lower.includes('fails')) {
@@ -295,8 +330,12 @@ class IssueParserService {
     if (lower.includes('compliance') || lower.includes('standard')) {
       return 'compliance';
     }
-    if (lower.includes('quality') || lower.includes('best practice') || 
-        lower.includes('SOLID') || lower.includes('DRY')) {
+    if (
+      lower.includes('quality') ||
+      lower.includes('best practice') ||
+      lower.includes('SOLID') ||
+      lower.includes('DRY')
+    ) {
       return 'best-practice';
     }
 
@@ -365,6 +404,3 @@ class IssueParserService {
 }
 
 export const issueParserService = new IssueParserService();
-
-
-

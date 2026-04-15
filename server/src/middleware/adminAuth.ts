@@ -47,7 +47,7 @@ export async function requireAdmin(
     };
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 }
@@ -70,7 +70,7 @@ export async function requireSuperAdmin(
     }
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 }

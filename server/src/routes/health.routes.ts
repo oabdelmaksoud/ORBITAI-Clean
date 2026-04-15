@@ -4,12 +4,10 @@
  */
 
 import express from 'express';
-import { connectDatabase } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import mongoose from 'mongoose';
 import { redisService } from '../services/redis.service.js';
 import { e2bService } from '../services/e2b.service.js';
-import { config } from '../config/env.js';
 
 const router = express.Router();
 
@@ -57,7 +55,7 @@ router.get('/', (_req, res) => {
  * GET /health/detailed
  */
 router.get('/detailed', async (_req, res) => {
-  const startTime = Date.now();
+  // const _startTime = Date.now();
   const healthStatus: HealthStatus = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -99,7 +97,7 @@ router.get('/detailed', async (_req, res) => {
     // Try to ping the database
     if (dbState === 1) {
       try {
-        await mongoose.connection.db.admin().ping();
+        await mongoose.connection.db!.admin().ping();
         healthStatus.dependencies.database.latency = Date.now() - dbStartTime;
       } catch (pingError) {
         logger.warn('Database ping failed:', pingError);
@@ -128,7 +126,7 @@ router.get('/detailed', async (_req, res) => {
     
     // Redis is optional, so don't degrade status if not connected
     // Only degrade if it was connected and then failed
-  } catch (error) {
+  } catch (error: unknown) {
     healthStatus.dependencies.redis = {
       status: 'error'
     };
@@ -149,7 +147,7 @@ router.get('/detailed', async (_req, res) => {
       status: geminiAvailable ? 'available' : 'unavailable',
       responseTime: geminiResponseTime
     };
-  } catch (error) {
+  } catch (error: unknown) {
     healthStatus.dependencies.externalApis.gemini = {
       status: 'error'
     };
@@ -165,7 +163,7 @@ router.get('/detailed', async (_req, res) => {
       status: e2bConfigured ? 'available' : 'unavailable',
       responseTime: e2bResponseTime
     };
-  } catch (error) {
+  } catch (error: unknown) {
     healthStatus.dependencies.externalApis.e2b = {
       status: 'error'
     };
@@ -183,7 +181,7 @@ router.get('/detailed', async (_req, res) => {
     healthStatus.status = 'healthy';
   }
 
-  const statusCode = healthStatus.status === 'healthy' ? 200 : healthStatus.status === 'degraded' ? 200 : 503;
+  const statusCode = healthStatus.status === 'healthy' ? 200 : healthStatus.status as string === "degraded" ? 200 : 503;
   res.status(statusCode).json(healthStatus);
 });
 
@@ -195,14 +193,15 @@ router.get('/ready', async (_req, res) => {
   try {
     // Check if database is connected
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
+      res.status(503).json({
         status: 'not ready',
         reason: 'Database not connected',
       });
+      return;
     }
 
     // Ping database
-    await mongoose.connection.db.admin().ping();
+    await mongoose.connection.db!.admin().ping();
 
     res.json({
       status: 'ready',
@@ -212,7 +211,7 @@ router.get('/ready', async (_req, res) => {
     logger.error('Readiness check failed:', error);
     res.status(503).json({
       status: 'not ready',
-      reason: error.message || 'Unknown error',
+      reason: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
     });
   }
 });

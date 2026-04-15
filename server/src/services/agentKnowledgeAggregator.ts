@@ -3,6 +3,7 @@
  * Periodically aggregates learning from all platform activities
  */
 
+import { agentDiscovery } from './agentDiscovery.service.js';
 import { agentKnowledgeLearning } from './agentKnowledgeLearning.js';
 import { logger } from '../utils/logger.js';
 import { Project } from '../models/Project.model.js';

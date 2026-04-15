@@ -14,7 +14,7 @@ const router = express.Router();
  * Initialize standards matching service
  * POST /api/standards/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (_req, res, _next) => {
   try {
     await standardsMatchingService.initialize();
     res.json({
@@ -26,7 +26,7 @@ router.post('/initialize', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize standards service',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -86,7 +86,7 @@ router.post('/match', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to find matching standards',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -149,7 +149,7 @@ router.post('/auto-enroll', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to auto-enroll standards',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -181,7 +181,7 @@ router.post('/search', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to search standards',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -226,7 +226,7 @@ router.get('/', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get standards',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -257,7 +257,7 @@ router.get('/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get standard',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });

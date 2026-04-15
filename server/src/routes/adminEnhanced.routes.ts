@@ -168,7 +168,7 @@ router.post('/bulk/users', async (req: AdminRequest, res, next) => {
       action: 'users.bulk.action',
       entityType: 'user',
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: (error instanceof Error ? error.message : String(error))
     });
     next(error);
   }
@@ -224,7 +224,7 @@ router.post('/bulk/projects', async (req: AdminRequest, res, next) => {
       action: 'projects.bulk.action',
       entityType: 'project',
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: (error instanceof Error ? error.message : String(error))
     });
     next(error);
   }

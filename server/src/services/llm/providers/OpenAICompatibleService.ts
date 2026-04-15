@@ -56,7 +56,7 @@ export class OpenAICompatibleService {
     try {
       await this.client.models.list();
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug(`OpenAI-compatible server not available at ${this.baseUrl}:`, error);
       return false;
     }
@@ -129,7 +129,7 @@ export class OpenAICompatibleService {
                 name: toolCall.function.name,
                 args: args || {}
               });
-            } catch (e) {
+            } catch (e: unknown) {
               logger.warn('Failed to parse function call:', e);
             }
           }
@@ -162,7 +162,7 @@ export class OpenAICompatibleService {
    */
   async generateStructuredOutput(
     prompt: string,
-    schema: any,
+    _schema: any,
     model: string
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema.`;
@@ -178,7 +178,7 @@ export class OpenAICompatibleService {
 
     try {
       return JSON.parse(result.text);
-    } catch (error) {
+    } catch (error: unknown) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

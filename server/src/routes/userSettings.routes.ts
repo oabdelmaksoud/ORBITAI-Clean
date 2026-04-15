@@ -18,7 +18,7 @@ const testRateLimiter = rateLimit({
   message: 'Too many test requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
+  skip: (_req) => {
     // Skip rate limiting in development
     return process.env.NODE_ENV === 'development';
   }
@@ -37,7 +37,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
     
-    let settings = await UserSettings.findOne({ userId }).lean();
+    let settings = await UserSettings.findOne({ userId }).lean() as any;
     
     // If no settings exist, create default
     if (!settings) {
@@ -231,10 +231,10 @@ router.get('/llm-config', async (req: AuthRequest, res, next) => {
     const userId = req.user!.id;
     // Authorization: Users can only access their own LLM config (enforced by authenticateToken middleware)
     
-    const settings = await UserSettings.findOne({ userId }).lean();
+    const settings = await UserSettings.findOne({ userId }).lean() as any;
     
     if (!settings || !settings.llmConfig) {
-      return res.json({
+      res.json({
         success: true,
         data: {
           llmConfig: {
@@ -245,6 +245,7 @@ router.get('/llm-config', async (req: AuthRequest, res, next) => {
           }
         }
       });
+      return;
     }
     
     // Don't send encrypted API keys to frontend - only send provider names
@@ -416,7 +417,7 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
         apiKeyToTest = apiKey;
       } else {
         // If no apiKey provided, test the saved key from database
-        const settings = await UserSettings.findOne({ userId }).lean();
+        const settings = await UserSettings.findOne({ userId }).lean() as any;
         if (settings?.llmConfig?.apiKeys) {
           const savedKey = settings.llmConfig.apiKeys.find((k: any) => k.provider === provider);
           if (savedKey && savedKey.apiKey) {
@@ -424,29 +425,32 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
               // Decrypt the saved key
               apiKeyToTest = userApiKeyEncryption.decryptApiKey(userId, savedKey.apiKey);
             } catch (error: unknown) {
-              return res.json({
+              res.json({
                 success: false,
                 error: 'Failed to decrypt saved API key'
               });
+              return;
             }
           }
         }
       }
       
       if (!apiKeyToTest) {
-        return res.json({
+        res.json({
           success: false,
           error: 'No API key found to test. Please provide an API key or save one first.'
         });
+        return;
       }
       
       // Validate format
       const validation = userApiKeyEncryption.validateApiKeyFormat(provider, apiKeyToTest);
       if (!validation.valid) {
-        return res.json({
+        res.json({
           success: false,
           error: validation.error || 'Invalid API key format'
         });
+        return;
       }
       
       // Test the API key (basic format check for now)
@@ -466,10 +470,11 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
         }
       }
       
-      return res.json({
+      res.json({
         success: testResult.valid,
         error: testResult.error
       });
+      return;
     } else if (type === 'local_llm') {
       if (!localLLMType || !baseUrl) {
         throw new AppError('Local LLM type and base URL are required', 400);
@@ -505,16 +510,18 @@ router.post('/llm-config/test', testRateLimiter, async (req: AuthRequest, res, n
           }
         }
         
-        return res.json({
+        res.json({
           success: testResult.success,
           error: testResult.error,
           models: testResult.models
         });
+        return;
       } catch (error: unknown) {
-        return res.json({
+        res.json({
           success: false,
-          error: error.message || 'Connection test failed'
+          error: (error instanceof Error ? error.message : String(error)) || 'Connection test failed'
         });
+        return;
       }
     } else {
       throw new AppError('Invalid test type', 400);
@@ -543,10 +550,11 @@ router.delete('/llm-config/api-key/:provider', async (req: AuthRequest, res, nex
     const settings = await UserSettings.findOne({ userId });
     
     if (!settings || !settings.llmConfig) {
-      return res.json({
+      res.json({
         success: true,
         message: 'API key not found'
       });
+      return;
     }
     
     // Remove the API key
@@ -588,10 +596,11 @@ router.delete('/llm-config/local-llm', async (req: AuthRequest, res, next) => {
     const settings = await UserSettings.findOne({ userId });
     
     if (!settings || !settings.llmConfig) {
-      return res.json({
+      res.json({
         success: true,
         message: 'Local LLM not found'
       });
+      return;
     }
     
     // Remove the local LLM
@@ -601,10 +610,11 @@ router.delete('/llm-config/local-llm', async (req: AuthRequest, res, next) => {
     );
     
     if (settings.llmConfig.localLLMs.length === initialLength) {
-      return res.json({
+      res.json({
         success: false,
         message: 'Local LLM not found'
       });
+      return;
     }
     
     await settings.save();

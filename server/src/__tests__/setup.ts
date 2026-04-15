@@ -1,6 +1,5 @@
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { beforeAll, afterAll, beforeEach} from 'vitest';
 import mongoose from 'mongoose';
-import { config } from '../config/env.js';
 
 // Use test database - ENFORCE separate test database
 const getTestDatabaseUri = (): string => {
@@ -68,7 +67,7 @@ afterAll(async () => {
       for (const key in collections) {
         try {
           await collections[key].deleteMany({});
-        } catch (e) {
+        } catch (e: unknown) {
           // Ignore cleanup errors
         }
       }

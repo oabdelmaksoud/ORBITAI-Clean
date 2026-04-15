@@ -61,9 +61,9 @@ const SecurityScanResults: React.FC<SecurityScanResultsProps> = ({ projectId, ar
   const loadScans = async () => {
     setLoading(true);
     try {
-      // In a real implementation, this would fetch scan results from the backend
-      // For now, we'll simulate it
+      // TODO(#44): Implement GET /api/projects/:projectId/security-scans when backend is ready
       setResults([]);
+      setError('Security scan results are not yet available. The backend endpoint is pending implementation.');
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load scan results');
     } finally {
@@ -71,20 +71,9 @@ const SecurityScanResults: React.FC<SecurityScanResultsProps> = ({ projectId, ar
     }
   };
 
-  const runScan = async (tools: string[] = ['llm']) => {
-    setScanning(true);
-    setError(null);
-    try {
-      // This would trigger a security scan via the backend
-      // For now, we'll show a placeholder
-      setTimeout(() => {
-        setScanning(false);
-        // In real implementation, reload scans after completion
-      }, 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to run security scan');
-      setScanning(false);
-    }
+  const runScan = async (_tools: string[] = ['llm']) => {
+    setScanning(false);
+    setError('Security scanning is not yet available. The backend endpoint is pending implementation (TODO #44).');
   };
 
   const getSeverityColor = (severity: string) => {

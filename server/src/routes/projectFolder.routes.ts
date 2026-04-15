@@ -1,8 +1,7 @@
-import express, { Router } from 'express';
+import { Router } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { ProjectFolderService } from '../services/projectFolder.service.js';
-import { logger } from '../utils/logger.js';
 
 const router = Router();
 

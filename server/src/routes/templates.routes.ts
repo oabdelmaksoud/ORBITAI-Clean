@@ -1,6 +1,6 @@
 import express from 'express';
 import { Template } from '../models/Template.model.js';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { authenticateToken} from '../middleware/auth.js';
 import { checkFeatureAccess, FeatureRequest } from '../middleware/featureCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
 

@@ -6,7 +6,6 @@
 
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { Document } from '@langchain/core/documents';
 // Simple text splitter implementation (langchain text splitter not available in this version)
 class SimpleTextSplitter {
   private chunkSize: number;
@@ -57,7 +56,6 @@ class SimpleTextSplitter {
   }
 }
 import { weaviateService } from './weaviate.service.js';
-import { embeddingService } from './embedding.service.js';
 import { vectorSearchService } from './vectorSearch.service.js';
 import { logger } from '../utils/logger.js';
 import { apiKeyProvider } from './apiKeyProvider.service.js';
@@ -134,7 +132,7 @@ class LlamaIndexService {
         });
       } else if (geminiKey) {
         this.llm = new ChatGoogleGenerativeAI({
-          modelName: 'gemini-3-pro-preview',
+          model: 'gemini-3-pro-preview',
           temperature: 0.7,
           apiKey: geminiKey,
         });
@@ -291,7 +289,7 @@ Answer:`;
       };
     } catch (error: unknown) {
       logger.error('RAG query failed:', error);
-      throw new Error(`RAG query failed: ${error.message}`);
+      throw new Error(`RAG query failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
   }
 
@@ -367,7 +365,7 @@ Answer:`;
       }
     } catch (error: unknown) {
       logger.error('Streaming RAG query failed:', error);
-      throw new Error(`Streaming RAG query failed: ${error.message}`);
+      throw new Error(`Streaming RAG query failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
   }
 
@@ -386,7 +384,7 @@ Answer:`;
           try {
             await weaviateService.deleteArtifact(docId);
           } catch (error: unknown) {
-            logger.warn(`Failed to delete ${docId} from Weaviate:`, error.message);
+            logger.warn(`Failed to delete ${docId} from Weaviate:`, (error instanceof Error ? error.message : String(error)));
           }
         }
       }

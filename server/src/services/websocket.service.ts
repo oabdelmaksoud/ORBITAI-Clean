@@ -14,7 +14,6 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { logger } from '../utils/logger.js';
-import { Project } from '../models/Project.model.js';
 
 interface UserPresence {
   userId: string;
@@ -109,7 +108,7 @@ class WebSocketService {
           const userId = data.token; // Simplified - should verify JWT
           socket.data.userId = userId;
           logger.info(`[WebSocket] Client authenticated: ${socket.id}, userId: ${userId}`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`[WebSocket] Authentication failed: ${error}`);
           socket.disconnect();
         }

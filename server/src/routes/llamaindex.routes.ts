@@ -13,7 +13,7 @@ const router = express.Router();
  * Initialize LlamaIndex service
  * POST /api/llamaindex/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (_req, res, _next) => {
   try {
     await llamaindexService.initialize();
     res.json({
@@ -25,7 +25,7 @@ router.post('/initialize', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize LlamaIndex service',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -56,7 +56,7 @@ router.post('/index', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to index documents',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -94,7 +94,7 @@ router.post('/query', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'RAG query failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -137,7 +137,7 @@ router.post('/query/stream', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Streaming query failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -168,7 +168,7 @@ router.post('/delete', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete documents',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -177,7 +177,7 @@ router.post('/delete', async (req, res, _next) => {
  * Get index statistics
  * GET /api/llamaindex/stats
  */
-router.get('/stats', async (req, res, _next) => {
+router.get('/stats', async (_req, res, _next) => {
   try {
     const stats = await llamaindexService.getIndexStats();
     res.json({
@@ -189,7 +189,7 @@ router.get('/stats', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get index statistics',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });

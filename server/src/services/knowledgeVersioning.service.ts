@@ -26,7 +26,7 @@ class KnowledgeVersioningService {
     knowledgeId: string,
     newContent: string,
     changedBy: string,
-    changeReason: string,
+    _changeReason: string,
     validityPeriod?: { start: Date; end?: Date }
   ): Promise<IKnowledgeBase> {
     try {

@@ -56,7 +56,7 @@ router.post(
 
       // Send ZIP buffer
       res.send(result.zipBuffer);
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -115,7 +115,7 @@ router.get(
             if (backendFiles.length > 0) preview.structure.hasBackend = true;
             if (frontendFiles.length > 0) preview.structure.hasFrontend = true;
           }
-        } catch (e) {
+        } catch (e: unknown) {
           // Not JSON
         }
       }
@@ -175,7 +175,7 @@ router.get(
         success: true,
         data: preview,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -201,7 +201,7 @@ router.post(
 
       // Get GitHub token from user
       const { githubService } = await import('../services/github.service.js');
-      const accessToken = await githubService.getUserGitHubToken(userId);
+      const accessToken = await ((githubService as any).getUserGitHubToken)(userId);
       
       if (!accessToken) {
         throw new AppError('GitHub not connected. Please connect your GitHub account first.', 400);
@@ -228,7 +228,7 @@ router.post(
       }
 
       // Push to GitHub
-      const result = await githubService.pushGeneratedProject(
+      const result = await ((githubService as any).pushGeneratedProject)(
         accessToken,
         project.name || 'project',
         files as any,
@@ -249,7 +249,7 @@ router.post(
           filesUploaded: files.length,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -276,7 +276,7 @@ router.get(
           message: 'Export completed',
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }

@@ -3,7 +3,7 @@
  * Business logic for ticket management, auto-assignment, and SLA tracking
  */
 
-import { SupportTicket, ISupportTicket, TicketStatus, TicketPriority, TicketCategory } from '../models/SupportTicket.model.js';
+import { SupportTicket, ISupportTicket, TicketPriority } from '../models/SupportTicket.model.js';
 import { User } from '../models/User.model.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,7 +13,7 @@ const SLA_CONFIG = {
   urgent: { firstResponse: 1, resolution: 4 },
   high: { firstResponse: 4, resolution: 24 },
   medium: { firstResponse: 8, resolution: 48 },
-  low: { firstResponse: 24, resolution: 72 }
+  low: { firstResponse: 24, resolution: 72 },
 };
 
 export interface TicketStats {
@@ -43,21 +43,14 @@ class SupportTicketService {
    * Get comprehensive ticket statistics
    */
   async getTicketStats(): Promise<TicketStats> {
-    const [
-      statusCounts,
-      unassignedCount,
-      breachedCount,
-      avgTimes
-    ] = await Promise.all([
-      SupportTicket.aggregate([
-        { $group: { _id: '$status', count: { $sum: 1 } } }
-      ]),
-      SupportTicket.countDocuments({ 
+    const [statusCounts, unassignedCount, breachedCount, avgTimes] = await Promise.all([
+      SupportTicket.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      SupportTicket.countDocuments({
         assignedTo: { $exists: false },
-        status: { $in: ['open', 'in_progress'] }
+        status: { $in: ['open', 'in_progress'] },
       }),
       this.getBreachedSLACount(),
-      this.getAverageResponseTimes()
+      this.getAverageResponseTimes(),
     ]);
 
     const statusMap = statusCounts.reduce((acc: any, { _id, count }) => {
@@ -75,7 +68,7 @@ class SupportTicketService {
       unassigned: unassignedCount,
       breachedSLA: breachedCount,
       avgFirstResponseTime: avgTimes.avgFirstResponse,
-      avgResolutionTime: avgTimes.avgResolution
+      avgResolutionTime: avgTimes.avgResolution,
     };
   }
 
@@ -95,7 +88,7 @@ class SupportTicketService {
         priority,
         status: { $in: ['open', 'in_progress'] },
         firstResponseAt: { $exists: false },
-        createdAt: { $lt: threshold }
+        createdAt: { $lt: threshold },
       });
       breachedCount += count;
     }
@@ -110,16 +103,16 @@ class SupportTicketService {
     const result = await SupportTicket.aggregate([
       {
         $match: {
-          firstResponseAt: { $exists: true }
-        }
+          firstResponseAt: { $exists: true },
+        },
       },
       {
         $project: {
           firstResponseTime: {
             $divide: [
               { $subtract: ['$firstResponseAt', '$createdAt'] },
-              1000 * 60 // Convert to minutes
-            ]
+              1000 * 60, // Convert to minutes
+            ],
           },
           resolutionTime: {
             $cond: {
@@ -127,26 +120,26 @@ class SupportTicketService {
               then: {
                 $divide: [
                   { $subtract: ['$resolvedAt', '$createdAt'] },
-                  1000 * 60 // Convert to minutes
-                ]
+                  1000 * 60, // Convert to minutes
+                ],
               },
-              else: null
-            }
-          }
-        }
+              else: null,
+            },
+          },
+        },
       },
       {
         $group: {
           _id: null,
           avgFirstResponse: { $avg: '$firstResponseTime' },
-          avgResolution: { $avg: '$resolutionTime' }
-        }
-      }
+          avgResolution: { $avg: '$resolutionTime' },
+        },
+      },
     ]);
 
     return {
       avgFirstResponse: result[0]?.avgFirstResponse || 0,
-      avgResolution: result[0]?.avgResolution || 0
+      avgResolution: result[0]?.avgResolution || 0,
     };
   }
 
@@ -160,46 +153,43 @@ class SupportTicketService {
     const workloads = await SupportTicket.aggregate([
       {
         $match: {
-          assignedTo: { $exists: true, $ne: null }
-        }
+          assignedTo: { $exists: true, $ne: null },
+        },
       },
       {
         $group: {
           _id: '$assignedTo',
           assignedToName: { $first: '$assignedToName' },
           openTickets: {
-            $sum: { $cond: [{ $eq: ['$status', 'open'] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ['$status', 'open'] }, 1, 0] },
           },
           inProgressTickets: {
-            $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] },
           },
           resolvedToday: {
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $eq: ['$status', 'resolved'] },
-                    { $gte: ['$resolvedAt', today] }
-                  ]
+                  $and: [{ $eq: ['$status', 'resolved'] }, { $gte: ['$resolvedAt', today] }],
                 },
                 1,
-                0
-              ]
-            }
+                0,
+              ],
+            },
           },
           totalResponseTime: {
             $sum: {
               $cond: {
                 if: '$firstResponseAt',
                 then: { $subtract: ['$firstResponseAt', '$createdAt'] },
-                else: 0
-              }
-            }
+                else: 0,
+              },
+            },
           },
           ticketsWithResponse: {
-            $sum: { $cond: ['$firstResponseAt', 1, 0] }
-          }
-        }
+            $sum: { $cond: ['$firstResponseAt', 1, 0] },
+          },
+        },
       },
       {
         $project: {
@@ -214,14 +204,14 @@ class SupportTicketService {
               then: {
                 $divide: [
                   '$totalResponseTime',
-                  { $multiply: ['$ticketsWithResponse', 1000 * 60] } // Convert to minutes
-                ]
+                  { $multiply: ['$ticketsWithResponse', 1000 * 60] }, // Convert to minutes
+                ],
               },
-              else: 0
-            }
-          }
-        }
-      }
+              else: 0,
+            },
+          },
+        },
+      },
     ]);
 
     return workloads;
@@ -237,10 +227,12 @@ class SupportTicketService {
     }
 
     // Get all available agents (admins/superadmins)
-    const agents = await User.find({
+    const agents = (await User.find({
       role: { $in: ['admin', 'superadmin'] },
-      isActive: true
-    }).select('_id name').lean();
+      isActive: true,
+    })
+      .select('_id name')
+      .lean()) as any;
 
     if (agents.length === 0) {
       logger.warn('[Support] No available agents for auto-assignment');
@@ -251,16 +243,16 @@ class SupportTicketService {
     const workloads = await SupportTicket.aggregate([
       {
         $match: {
-          assignedTo: { $in: agents.map(a => a._id?.toString()) },
-          status: { $in: ['open', 'in_progress', 'waiting_on_customer'] }
-        }
+          assignedTo: { $in: agents.map((a: any) => a._id?.toString()) },
+          status: { $in: ['open', 'in_progress', 'waiting_on_customer'] },
+        },
       },
       {
         $group: {
           _id: '$assignedTo',
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     const workloadMap = workloads.reduce((acc: any, { _id, count }) => {
@@ -290,7 +282,7 @@ class SupportTicketService {
         performedBy: 'system',
         performedByName: 'System',
         details: `Auto-assigned to ${selectedAgent.name}`,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
       await ticket.save();
       logger.info(`[Support] Ticket ${ticket.ticketNumber} auto-assigned to ${selectedAgent.name}`);
@@ -308,14 +300,16 @@ class SupportTicketService {
 
     for (const priority of ['urgent', 'high', 'medium', 'low'] as TicketPriority[]) {
       const slaHours = SLA_CONFIG[priority].firstResponse;
-      const warningThreshold = new Date(now.getTime() - (slaHours - hoursThreshold) * 60 * 60 * 1000);
+      const warningThreshold = new Date(
+        now.getTime() - (slaHours - hoursThreshold) * 60 * 60 * 1000
+      );
 
-      const approachingTickets = await SupportTicket.find({
+      const approachingTickets = (await SupportTicket.find({
         priority,
         status: { $in: ['open', 'in_progress'] },
         firstResponseAt: { $exists: false },
-        createdAt: { $lt: warningThreshold }
-      }).lean();
+        createdAt: { $lt: warningThreshold },
+      }).lean()) as any;
 
       tickets.push(...(approachingTickets as ISupportTicket[]));
     }
@@ -330,8 +324,8 @@ class SupportTicketService {
     const metrics = await SupportTicket.aggregate([
       {
         $match: {
-          createdAt: { $gte: startDate, $lte: endDate }
-        }
+          createdAt: { $gte: startDate, $lte: endDate },
+        },
       },
       {
         $facet: {
@@ -339,31 +333,31 @@ class SupportTicketService {
             {
               $group: {
                 _id: {
-                  $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                  $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
                 },
                 created: { $sum: 1 },
                 resolved: {
-                  $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
-                }
-              }
+                  $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] },
+                },
+              },
             },
-            { $sort: { _id: 1 } }
+            { $sort: { _id: 1 } },
           ],
           byCategory: [
             {
               $group: {
                 _id: '$category',
-                count: { $sum: 1 }
-              }
-            }
+                count: { $sum: 1 },
+              },
+            },
           ],
           byPriority: [
             {
               $group: {
                 _id: '$priority',
-                count: { $sum: 1 }
-              }
-            }
+                count: { $sum: 1 },
+              },
+            },
           ],
           totals: [
             {
@@ -371,22 +365,22 @@ class SupportTicketService {
                 _id: null,
                 total: { $sum: 1 },
                 resolved: {
-                  $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+                  $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] },
                 },
                 avgFirstResponse: {
                   $avg: {
                     $cond: {
                       if: '$firstResponseAt',
                       then: { $subtract: ['$firstResponseAt', '$createdAt'] },
-                      else: null
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      }
+                      else: null,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
     ]);
 
     return metrics[0];
@@ -403,8 +397,8 @@ class SupportTicketService {
         { description: { $regex: query, $options: 'i' } },
         { userName: { $regex: query, $options: 'i' } },
         { userEmail: { $regex: query, $options: 'i' } },
-        { 'messages.content': { $regex: query, $options: 'i' } }
-      ]
+        { 'messages.content': { $regex: query, $options: 'i' } },
+      ],
     };
 
     if (filters.status) searchQuery.status = filters.status;
@@ -415,7 +409,7 @@ class SupportTicketService {
     return SupportTicket.find(searchQuery)
       .sort({ updatedAt: -1 })
       .limit(50)
-      .lean() as Promise<ISupportTicket[]>;
+      .lean() as unknown as Promise<ISupportTicket[]>;
   }
 
   /**
@@ -429,29 +423,28 @@ class SupportTicketService {
     const createdAt = new Date(ticket.createdAt);
     const sla = SLA_CONFIG[ticket.priority];
 
-    const firstResponseDeadline = new Date(createdAt.getTime() + sla.firstResponse * 60 * 60 * 1000);
+    const firstResponseDeadline = new Date(
+      createdAt.getTime() + sla.firstResponse * 60 * 60 * 1000
+    );
     const resolutionDeadline = new Date(createdAt.getTime() + sla.resolution * 60 * 60 * 1000);
 
     const firstResponseBreached = !ticket.firstResponseAt && now > firstResponseDeadline;
-    const resolutionBreached = !['resolved', 'closed'].includes(ticket.status) && now > resolutionDeadline;
+    const resolutionBreached =
+      !['resolved', 'closed'].includes(ticket.status) && now > resolutionDeadline;
 
     return {
       firstResponse: {
         deadline: firstResponseDeadline,
         breached: firstResponseBreached,
-        remaining: Math.max(0, firstResponseDeadline.getTime() - now.getTime()) / (1000 * 60) // minutes
+        remaining: Math.max(0, firstResponseDeadline.getTime() - now.getTime()) / (1000 * 60), // minutes
       },
       resolution: {
         deadline: resolutionDeadline,
         breached: resolutionBreached,
-        remaining: Math.max(0, resolutionDeadline.getTime() - now.getTime()) / (1000 * 60) // minutes
-      }
+        remaining: Math.max(0, resolutionDeadline.getTime() - now.getTime()) / (1000 * 60), // minutes
+      },
     };
   }
 }
 
 export const supportTicketService = new SupportTicketService();
-
-
-
-

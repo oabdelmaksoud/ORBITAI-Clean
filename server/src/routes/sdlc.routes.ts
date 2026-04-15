@@ -13,7 +13,7 @@ const router = express.Router();
  * Initialize SDLC matching service
  * POST /api/sdlc/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (_req, res, _next) => {
   try {
     await sdlcMatchingService.initialize();
     res.json({
@@ -25,7 +25,7 @@ router.post('/initialize', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize SDLC matching service',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -79,7 +79,7 @@ router.post('/recommend', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'SDLC recommendation failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -148,7 +148,7 @@ router.post('/estimate-sprints', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Sprint estimation failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -202,7 +202,7 @@ router.post('/auto-configure', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'SDLC auto-configuration failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });

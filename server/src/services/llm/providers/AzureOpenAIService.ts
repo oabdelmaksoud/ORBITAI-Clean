@@ -14,7 +14,9 @@ async function getAzureApiKey(): Promise<string> {
   if (dbKey) {
     return dbKey;
   }
-  throw new Error('Azure OpenAI API key not configured. Please add it via Admin Console → Settings → API Keys');
+  throw new Error(
+    'Azure OpenAI API key not configured. Please add it via Admin Console → Settings → API Keys'
+  );
 }
 
 export interface LLMResponse {
@@ -32,25 +34,32 @@ export interface LLMResponse {
 
 class AzureOpenAIService {
   private deploymentName: string;
+  private cachedClient: OpenAI | null = null;
+  private cachedApiKey: string | null = null;
 
   constructor() {
     this.deploymentName = config.azureOpenAIDeploymentName || '';
   }
 
-  // Get client dynamically with current API key
+  // Get client dynamically with current API key, reusing if key unchanged
   private async getClient(): Promise<OpenAI> {
     const apiKey = await getAzureApiKey();
     if (!config.azureOpenAIEndpoint) {
       throw new Error('Azure OpenAI endpoint not configured');
     }
-    return new OpenAI({
+    if (this.cachedClient && this.cachedApiKey === apiKey) {
+      return this.cachedClient;
+    }
+    this.cachedClient = new OpenAI({
       apiKey,
       baseURL: `${config.azureOpenAIEndpoint}/openai/deployments/${this.deploymentName}`,
       defaultQuery: { 'api-version': config.azureOpenAIApiVersion || '2024-02-15-preview' },
       defaultHeaders: {
-        'api-key': apiKey
-      }
+        'api-key': apiKey,
+      },
     });
+    this.cachedApiKey = apiKey;
+    return this.cachedClient;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -91,7 +100,7 @@ class AzureOpenAIService {
         max_tokens: options?.maxTokens,
         top_p: options?.topP,
         frequency_penalty: options?.frequencyPenalty,
-        presence_penalty: options?.presencePenalty
+        presence_penalty: options?.presencePenalty,
       };
 
       // Add tools if provided
@@ -111,12 +120,16 @@ class AzureOpenAIService {
       const functionCalls: Array<{ name: string; args: Record<string, any> }> = [];
       if (choice.message?.tool_calls) {
         for (const toolCall of choice.message.tool_calls) {
-          const functionName = toolCall.function?.name;
-          const functionArgs = toolCall.function?.arguments;
+          const functionName = (toolCall as any).function?.name;
+          const functionArgs = (toolCall as any).function?.arguments;
           if (functionName) {
             functionCalls.push({
               name: functionName,
-              args: functionArgs ? (typeof functionArgs === 'string' ? JSON.parse(functionArgs) : functionArgs) : {}
+              args: functionArgs
+                ? typeof functionArgs === 'string'
+                  ? JSON.parse(functionArgs)
+                  : functionArgs
+                : {},
             });
           }
         }
@@ -126,7 +139,7 @@ class AzureOpenAIService {
       const usage = {
         promptTokens: completion.usage?.prompt_tokens || 0,
         completionTokens: completion.usage?.completion_tokens || 0,
-        totalTokens: completion.usage?.total_tokens || 0
+        totalTokens: completion.usage?.total_tokens || 0,
       };
 
       return {
@@ -135,8 +148,8 @@ class AzureOpenAIService {
         usage: {
           promptTokens: usage.promptTokens,
           completionTokens: usage.completionTokens,
-          totalTokens: usage.totalTokens
-        }
+          totalTokens: usage.totalTokens,
+        },
       };
     } catch (error: any) {
       logger.error('[Azure OpenAI] Generation failed:', error);
@@ -153,11 +166,10 @@ class AzureOpenAIService {
       function: {
         name: tool.name || tool.function?.name,
         description: tool.description || tool.function?.description,
-        parameters: tool.parameters || tool.function?.parameters || tool.schema
-      }
+        parameters: tool.parameters || tool.function?.parameters || tool.schema,
+      },
     }));
   }
 }
 
 export const azureOpenAIService = new AzureOpenAIService();
-

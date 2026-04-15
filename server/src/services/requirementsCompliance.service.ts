@@ -5,7 +5,11 @@
 
 import { logger } from '../utils/logger.js';
 import { Artifact, IArtifact } from '../models/Artifact.model.js';
-import { requirementsValidationService, ParsedRequirement, ValidationReport } from './requirementsValidation.service.js';
+import {
+  requirementsValidationService,
+  ParsedRequirement,
+  ValidationReport,
+} from './requirementsValidation.service.js';
 import { llmRouterAIService } from './llmRouterAI.service.js';
 
 export interface ComplianceScore {
@@ -68,8 +72,8 @@ class RequirementsComplianceService {
   async calculateComplianceScore(projectId: string): Promise<ComplianceScore> {
     try {
       // Get all artifacts
-      const artifacts = await Artifact.find({ projectId }).lean();
-      const reqArtifacts = artifacts.filter(a => a.type === 'requirement');
+      const artifacts = await Artifact.find({ projectId }).lean() as any;
+      const reqArtifacts = artifacts.filter((a: any) => a.type === 'requirement');
 
       if (reqArtifacts.length === 0) {
         return {
@@ -83,9 +87,9 @@ class RequirementsComplianceService {
             implemented: 0,
             partial: 0,
             missing: 0,
-            total: 0
+            total: 0,
           },
-          generatedAt: new Date()
+          generatedAt: new Date(),
         };
       }
 
@@ -111,27 +115,24 @@ class RequirementsComplianceService {
 
       // Calculate test coverage score
       const requirementsWithTests = requirements.filter(req => req.linkedTests.length > 0).length;
-      const testCoverageScore = requirements.length > 0
-        ? (requirementsWithTests / requirements.length) * 100
-        : 0;
+      const testCoverageScore =
+        requirements.length > 0 ? (requirementsWithTests / requirements.length) * 100 : 0;
 
       // Calculate alignment score (sample a few requirements for detailed analysis)
       const alignmentScores = await Promise.all(
-        requirements.slice(0, 5).map(req => 
-          this.compareRequirementsToCode(req, artifacts)
-        )
+        requirements.slice(0, 5).map(req => this.compareRequirementsToCode(req, artifacts))
       );
-      const alignmentScore = alignmentScores.length > 0
-        ? alignmentScores.reduce((sum, s) => sum + s.score, 0) / alignmentScores.length
-        : 50; // Default to 50 if no requirements to compare
+      const alignmentScore =
+        alignmentScores.length > 0
+          ? alignmentScores.reduce((sum, s) => sum + s.score, 0) / alignmentScores.length
+          : 50; // Default to 50 if no requirements to compare
 
       // Calculate overall score (weighted average)
-      const overallScore = (
+      const overallScore =
         coverageScore * 0.4 +
         traceabilityScore * 0.2 +
         testCoverageScore * 0.2 +
-        alignmentScore * 0.2
-      );
+        alignmentScore * 0.2;
 
       return {
         projectId,
@@ -144,9 +145,9 @@ class RequirementsComplianceService {
           implemented: validationReport.implemented,
           partial: validationReport.partial,
           missing: validationReport.missing,
-          total: validationReport.totalRequirements
+          total: validationReport.totalRequirements,
         },
-        generatedAt: new Date()
+        generatedAt: new Date(),
       };
     } catch (error: unknown) {
       logger.error('Failed to calculate compliance score:', error);
@@ -163,8 +164,8 @@ class RequirementsComplianceService {
       const score = await this.calculateComplianceScore(projectId);
 
       // Get all artifacts
-      const artifacts = await Artifact.find({ projectId }).lean();
-      const reqArtifacts = artifacts.filter(a => a.type === 'requirement');
+      const artifacts = await Artifact.find({ projectId }).lean() as any;
+      const reqArtifacts = artifacts.filter((a: any) => a.type === 'requirement');
 
       if (reqArtifacts.length === 0) {
         return {
@@ -176,10 +177,10 @@ class RequirementsComplianceService {
             fullyCompliant: 0,
             partiallyCompliant: 0,
             nonCompliant: 0,
-            compliancePercentage: 0
+            compliancePercentage: 0,
           },
           recommendations: ['No requirements found in project'],
-          generatedAt: new Date()
+          generatedAt: new Date(),
         };
       }
 
@@ -195,7 +196,7 @@ class RequirementsComplianceService {
 
       // Calculate compliance for each requirement
       const requirementCompliances: RequirementCompliance[] = await Promise.all(
-        requirements.map(async (req) => {
+        requirements.map(async req => {
           const hasCode = req.linkedCode.length > 0;
           const hasTests = req.linkedTests.length > 0;
           const hasDesign = req.linkedDesigns.length > 0;
@@ -213,11 +214,15 @@ class RequirementsComplianceService {
           if (hasCode) {
             const alignment = await this.compareRequirementsToCode(req, artifacts);
             alignmentScore = alignment.score;
-            complianceScore = (complianceScore * 0.7) + (alignmentScore * 0.3);
+            complianceScore = complianceScore * 0.7 + alignmentScore * 0.3;
           }
 
-          const status = complianceScore >= 80 ? 'compliant' :
-                        complianceScore >= 50 ? 'partial' : 'non-compliant';
+          const status =
+            complianceScore >= 80
+              ? 'compliant'
+              : complianceScore >= 50
+                ? 'partial'
+                : 'non-compliant';
 
           const issues: string[] = [];
           if (!hasCode) issues.push('No code implementation');
@@ -236,7 +241,7 @@ class RequirementsComplianceService {
             hasDesign,
             traceRefsCount,
             alignmentScore: Math.round(alignmentScore * 100) / 100,
-            issues
+            issues,
           };
         })
       );
@@ -245,9 +250,8 @@ class RequirementsComplianceService {
       const fullyCompliant = requirementCompliances.filter(r => r.status === 'compliant').length;
       const partiallyCompliant = requirementCompliances.filter(r => r.status === 'partial').length;
       const nonCompliant = requirementCompliances.filter(r => r.status === 'non-compliant').length;
-      const compliancePercentage = requirements.length > 0
-        ? (fullyCompliant / requirements.length) * 100
-        : 0;
+      const compliancePercentage =
+        requirements.length > 0 ? (fullyCompliant / requirements.length) * 100 : 0;
 
       // Generate recommendations
       const recommendations = this.generateRecommendations(
@@ -265,10 +269,10 @@ class RequirementsComplianceService {
           fullyCompliant,
           partiallyCompliant,
           nonCompliant,
-          compliancePercentage: Math.round(compliancePercentage * 100) / 100
+          compliancePercentage: Math.round(compliancePercentage * 100) / 100,
         },
         recommendations,
-        generatedAt: new Date()
+        generatedAt: new Date(),
       };
     } catch (error: unknown) {
       logger.error('Failed to generate compliance report:', error);
@@ -285,8 +289,8 @@ class RequirementsComplianceService {
   ): Promise<AlignmentScore> {
     try {
       // Get code artifacts linked to this requirement
-      const codeArtifacts = artifacts.filter(a => 
-        a.type === 'code' && requirement.linkedCode.includes(a._id.toString())
+      const codeArtifacts = artifacts.filter(
+        a => a.type === 'code' && requirement.linkedCode.includes(a._id.toString())
       );
 
       if (codeArtifacts.length === 0) {
@@ -295,7 +299,7 @@ class RequirementsComplianceService {
           confidence: 'low',
           matches: [],
           mismatches: ['No code artifacts found'],
-          reasoning: 'No code implementation found for this requirement'
+          reasoning: 'No code implementation found for this requirement',
         };
       }
 
@@ -330,16 +334,16 @@ Respond in JSON format:
   "reasoning": string
 }`;
 
-      const result = await llmRouterAIService.executeWithFallback({
+      const result = await (llmRouterAIService as any).executeWithFallback({
         prompt,
         context: {
           agentRole: 'QA/Audit Agent',
           taskType: 'analysis',
-          systemInstruction: 'You are a quality assurance agent analyzing requirement compliance.'
+          systemInstruction: 'You are a quality assurance agent analyzing requirement compliance.',
         },
         routingContext: {},
         requestType: 'requirement-alignment-analysis',
-        contextType: 'other'
+        contextType: 'other',
       });
 
       // Parse JSON response
@@ -355,17 +359,18 @@ Respond in JSON format:
         // Fallback: simple keyword matching
         const reqLower = requirement.description.toLowerCase();
         const codeLower = codeContent.toLowerCase();
-        
+
         const reqKeywords = reqLower.split(/\s+/).filter(w => w.length > 3);
         const matchingKeywords = reqKeywords.filter(kw => codeLower.includes(kw));
-        const matchRatio = reqKeywords.length > 0 ? matchingKeywords.length / reqKeywords.length : 0;
-        
+        const matchRatio =
+          reqKeywords.length > 0 ? matchingKeywords.length / reqKeywords.length : 0;
+
         alignment = {
           score: Math.round(matchRatio * 100),
           confidence: matchRatio > 0.7 ? 'high' : matchRatio > 0.4 ? 'medium' : 'low',
           matches: matchingKeywords.slice(0, 5),
           mismatches: reqKeywords.filter(kw => !codeLower.includes(kw)).slice(0, 5),
-          reasoning: `Keyword matching analysis: ${matchingKeywords.length}/${reqKeywords.length} keywords found in code`
+          reasoning: `Keyword matching analysis: ${matchingKeywords.length}/${reqKeywords.length} keywords found in code`,
         };
       }
 
@@ -378,7 +383,7 @@ Respond in JSON format:
         confidence: 'low',
         matches: [],
         mismatches: ['Analysis failed'],
-        reasoning: `Error analyzing alignment: ${error.message}`
+        reasoning: `Error analyzing alignment: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -394,23 +399,33 @@ Respond in JSON format:
     const recommendations: string[] = [];
 
     if (score.overallScore < 80) {
-      recommendations.push(`Overall compliance score is ${score.overallScore.toFixed(1)}%. Aim for at least 80% for production readiness.`);
+      recommendations.push(
+        `Overall compliance score is ${score.overallScore.toFixed(1)}%. Aim for at least 80% for production readiness.`
+      );
     }
 
     if (score.coverageScore < 80) {
-      recommendations.push(`Only ${score.coverageScore.toFixed(1)}% of requirements have implementations. Implement missing requirements: ${validationReport.missing} missing, ${validationReport.partial} partial.`);
+      recommendations.push(
+        `Only ${score.coverageScore.toFixed(1)}% of requirements have implementations. Implement missing requirements: ${validationReport.missing} missing, ${validationReport.partial} partial.`
+      );
     }
 
     if (score.testCoverageScore < 70) {
-      recommendations.push(`Test coverage is ${score.testCoverageScore.toFixed(1)}%. Aim for at least 70% test coverage for all requirements.`);
+      recommendations.push(
+        `Test coverage is ${score.testCoverageScore.toFixed(1)}%. Aim for at least 70% test coverage for all requirements.`
+      );
     }
 
     if (score.traceabilityScore < 90) {
-      recommendations.push(`Traceability score is ${score.traceabilityScore.toFixed(1)}%. Add traceRefs to link requirements to implementations.`);
+      recommendations.push(
+        `Traceability score is ${score.traceabilityScore.toFixed(1)}%. Add traceRefs to link requirements to implementations.`
+      );
     }
 
     if (score.alignmentScore < 75) {
-      recommendations.push(`Code alignment with requirements is ${score.alignmentScore.toFixed(1)}%. Review implementations to ensure they match requirement specifications.`);
+      recommendations.push(
+        `Code alignment with requirements is ${score.alignmentScore.toFixed(1)}%. Review implementations to ensure they match requirement specifications.`
+      );
     }
 
     // Priority-based recommendations
@@ -418,25 +433,33 @@ Respond in JSON format:
       r => r.priority === 'critical' && r.status === 'non-compliant'
     );
     if (criticalMissing.length > 0) {
-      recommendations.push(`URGENT: ${criticalMissing.length} critical priority requirements are non-compliant. Address these immediately.`);
+      recommendations.push(
+        `URGENT: ${criticalMissing.length} critical priority requirements are non-compliant. Address these immediately.`
+      );
     }
 
     const highMissing = requirements.filter(
       r => r.priority === 'high' && r.status === 'non-compliant'
     );
     if (highMissing.length > 0) {
-      recommendations.push(`${highMissing.length} high priority requirements are non-compliant. Address before project completion.`);
+      recommendations.push(
+        `${highMissing.length} high priority requirements are non-compliant. Address before project completion.`
+      );
     }
 
     // Specific issue recommendations
     const noTests = requirements.filter(r => !r.hasTests && r.hasCode);
     if (noTests.length > 0) {
-      recommendations.push(`${noTests.length} requirements have code but no tests. Add test coverage.`);
+      recommendations.push(
+        `${noTests.length} requirements have code but no tests. Add test coverage.`
+      );
     }
 
     const noTraceRefs = requirements.filter(r => r.traceRefsCount === 0);
     if (noTraceRefs.length > 0) {
-      recommendations.push(`${noTraceRefs.length} requirements have no trace references. Add traceRefs to maintain traceability.`);
+      recommendations.push(
+        `${noTraceRefs.length} requirements have no trace references. Add traceRefs to maintain traceability.`
+      );
     }
 
     if (recommendations.length === 0) {
@@ -448,6 +471,3 @@ Respond in JSON format:
 }
 
 export const requirementsComplianceService = new RequirementsComplianceService();
-
-
-

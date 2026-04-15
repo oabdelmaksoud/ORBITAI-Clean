@@ -5,7 +5,6 @@ import { MCPServer } from '../models/MCPServer.model.js';
 import { Webhook } from '../models/Webhook.model.js';
 import { AuditLog } from '../models/AuditLog.model.js';
 import { adminRateLimiter } from '../middleware/rateLimiter.js';
-import { AppError } from '../middleware/errorHandler.js';
 import axios from 'axios';
 
 const router = express.Router();
@@ -28,7 +27,7 @@ router.get('/mcp', async (_req: AdminRequest, res, next) => {
       success: true,
       data: { servers }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -42,10 +41,11 @@ router.post('/mcp', async (req: AdminRequest, res, next) => {
     const { name, description, config, tools, source = 'system' } = req.body;
 
     if (!name || !config) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'name and config are required'
       });
+      return;
     }
 
     const server = new MCPServer({
@@ -82,7 +82,7 @@ router.post('/mcp', async (req: AdminRequest, res, next) => {
       success: true,
       data: server
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -98,10 +98,11 @@ router.put('/mcp/:id', async (req: AdminRequest, res, next) => {
 
     const server = await MCPServer.findOne({ id });
     if (!server) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'MCP server not found'
       });
+      return;
     }
 
     Object.assign(server, updates);
@@ -125,7 +126,7 @@ router.put('/mcp/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: server
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -140,10 +141,11 @@ router.delete('/mcp/:id', async (req: AdminRequest, res, next) => {
 
     const server = await MCPServer.findOne({ id });
     if (!server) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'MCP server not found'
       });
+      return;
     }
 
     await MCPServer.deleteOne({ id });
@@ -165,7 +167,7 @@ router.delete('/mcp/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'MCP server deleted'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -180,10 +182,11 @@ router.post('/mcp/:id/test', async (req: AdminRequest, res, next) => {
 
     const server = await MCPServer.findOne({ id });
     if (!server) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'MCP server not found'
       });
+      return;
     }
 
     // Simple connectivity test
@@ -198,7 +201,7 @@ router.post('/mcp/:id/test', async (req: AdminRequest, res, next) => {
       success: true,
       data: testResult
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -222,7 +225,7 @@ router.get('/webhooks', async (req: AdminRequest, res, next) => {
       success: true,
       data: { webhooks }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -236,10 +239,11 @@ router.post('/webhooks', async (req: AdminRequest, res, next) => {
     const { name, url, method, events, headers, secret, retryCount, timeout } = req.body;
 
     if (!name || !url || !events || !Array.isArray(events) || events.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'name, url, and events array are required'
       });
+      return;
     }
 
     const webhook = new Webhook({
@@ -276,7 +280,7 @@ router.post('/webhooks', async (req: AdminRequest, res, next) => {
       success: true,
       data: webhook
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -292,10 +296,11 @@ router.put('/webhooks/:id', async (req: AdminRequest, res, next) => {
 
     const webhook = await Webhook.findById(id);
     if (!webhook) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Webhook not found'
       });
+      return;
     }
 
     Object.assign(webhook, updates);
@@ -319,7 +324,7 @@ router.put('/webhooks/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: webhook
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -334,10 +339,11 @@ router.delete('/webhooks/:id', async (req: AdminRequest, res, next) => {
 
     const webhook = await Webhook.findById(id);
     if (!webhook) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Webhook not found'
       });
+      return;
     }
 
     await Webhook.deleteOne({ _id: id });
@@ -359,7 +365,7 @@ router.delete('/webhooks/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Webhook deleted'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -375,10 +381,11 @@ router.post('/webhooks/:id/test', async (req: AdminRequest, res, next) => {
 
     const webhook = await Webhook.findById(id);
     if (!webhook) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Webhook not found'
       });
+      return;
     }
 
     try {
@@ -409,15 +416,15 @@ router.post('/webhooks/:id/test', async (req: AdminRequest, res, next) => {
     } catch (error: unknown) {
       webhook.lastTriggered = new Date();
       webhook.lastStatus = 'failed';
-      webhook.lastError = error.message;
+      webhook.lastError = (error instanceof Error ? error.message : String(error));
       await webhook.save();
 
       res.status(500).json({
         success: false,
-        error: error.message
+        error: (error instanceof Error ? error.message : String(error))
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -428,7 +435,7 @@ router.post('/webhooks/:id/test', async (req: AdminRequest, res, next) => {
  */
 router.get('/status', async (_req: AdminRequest, res, next) => {
   try {
-    const [totalMCPServers, activeMCPServers, webhooks] = await Promise.all([
+    const [totalMCPServers, activeMCPServers, _webhooks] = await Promise.all([
       MCPServer.countDocuments({}),
       MCPServer.countDocuments({ status: 'active' }),
       Webhook.countDocuments({ isActive: true })
@@ -452,7 +459,7 @@ router.get('/status', async (_req: AdminRequest, res, next) => {
         webhooks: webhookStatus
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

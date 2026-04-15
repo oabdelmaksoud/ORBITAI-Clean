@@ -46,10 +46,11 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
     const key = await apiKeyManagement.getApiKeyById(req.params.id);
     
     if (!key) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'API key not found'
       });
+      return;
     }
 
     res.json({
@@ -70,10 +71,11 @@ router.post('/', strictRateLimiter, async (req: AdminRequest, res, next) => {
     const { provider, keyName, value, metadata } = req.body;
 
     if (!provider || !value) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Provider and value are required'
       });
+      return;
     }
 
     // Auto-generate keyName from provider if not provided
@@ -139,10 +141,11 @@ router.put('/:id', strictRateLimiter, async (req: AdminRequest, res, next) => {
     // Get the key to determine provider for auto-naming
     const existingKey = await apiKeyManagement.getApiKeyById(req.params.id);
     if (!existingKey) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'API key not found'
       });
+      return;
     }
 
     const updates: any = {};
@@ -263,10 +266,11 @@ router.post('/:id/activate', strictRateLimiter, async (req: AdminRequest, res, n
     const key = await ApiKey.findById(req.params.id);
     
     if (!key) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'API key not found'
       });
+      return;
     }
 
     key.isActive = true;
@@ -302,10 +306,11 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
     const mongoose = await import('mongoose');
     if (!mongoose.default.Types.ObjectId.isValid(keyId)) {
       logger.warn(`API key test failed: Invalid ObjectId format: ${keyId}`);
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: `Invalid API key ID format: ${keyId}`
       });
+      return;
     }
     
     // First, check if the key exists and get its status
@@ -314,20 +319,22 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
     
     if (!keyDoc) {
       logger.warn(`API key test failed: Key not found with ID: ${keyId} (Admin: ${req.admin?.email})`);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: `API key not found with ID: ${keyId}. Please verify the key exists and try again.`
       });
+      return;
     }
     
     if (!keyDoc.isActive) {
       logger.warn(`API key test failed: Key is inactive with ID: ${keyId}`);
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'API key is inactive. Please activate it first before testing.',
         keyId: keyId,
         isActive: false
       });
+      return;
     }
 
     // Get decrypted key (internal use only)
@@ -335,20 +342,22 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
     
     if (!decryptedKey) {
       logger.error(`API key test failed: Failed to decrypt key with ID: ${keyId}`);
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Failed to decrypt API key. The key may be corrupted or encryption key may have changed.',
         keyId: keyId
       });
+      return;
     }
 
     // Test the key based on provider
     const key = await apiKeyManagement.getApiKeyById(keyId);
     if (!key) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'API key not found'
       });
+      return;
     }
 
     // Perform provider-specific test
@@ -396,7 +405,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
             }
           } catch (error: unknown) {
             // Parse error message for better user feedback
-            let errorMessage = error.message || 'Unknown error';
+            let errorMessage = (error instanceof Error ? error.message : String(error)) || 'Unknown error';
             if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('API key')) {
               errorMessage = 'Gemini API key is invalid or does not have permission. Please verify the key is correct and active in Google Cloud Console.';
             } else if (errorMessage.includes('401') || errorMessage.includes('UNAUTHENTICATED')) {
@@ -487,7 +496,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
             testResult = { valid: true, message: 'OpenRouter API key is valid and working' };
           } else {
             const errorData = await response.json().catch(() => ({}));
-            testResult = { valid: false, message: `OpenRouter API key test failed: ${errorData.error?.message || response.statusText}` };
+            testResult = { valid: false, message: `OpenRouter API key test failed: ${(errorData as any).error?.message || response.statusText}` };
           }
           break;
         }
@@ -517,8 +526,8 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
           if (response.ok) {
             const data = await response.json();
             // Clean up: close the sandbox
-            if (data.sandboxID) {
-              await fetch(`https://api.e2b.dev/v2/sandbox/${data.sandboxID}`, {
+            if ((data as any).sandboxID) {
+              await fetch(`https://api.e2b.dev/v2/sandbox/${(data as any).sandboxID}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${decryptedKey}` }
               }).catch(() => {}); // Ignore cleanup errors
@@ -526,7 +535,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
             testResult = { valid: true, message: 'E2B API key is valid and working' };
           } else {
             const errorData = await response.json().catch(() => ({}));
-            testResult = { valid: false, message: `E2B API key test failed: ${errorData.error?.message || response.statusText}` };
+            testResult = { valid: false, message: `E2B API key test failed: ${(errorData as any).error?.message || response.statusText}` };
           }
           break;
         }
@@ -540,10 +549,10 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
           // 401/403 means key is invalid
           if (response.status === 400) {
             const errorData = await response.json().catch(() => ({}));
-            if (errorData.error?.message?.includes('cx') || errorData.error?.message?.includes('Custom Search')) {
+            if ((errorData as any).error?.message?.includes('cx') || (errorData as any).error?.message?.includes('Custom Search')) {
               testResult = { valid: true, message: 'Google Search API key format is valid (search engine ID required for full test)' };
             } else {
-              testResult = { valid: false, message: `Google Search API key test failed: ${errorData.error?.message}` };
+              testResult = { valid: false, message: `Google Search API key test failed: ${(errorData as any).error?.message}` };
             }
           } else if (response.status === 401 || response.status === 403) {
             testResult = { valid: false, message: 'Google Search API key is invalid or unauthorized' };
@@ -562,8 +571,8 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
             testResult = { valid: true, message: 'Vertex AI API key format is valid (project ID and region required for full setup)' };
           } else {
             const errorData = await response.json().catch(() => ({}));
-            if (errorData.error?.message?.includes('API key')) {
-              testResult = { valid: false, message: `Vertex AI API key test failed: ${errorData.error.message}` };
+            if ((errorData as any).error?.message?.includes('API key')) {
+              testResult = { valid: false, message: `Vertex AI API key test failed: ${(errorData as any).error.message}` };
             } else {
               testResult = { valid: true, message: 'Vertex AI API key format appears valid (full setup requires project configuration)' };
             }
@@ -602,7 +611,7 @@ router.post('/:id/test', strictRateLimiter, async (req: AdminRequest, res, next)
       }
     } catch (error: unknown) {
       // Provide more detailed error messages
-      const errorMessage = error.message || 'Unknown error';
+      const errorMessage = (error instanceof Error ? error.message : String(error)) || 'Unknown error';
       if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
         testResult = { valid: false, message: `API key is invalid or unauthorized: ${errorMessage}` };
       } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {

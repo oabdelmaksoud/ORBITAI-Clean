@@ -5,7 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { MCPServer } from '../models/MCPServer.model.js';
-import { MCPServer as MCPServerType } from '../../../types.js';
+type MCPServerType = any;
 
 export interface CreateMCPServerRequest {
   name: string;
@@ -62,19 +62,21 @@ export class AgentMCPServerCreator {
           command: request.config.command,
           args: request.config.args,
           headers: request.config.headers,
-          apiKey: request.config.apiKey // Should be encrypted in production
+          apiKey: request.config.apiKey, // Should be encrypted in production
         },
         metadata: {
           createdBy: agentRole, // Store agent role instead of user ID
           createdFor: request.metadata?.createdFor || projectId || taskId,
           tags: request.metadata?.tags || [agentRole, 'agent-created'],
-          notes: request.metadata?.notes || `Created automatically by ${agentRole} agent`
-        }
+          notes: request.metadata?.notes || `Created automatically by ${agentRole} agent`,
+        },
       });
 
       await server.save();
 
-      logger.info(`Agent ${agentRole} created MCP server: ${id} for ${projectId || taskId || 'task'}`);
+      logger.info(
+        `Agent ${agentRole} created MCP server: ${id} for ${projectId || taskId || 'task'}`
+      );
 
       // Return in MCPServer format
       return {
@@ -83,11 +85,13 @@ export class AgentMCPServerCreator {
         description: server.description,
         status: server.status,
         source: server.source,
-        tools: server.tools
+        tools: server.tools,
       };
     } catch (error: unknown) {
       logger.error(`Failed to create MCP server for agent ${agentRole}:`, error);
-      throw new Error(`Failed to create MCP server: ${error.message}`);
+      throw new Error(
+        `Failed to create MCP server: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -103,7 +107,7 @@ export class AgentMCPServerCreator {
     try {
       const query: any = {
         source: 'agent',
-        status: 'active'
+        status: 'active',
       };
 
       if (projectId) {
@@ -128,7 +132,7 @@ export class AgentMCPServerCreator {
         description: server.description,
         status: server.status,
         source: server.source,
-        tools: server.tools
+        tools: server.tools,
       };
     } catch (error: unknown) {
       logger.error('Failed to find MCP server for task:', error);
@@ -144,7 +148,7 @@ export class AgentMCPServerCreator {
       const servers = await MCPServer.find({
         source: 'agent',
         'metadata.createdFor': projectId,
-        status: 'active'
+        status: 'active',
       }).sort({ createdAt: -1 });
 
       return servers.map(server => ({
@@ -153,7 +157,7 @@ export class AgentMCPServerCreator {
         description: server.description,
         status: server.status,
         source: server.source,
-        tools: server.tools
+        tools: server.tools,
       }));
     } catch (error: unknown) {
       logger.error('Failed to list agent servers:', error);
@@ -163,19 +167,3 @@ export class AgentMCPServerCreator {
 }
 
 export const agentMCPServerCreator = new AgentMCPServerCreator();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

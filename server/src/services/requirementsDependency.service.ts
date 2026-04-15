@@ -58,7 +58,7 @@ class RequirementsDependencyService {
       const reqArtifacts = await Artifact.find({
         projectId,
         type: 'requirement'
-      }).lean();
+      }).lean() as any;
 
       if (reqArtifacts.length === 0) {
         return {
@@ -81,7 +81,7 @@ class RequirementsDependencyService {
       }
 
       const requirements = requirementsValidationService.extractRequirements(reqArtifacts);
-      const allArtifacts = await Artifact.find({ projectId }).lean();
+      const allArtifacts = await Artifact.find({ projectId }).lean() as any;
 
       // Build dependency graph
       const dependencyGraph = await this.buildDependencyGraph(requirements, allArtifacts);
@@ -136,7 +136,7 @@ class RequirementsDependencyService {
    */
   private async buildDependencyGraph(
     requirements: ParsedRequirement[],
-    allArtifacts: IArtifact[]
+    _allArtifacts: IArtifact[]
   ): Promise<DependencyGraph> {
     const requirementsMap = new Map<string, RequirementDependency>();
 
@@ -211,7 +211,7 @@ class RequirementsDependencyService {
     allRequirements: ParsedRequirement[]
   ): Array<{ targetId: string; type: RequirementDependency['dependencyType'] }> {
     const dependencies: Array<{ targetId: string; type: RequirementDependency['dependencyType'] }> = [];
-    const content = `${requirement.description} ${requirement.sourceArtifactTitle}`.toLowerCase();
+    // const _content = `${requirement.description} ${requirement.sourceArtifactTitle}`.toLowerCase();
 
     // Pattern 1: Explicit references (depends on REQ-001, blocks FR-002, etc.)
     const explicitPatterns = [
@@ -405,7 +405,7 @@ class RequirementsDependencyService {
       const reqArtifacts = await Artifact.find({
         projectId,
         type: 'requirement'
-      }).lean();
+      }).lean() as any;
 
       const requirements = requirementsValidationService.extractRequirements(reqArtifacts);
       const sourceReq = requirements.find(r => r.id === requirementId);
@@ -428,9 +428,9 @@ class RequirementsDependencyService {
         }
 
         // Add to traceRefs if not already present
-        if (!sourceArtifact.traceRefs?.includes(targetReq.sourceArtifactId)) {
+        if (!sourceArtifact.traceRefs?.includes(targetReq.sourceArtifactId as any)) {
           sourceArtifact.traceRefs = sourceArtifact.traceRefs || [];
-          sourceArtifact.traceRefs.push(targetReq.sourceArtifactId);
+          sourceArtifact.traceRefs.push(targetReq.sourceArtifactId as any);
           await sourceArtifact.save();
         }
       }
@@ -454,7 +454,7 @@ class RequirementsDependencyService {
       const reqArtifacts = await Artifact.find({
         projectId,
         type: 'requirement'
-      }).lean();
+      }).lean() as any;
 
       const requirements = requirementsValidationService.extractRequirements(reqArtifacts);
       const sourceReq = requirements.find(r => r.id === requirementId);

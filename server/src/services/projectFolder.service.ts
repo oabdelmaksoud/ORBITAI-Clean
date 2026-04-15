@@ -51,7 +51,7 @@ export class ProjectFolderService {
     try {
       return await ProjectFolder.find({ userId })
         .sort({ createdAt: -1 })
-        .lean();
+        .lean() as any;
     } catch (error: unknown) {
       logger.error('Error getting folders by userId:', error);
       throw error;
@@ -63,7 +63,7 @@ export class ProjectFolderService {
    */
   static async getFolderById(folderId: string, userId: string): Promise<IProjectFolder | null> {
     try {
-      return await ProjectFolder.findOne({ _id: folderId, userId }).lean();
+      return await ProjectFolder.findOne({ _id: folderId, userId }).lean() as any;
     } catch (error: unknown) {
       logger.error('Error getting folder by ID:', error);
       throw error;

@@ -31,7 +31,7 @@ export class QueryCacheService {
       
       logger.debug(`[QueryCache] Cache miss for key: ${cacheKey}`);
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn(`[QueryCache] Error getting cache for key ${key}:`, error);
       return null; // On error, return null to fetch from DB
     }
@@ -56,7 +56,7 @@ export class QueryCacheService {
       }
       
       return success;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn(`[QueryCache] Error setting cache for key ${key}:`, error);
       return false; // On error, continue without cache
     }
@@ -79,7 +79,7 @@ export class QueryCacheService {
       }
       
       return deleted;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn(`[QueryCache] Error invalidating cache pattern ${pattern}:`, error);
       return 0;
     }

@@ -9,7 +9,7 @@ import { checkFeatureAccess, FeatureRequest } from '../middleware/featureCheck.j
 import {
   deploymentOrchestratorService,
   DeploymentConfig,
-  DeploymentResult,
+  DeploymentResult as _DeploymentResult,
 } from '../services/deploymentOrchestrator.service.js';
 import { Project } from '../models/Project.model.js';
 import { Artifact } from '../models/Artifact.model.js';
@@ -46,7 +46,7 @@ router.post(
       logger.info(`🚀 Orchestrating deployment for project: ${project.name} → ${platform}`);
 
       // Emit progress update
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'deployment_started',
         projectId,
         platform,
@@ -61,14 +61,14 @@ router.post(
         platform: platform as any,
         environment: environment || 'production',
         customDomain,
-        envVars: this.mergeEnvVars(project, envVars),
+        envVars: envVars || {},
       };
 
       // Execute deployment orchestration
       const result = await deploymentOrchestratorService.orchestrateDeployment(deploymentConfig);
 
       if (result.status === 'failed') {
-        webSocketService.broadcast(userId, {
+        (webSocketService as any).broadcast(userId, {
           type: 'deployment_failed',
           projectId,
           error: result.error,
@@ -101,11 +101,11 @@ router.post(
       // Update project
       project.artifacts.push(deploymentArtifact._id);
       project.status = 'deployed';
-      project.deploymentUrl = result.liveUrl;
+      (project as any).deploymentUrl = result.liveUrl;
       project.lastModified = new Date();
       await project.save();
 
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'deployment_complete',
         projectId,
         liveUrl: result.liveUrl,
@@ -128,7 +128,7 @@ router.post(
           estimatedMonthlyCost: result.estimatedCost,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -138,85 +138,82 @@ router.post(
  * GET /api/deployments/status/:deploymentId
  * Get deployment status
  */
-router.get(
-  '/status/:deploymentId',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const userId = req.user!.id;
-      const { deploymentId } = req.params;
+router.get('/status/:deploymentId', async (req: AuthRequest, res: Response, next) => {
+  try {
+    // const _userId = req.user!.id;
+    const { deploymentId } = req.params;
 
-      // Fetch deployment artifact
-      const artifact = await Artifact.findOne({
-        _id: deploymentId,
-        type: 'deployment',
-      });
+    // Fetch deployment artifact
+    const artifact = await Artifact.findOne({
+      _id: deploymentId,
+      type: 'deployment',
+    });
 
-      if (!artifact) throw new AppError('Deployment not found', 404);
+    if (!artifact) throw new AppError('Deployment not found', 404);
 
-      const deployment = JSON.parse(artifact.content);
+    const deployment = JSON.parse(artifact.content);
 
-      res.json({
-        success: true,
-        data: {
-          deploymentId: deployment.deploymentId,
-          status: deployment.status,
-          liveUrl: deployment.liveUrl,
-          platform: deployment.platform,
-          deployedAt: deployment.deployedAt,
-          logs: deployment.logs,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: {
+        deploymentId: deployment.deploymentId,
+        status: deployment.status,
+        liveUrl: deployment.liveUrl,
+        platform: deployment.platform,
+        deployedAt: deployment.deployedAt,
+        logs: deployment.logs,
+      },
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * GET /api/deployments/health/:deploymentId
  * Check deployed application health
  */
-router.get(
-  '/health/:deploymentId',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const { deploymentId } = req.params;
+router.get('/health/:deploymentId', async (req: AuthRequest, res: Response, next) => {
+  try {
+    const { deploymentId } = req.params;
 
-      // Fetch deployment details
-      const artifact = await Artifact.findOne({
-        _id: deploymentId,
-        type: 'deployment',
-      });
+    // Fetch deployment details
+    const artifact = await Artifact.findOne({
+      _id: deploymentId,
+      type: 'deployment',
+    });
 
-      if (!artifact) throw new AppError('Deployment not found', 404);
+    if (!artifact) throw new AppError('Deployment not found', 404);
 
-      const deployment = JSON.parse(artifact.content);
+    const deployment = JSON.parse(artifact.content);
 
-      // Check health endpoint
-      const healthUrl = `${deployment.liveUrl}/health`;
-      const response = await fetch(healthUrl, { timeout: 5000 });
+    // Check health endpoint
+    const healthUrl = `${deployment.liveUrl}/health`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(healthUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
 
-      let healthData = { status: 'unknown' };
-      if (response.ok) {
-        healthData = (await response.json()) as any;
-      }
-
-      res.json({
-        success: true,
-        data: {
-          deploymentId,
-          liveUrl: deployment.liveUrl,
-          platform: deployment.platform,
-          healthStatus: response.ok ? 'healthy' : 'unhealthy',
-          healthData,
-          timestamp: new Date().toISOString(),
-        },
-      });
-    } catch (error) {
-      next(error);
+    let healthData = { status: 'unknown' };
+    if (response.ok) {
+      healthData = (await response.json()) as any;
     }
+
+    res.json({
+      success: true,
+      data: {
+        deploymentId,
+        liveUrl: deployment.liveUrl,
+        platform: deployment.platform,
+        healthStatus: response.ok ? 'healthy' : 'unhealthy',
+        healthData,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * POST /api/deployments/redeploy/:projectId
@@ -243,7 +240,7 @@ router.post(
 
       logger.info(`🔄 Redeploying project: ${project.name}`);
 
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'redeployment_started',
         projectId,
         message: 'Redeploying to production...',
@@ -270,7 +267,7 @@ router.post(
         throw new AppError(`Redeployment failed: ${result.error}`, 400);
       }
 
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'redeployment_complete',
         projectId,
         liveUrl: result.liveUrl,
@@ -284,7 +281,7 @@ router.post(
           status: result.status,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -294,102 +291,104 @@ router.post(
  * GET /api/deployments/platforms
  * Get list of supported deployment platforms
  */
-router.get(
-  '/platforms',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const platforms = [
-        {
-          name: 'vercel',
-          displayName: 'Vercel',
-          description: 'Global edge network deployment',
-          features: ['Auto-scaling', 'Global CDN', 'GitHub integration', 'Free tier'],
-          regions: ['Global'],
-          startingPrice: 0,
-          popularityScore: 95,
-          setupTime: '< 2 minutes',
-          bestFor: 'Web apps, APIs, NextJS projects',
-        },
-        {
-          name: 'railway',
-          displayName: 'Railway',
-          description: 'Modern cloud hosting platform',
-          features: ['GitHub integration', 'Auto-deploy', 'Database hosting', 'Environment variables'],
-          regions: ['us-west', 'us-east', 'eu-central'],
-          startingPrice: 5,
-          popularityScore: 85,
-          setupTime: '< 3 minutes',
-          bestFor: 'Full-stack apps, PostgreSQL databases',
-        },
-        {
-          name: 'aws',
-          displayName: 'AWS Elastic Beanstalk',
-          description: 'Enterprise cloud infrastructure',
-          features: ['Auto-scaling', 'High availability', 'Load balancing', 'Database options'],
-          regions: ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1'],
-          startingPrice: 15,
-          popularityScore: 90,
-          setupTime: '< 5 minutes',
-          bestFor: 'Enterprise applications, high traffic',
-        },
-        {
-          name: 'gcp',
-          displayName: 'Google Cloud Run',
-          description: 'Serverless container platform',
-          features: ['Serverless', 'Auto-scaling', 'Pay-per-use', 'Container native'],
-          regions: ['us-central1', 'europe-west1', 'asia-northeast1'],
-          startingPrice: 10,
-          popularityScore: 80,
-          setupTime: '< 4 minutes',
-          bestFor: 'Containerized apps, serverless workloads',
-        },
-        {
-          name: 'render',
-          displayName: 'Render',
-          description: 'Modern full-stack cloud platform',
-          features: ['GitHub sync', 'Auto-deploy', 'Database hosting', 'Background workers'],
-          regions: ['oregon', 'frankfurt', 'singapore'],
-          startingPrice: 7,
-          popularityScore: 75,
-          setupTime: '< 3 minutes',
-          bestFor: 'Web apps, databases, background jobs',
-        },
-      ];
+router.get('/platforms', async (_req: AuthRequest, res: Response, next) => {
+  try {
+    const platforms = [
+      {
+        name: 'vercel',
+        displayName: 'Vercel',
+        description: 'Global edge network deployment',
+        features: ['Auto-scaling', 'Global CDN', 'GitHub integration', 'Free tier'],
+        regions: ['Global'],
+        startingPrice: 0,
+        popularityScore: 95,
+        setupTime: '< 2 minutes',
+        bestFor: 'Web apps, APIs, NextJS projects',
+      },
+      {
+        name: 'railway',
+        displayName: 'Railway',
+        description: 'Modern cloud hosting platform',
+        features: [
+          'GitHub integration',
+          'Auto-deploy',
+          'Database hosting',
+          'Environment variables',
+        ],
+        regions: ['us-west', 'us-east', 'eu-central'],
+        startingPrice: 5,
+        popularityScore: 85,
+        setupTime: '< 3 minutes',
+        bestFor: 'Full-stack apps, PostgreSQL databases',
+      },
+      {
+        name: 'aws',
+        displayName: 'AWS Elastic Beanstalk',
+        description: 'Enterprise cloud infrastructure',
+        features: ['Auto-scaling', 'High availability', 'Load balancing', 'Database options'],
+        regions: ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1'],
+        startingPrice: 15,
+        popularityScore: 90,
+        setupTime: '< 5 minutes',
+        bestFor: 'Enterprise applications, high traffic',
+      },
+      {
+        name: 'gcp',
+        displayName: 'Google Cloud Run',
+        description: 'Serverless container platform',
+        features: ['Serverless', 'Auto-scaling', 'Pay-per-use', 'Container native'],
+        regions: ['us-central1', 'europe-west1', 'asia-northeast1'],
+        startingPrice: 10,
+        popularityScore: 80,
+        setupTime: '< 4 minutes',
+        bestFor: 'Containerized apps, serverless workloads',
+      },
+      {
+        name: 'render',
+        displayName: 'Render',
+        description: 'Modern full-stack cloud platform',
+        features: ['GitHub sync', 'Auto-deploy', 'Database hosting', 'Background workers'],
+        regions: ['oregon', 'frankfurt', 'singapore'],
+        startingPrice: 7,
+        popularityScore: 75,
+        setupTime: '< 3 minutes',
+        bestFor: 'Web apps, databases, background jobs',
+      },
+    ];
 
-      res.json({
-        success: true,
-        data: {
-          platforms,
-          totalCount: platforms.length,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: {
+        platforms,
+        totalCount: platforms.length,
+      },
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * Helper methods
  */
 
-function mergeEnvVars(project: any, customVars?: Record<string, string>): Record<string, string> {
-  const baseVars: Record<string, string> = {
-    NODE_ENV: 'production',
-    LOG_LEVEL: 'info',
-  };
-
-  // Add any project-specific vars
-  if (project.environmentVariables) {
-    Object.assign(baseVars, project.environmentVariables);
-  }
-
-  // Override with custom vars
-  if (customVars) {
-    Object.assign(baseVars, customVars);
-  }
-
-  return baseVars;
-}
+// function _mergeEnvVars(project: any, customVars?: Record<string, string>): Record<string, string> {
+//   const baseVars: Record<string, string> = {
+//     NODE_ENV: 'production',
+//     LOG_LEVEL: 'info',
+//   };
+//
+//   // Add any project-specific vars
+//   if (project.environmentVariables) {
+//     Object.assign(baseVars, project.environmentVariables);
+//   }
+//
+//   // Override with custom vars
+//   if (customVars) {
+//     Object.assign(baseVars, customVars);
+//   }
+//
+//   return baseVars;
+// }
 
 export const deploymentRoutes = router;

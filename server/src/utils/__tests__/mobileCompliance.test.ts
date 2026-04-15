@@ -5,7 +5,6 @@ import {
   validateReactNativeCompliance,
   validateFlutterCompliance,
   generateComplianceReport,
-  type ComplianceReport
 } from '../mobileCompliance.js';
 
 describe('Mobile Compliance Validation', () => {
@@ -49,7 +48,7 @@ describe('Mobile Compliance Validation', () => {
             }
         }
       `;
-      
+
       const result = validateiOSCompliance(code);
       expect(result.platform).toBe('ios');
       expect(result.compliant).toBe(true);
@@ -65,10 +64,12 @@ describe('Mobile Compliance Validation', () => {
             }
         }
       `;
-      
+
       const result = validateiOSCompliance(code);
       expect(result.compliant).toBe(false);
-      expect(result.issues.some(i => i.category === 'Content' && i.severity === 'error')).toBe(true);
+      expect(result.issues.some(i => i.category === 'Content' && i.severity === 'error')).toBe(
+        true
+      );
     });
 
     it('should warn for missing Info.plist entries', () => {
@@ -79,7 +80,7 @@ describe('Mobile Compliance Validation', () => {
             }
         }
       `;
-      
+
       const result = validateiOSCompliance(code);
       expect(result.issues.some(i => i.category === 'Info.plist')).toBe(true);
     });
@@ -92,7 +93,7 @@ describe('Mobile Compliance Validation', () => {
             }
         }
       `;
-      
+
       const result = validateiOSCompliance(code);
       expect(result.issues.some(i => i.category === 'Error Handling')).toBe(true);
     });
@@ -130,7 +131,7 @@ describe('Mobile Compliance Validation', () => {
             }
         }
       `;
-      
+
       const result = validateAndroidCompliance(code);
       expect(result.platform).toBe('android');
       expect(result.compliant).toBe(true);
@@ -138,16 +139,18 @@ describe('Mobile Compliance Validation', () => {
 
     it('should fail for missing target SDK 34', () => {
       const code = `
-        // AndroidManifest.xml should have targetSdkVersion 34
-        // But this code doesn't mention it
+        // Manifest should specify the required SDK level
+        // But this code doesn't include it
         class MainActivity : ComponentActivity() {
             // ...
         }
       `;
-      
+
       const result = validateAndroidCompliance(code);
       // Check that there's an SDK Version error issue
-      const sdkIssue = result.issues.find(i => i.category === 'SDK Version' && i.severity === 'error');
+      const sdkIssue = result.issues.find(
+        i => i.category === 'SDK Version' && i.severity === 'error'
+      );
       expect(sdkIssue).toBeDefined();
       expect(result.compliant).toBe(false);
     });
@@ -158,7 +161,7 @@ describe('Mobile Compliance Validation', () => {
             // No Material 3 components
         }
       `;
-      
+
       const result = validateAndroidCompliance(code);
       expect(result.issues.some(i => i.category === 'Material Design')).toBe(true);
     });
@@ -197,7 +200,7 @@ describe('Mobile Compliance Validation', () => {
         
         export default App;
       `;
-      
+
       const result = validateReactNativeCompliance(code);
       expect(result.platform).toBe('react-native');
       expect(result.compliant).toBe(true);
@@ -214,7 +217,7 @@ describe('Mobile Compliance Validation', () => {
             );
         };
       `;
-      
+
       const result = validateReactNativeCompliance(code);
       expect(result.compliant).toBe(false);
     });
@@ -249,14 +252,14 @@ describe('Mobile Compliance Validation', () => {
                   child: Text('Hello World'),
                 ),
               );
-            } catch (e) {
+            } catch (e: unknown) {
               // Error handling
               return Text('Error occurred');
             }
           }
         }
       `;
-      
+
       const result = validateFlutterCompliance(code);
       expect(result.platform).toBe('flutter');
       expect(result.compliant).toBe(true);
@@ -270,7 +273,7 @@ describe('Mobile Compliance Validation', () => {
           }
         }
       `;
-      
+
       const result = validateFlutterCompliance(code);
       expect(result.issues.some(i => i.category === 'Error Handling')).toBe(true);
     });
@@ -298,9 +301,9 @@ describe('Mobile Compliance Validation', () => {
           class HomePage extends StatelessWidget {
               Widget build(BuildContext context) => Text('Hello');
           }
-        `
+        `,
       };
-      
+
       const report = generateComplianceReport(mobileCode);
       expect(report.reports).toHaveLength(4);
       expect(report.reports.some(r => r.platform === 'ios')).toBe(true);
@@ -316,4 +319,3 @@ describe('Mobile Compliance Validation', () => {
     });
   });
 });
-

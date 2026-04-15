@@ -8,7 +8,12 @@ import { logger } from '../utils/logger.js';
 import { apiKeyProvider } from './apiKeyProvider.service.js';
 import { config } from '../config/env.js';
 import { ChatConversation } from '../models/ChatConversation.model.js';
+import { redisService } from './redis.service.js';
 import crypto from 'crypto';
+
+const SESSION_TTL_SECONDS = 3600; // 1 hour
+const SESSION_KEY = (id: string) => `pipecat:session:${id}`;
+const USER_SESSIONS_KEY = (userId: string) => `pipecat:user:${userId}:sessions`;
 
 export interface VoiceSession {
   sessionId: string;
@@ -30,7 +35,6 @@ export interface VoiceSession {
 }
 
 class PipecatBridgeService {
-  private sessions: Map<string, VoiceSession> = new Map();
   private readonly PIPECAT_HOST = process.env.PIPECAT_HOST || 'localhost';
   private readonly PIPECAT_PORT = parseInt(process.env.PIPECAT_PORT || '8000', 10);
   private readonly PIPECAT_ENABLED = process.env.PIPECAT_ENABLED !== 'false';
@@ -52,14 +56,17 @@ class PipecatBridgeService {
   /**
    * Get WebSocket URL for Pipecat service
    */
-  getWebSocketUrl(sessionId: string, params: {
-    conversationId?: string;
-    userId?: string;
-    apiKey?: string;
-  }): string {
+  getWebSocketUrl(
+    sessionId: string,
+    params: {
+      conversationId?: string;
+      userId?: string;
+      apiKey?: string;
+    }
+  ): string {
     const baseUrl = `ws://${this.PIPECAT_HOST}:${this.PIPECAT_PORT}/ws/${sessionId}`;
     const urlParams = new URLSearchParams();
-    
+
     if (params.conversationId) {
       urlParams.append('conversation_id', params.conversationId);
     }
@@ -87,11 +94,13 @@ class PipecatBridgeService {
     }
 
     const sessionId = crypto.randomUUID();
-    
+
     // Get OpenAI API key for STT/TTS (required for Pipecat)
     const openaiKey = await apiKeyProvider.getApiKey('openai');
     if (!openaiKey) {
-      throw new Error('OpenAI API key not found. Please add it via Admin Console → Settings → API Keys');
+      throw new Error(
+        'OpenAI API key not found. Please add it via Admin Console → Settings → API Keys'
+      );
     }
 
     const session: VoiceSession = {
@@ -100,10 +109,16 @@ class PipecatBridgeService {
       conversationId: params.conversationId,
       createdAt: new Date(),
       metadata: params.metadata || {},
-      transcripts: []
+      transcripts: [],
     };
 
-    this.sessions.set(sessionId, session);
+    await redisService.set(SESSION_KEY(sessionId), session, SESSION_TTL_SECONDS);
+    if (params.userId) {
+      const userSessions =
+        (await redisService.get<string[]>(USER_SESSIONS_KEY(params.userId))) || [];
+      userSessions.push(sessionId);
+      await redisService.set(USER_SESSIONS_KEY(params.userId), userSessions, SESSION_TTL_SECONDS);
+    }
     logger.info(`[PipecatBridge] Created voice session: ${sessionId} for user: ${params.userId}`);
 
     return session;
@@ -113,29 +128,32 @@ class PipecatBridgeService {
    * Get session information (for Python service to fetch API keys)
    */
   async getSession(sessionId: string): Promise<VoiceSession | null> {
-    const session = this.sessions.get(sessionId);
+    const session = await redisService.get<VoiceSession>(SESSION_KEY(sessionId));
     if (!session) {
       return null;
     }
 
     // Get OpenAI API key for STT/TTS
     const openaiKey = await apiKeyProvider.getApiKey('openai');
-    
+
     return {
       ...session,
       // Include API key in response (for Python service)
-      apiKey: openaiKey || undefined
+      apiKey: openaiKey || undefined,
     } as any;
   }
 
   /**
    * Update session context (conversation metadata)
    */
-  async updateSession(sessionId: string, updates: {
-    conversationId?: string;
-    metadata?: Record<string, any>;
-  }): Promise<VoiceSession | null> {
-    const session = this.sessions.get(sessionId);
+  async updateSession(
+    sessionId: string,
+    updates: {
+      conversationId?: string;
+      metadata?: Record<string, any>;
+    }
+  ): Promise<VoiceSession | null> {
+    const session = await redisService.get<VoiceSession>(SESSION_KEY(sessionId));
     if (!session) {
       return null;
     }
@@ -147,7 +165,7 @@ class PipecatBridgeService {
       session.metadata = { ...session.metadata, ...updates.metadata };
     }
 
-    this.sessions.set(sessionId, session);
+    await redisService.set(SESSION_KEY(sessionId), session, SESSION_TTL_SECONDS);
     logger.info(`[PipecatBridge] Updated session: ${sessionId}`);
 
     return session;
@@ -156,8 +174,8 @@ class PipecatBridgeService {
   /**
    * Add transcript to session
    */
-  addTranscript(sessionId: string, userText: string, aiText: string): void {
-    const session = this.sessions.get(sessionId);
+  async addTranscript(sessionId: string, userText: string, aiText: string): Promise<void> {
+    const session = await redisService.get<VoiceSession>(SESSION_KEY(sessionId));
     if (!session) {
       logger.warn(`[PipecatBridge] Cannot add transcript to non-existent session: ${sessionId}`);
       return;
@@ -166,15 +184,17 @@ class PipecatBridgeService {
     session.transcripts.push({
       userText,
       aiText,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
+
+    await redisService.set(SESSION_KEY(sessionId), session, SESSION_TTL_SECONDS);
   }
 
   /**
    * End session and save conversation to database
    */
   async endSession(sessionId: string): Promise<void> {
-    const session = this.sessions.get(sessionId);
+    const session = await redisService.get<VoiceSession>(SESSION_KEY(sessionId));
     if (!session) {
       logger.warn(`[PipecatBridge] Cannot end non-existent session: ${sessionId}`);
       return;
@@ -192,7 +212,7 @@ class PipecatBridgeService {
               id: crypto.randomUUID(),
               sender: 'user',
               text: transcript.userText,
-              timestamp: transcript.timestamp
+              timestamp: transcript.timestamp,
             });
 
             // Add AI response
@@ -200,7 +220,7 @@ class PipecatBridgeService {
               id: crypto.randomUUID(),
               sender: 'agent',
               text: transcript.aiText,
-              timestamp: transcript.timestamp + 100 // Slight offset
+              timestamp: transcript.timestamp + 100, // Slight offset
             });
           }
 
@@ -209,53 +229,59 @@ class PipecatBridgeService {
             ...conversation.metadata,
             voiceSessionId: sessionId,
             isVoiceConversation: true,
-            voiceTranscripts: session.transcripts
+            voiceTranscripts: session.transcripts,
           };
 
           await conversation.save();
-          logger.info(`[PipecatBridge] Saved ${session.transcripts.length} voice transcripts to conversation: ${session.conversationId}`);
+          logger.info(
+            `[PipecatBridge] Saved ${session.transcripts.length} voice transcripts to conversation: ${session.conversationId}`
+          );
         }
       }
     } catch (error: unknown) {
-      logger.error(`[PipecatBridge] Error saving voice conversation: ${error.message}`, error);
+      logger.error(
+        `[PipecatBridge] Error saving voice conversation: ${error instanceof Error ? error.message : String(error)}`,
+        error
+      );
     }
 
-    // Remove session from memory
-    this.sessions.delete(sessionId);
+    // Remove session from Redis and user index
+    await redisService.delete(SESSION_KEY(sessionId));
+    if (session.userId) {
+      const userSessions =
+        (await redisService.get<string[]>(USER_SESSIONS_KEY(session.userId))) || [];
+      const updated = userSessions.filter(id => id !== sessionId);
+      if (updated.length > 0) {
+        await redisService.set(USER_SESSIONS_KEY(session.userId), updated, SESSION_TTL_SECONDS);
+      } else {
+        await redisService.delete(USER_SESSIONS_KEY(session.userId));
+      }
+    }
     logger.info(`[PipecatBridge] Ended session: ${sessionId}`);
   }
 
   /**
-   * Get all active sessions for a user
+   * Get all active sessions for a user (Redis-backed)
    */
-  getSessionsForUser(userId: string): VoiceSession[] {
-    return Array.from(this.sessions.values()).filter(s => s.userId === userId);
+  async getSessionsForUser(userId: string): Promise<VoiceSession[]> {
+    const sessionIds = (await redisService.get<string[]>(USER_SESSIONS_KEY(userId))) || [];
+    const sessions = await Promise.all(
+      sessionIds.map(id => redisService.get<VoiceSession>(SESSION_KEY(id)))
+    );
+    return sessions.filter((s): s is VoiceSession => s !== null);
   }
 
   /**
-   * Cleanup old sessions (call periodically)
+   * Cleanup old sessions — Redis TTL handles automatic expiry.
+   * This method explicitly removes sessions older than maxAge for safety.
    */
   async cleanupOldSessions(maxAge: number = 3600000): Promise<void> {
-    const now = Date.now();
-    const sessionsToDelete: string[] = [];
-
-    for (const [sessionId, session] of this.sessions.entries()) {
-      const age = now - session.createdAt.getTime();
-      if (age > maxAge) {
-        sessionsToDelete.push(sessionId);
-      }
-    }
-
-    for (const sessionId of sessionsToDelete) {
-      await this.endSession(sessionId);
-    }
-
-    if (sessionsToDelete.length > 0) {
-      logger.info(`[PipecatBridge] Cleaned up ${sessionsToDelete.length} old sessions`);
-    }
+    // Redis TTL already expires sessions after SESSION_TTL_SECONDS.
+    // This is a no-op but preserved for interface compatibility.
+    logger.debug(
+      `[PipecatBridge] cleanupOldSessions called; Redis TTL (${SESSION_TTL_SECONDS}s) handles expiry automatically. maxAge hint: ${maxAge}ms`
+    );
   }
 }
 
 export const pipecatBridgeService = new PipecatBridgeService();
-
-

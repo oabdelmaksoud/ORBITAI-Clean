@@ -7,13 +7,22 @@ import { toApiError } from '../../../errors/ApiError.js';
 import OpenAI from 'openai';
 import { apiKeyProvider } from '../../apiKeyProvider.service.js';
 
-// Get API key from database ONLY (no env fallback for security)
+// Get API key from database first, then fallback to environment variable
 async function getOpenAIApiKey(): Promise<string> {
   const dbKey = await apiKeyProvider.getApiKey('openai');
   if (dbKey) {
+    logger.info(`[OpenAIService] Using API key from database`);
     return dbKey;
   }
-  throw new Error('OpenAI API key not configured. Please add it via Admin Console → Settings → API Keys');
+  // Fallback to environment variable
+  const envKey = process.env.OPENAI_API_KEY;
+  if (envKey && envKey.trim() !== '') {
+    logger.info(`[OpenAIService] Using API key from environment (.env)`);
+    return envKey;
+  }
+  throw new Error(
+    'OpenAI API key not configured. Please add it via Admin Console → Settings → API Keys or set OPENAI_API_KEY in .env'
+  );
 }
 
 export interface LLMResponse {
@@ -38,10 +47,18 @@ export interface LLMConfig {
 }
 
 export class OpenAIService {
-  // Get client dynamically with current API key
+  private cachedClient: OpenAI | null = null;
+  private cachedApiKey: string | null = null;
+
+  // Get client dynamically with current API key, reusing if key unchanged
   private async getClient(): Promise<OpenAI> {
     const apiKey = await getOpenAIApiKey();
-    return new OpenAI({ apiKey });
+    if (this.cachedClient && this.cachedApiKey === apiKey) {
+      return this.cachedClient;
+    }
+    this.cachedClient = new OpenAI({ apiKey });
+    this.cachedApiKey = apiKey;
+    return this.cachedClient;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -66,13 +83,13 @@ export class OpenAIService {
       if (configOptions?.systemInstruction) {
         messages.push({
           role: 'system',
-          content: configOptions.systemInstruction
+          content: configOptions.systemInstruction,
         });
       }
 
       messages.push({
         role: 'user',
-        content: prompt
+        content: prompt,
       });
 
       // Convert tools to OpenAI format if provided
@@ -86,7 +103,7 @@ export class OpenAIService {
         temperature: configOptions?.temperature || 0.7,
         max_tokens: configOptions?.maxTokens,
         response_format: configOptions?.responseFormat,
-        tools: openAITools
+        tools: openAITools,
       });
 
       const choice = response.choices[0];
@@ -98,15 +115,16 @@ export class OpenAIService {
         for (const toolCall of choice.message.tool_calls) {
           if (toolCall.type === 'function' && toolCall.function) {
             try {
-              const args = typeof toolCall.function.arguments === 'string'
-                ? JSON.parse(toolCall.function.arguments)
-                : toolCall.function.arguments;
+              const args =
+                typeof toolCall.function.arguments === 'string'
+                  ? JSON.parse(toolCall.function.arguments)
+                  : toolCall.function.arguments;
 
               functionCalls.push({
                 name: toolCall.function.name,
-                args: args || {}
+                args: args || {},
               });
-            } catch (e) {
+            } catch (e: unknown) {
               logger.warn('Failed to parse OpenAI function call:', e);
             }
           }
@@ -118,8 +136,8 @@ export class OpenAIService {
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0
-        }
+          totalTokens: response.usage?.total_tokens || 0,
+        },
       };
 
       // Add function calls if present
@@ -137,7 +155,7 @@ export class OpenAIService {
 
   async generateStructuredOutput(
     prompt: string,
-    schema: any,
+    _schema: any,
     model: string = 'gpt-4o'
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema.`;
@@ -147,13 +165,13 @@ export class OpenAIService {
       model,
       {
         responseFormat: { type: 'json_object' },
-        temperature: 0.3
+        temperature: 0.3,
       }
     );
 
     try {
       return JSON.parse(result.text);
-    } catch (error) {
+    } catch (error: unknown) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -179,13 +197,13 @@ export class OpenAIService {
       if (configOptions?.systemInstruction) {
         messages.push({
           role: 'system',
-          content: configOptions.systemInstruction
+          content: configOptions.systemInstruction,
         });
       }
 
       messages.push({
         role: 'user',
-        content: prompt
+        content: prompt,
       });
 
       // Convert tools to OpenAI format if provided
@@ -200,7 +218,7 @@ export class OpenAIService {
         max_tokens: configOptions?.maxTokens,
         response_format: configOptions?.responseFormat,
         tools: openAITools,
-        stream: true
+        stream: true,
       });
 
       for await (const chunk of stream) {
@@ -230,8 +248,8 @@ export class OpenAIService {
             function: {
               name: funcDecl.name,
               description: funcDecl.description,
-              parameters: funcDecl.parameters || {}
-            }
+              parameters: funcDecl.parameters || {},
+            },
           });
         }
       }
@@ -239,8 +257,6 @@ export class OpenAIService {
 
     return openAITools;
   }
-
 }
 
 export const openAIService = new OpenAIService();
-

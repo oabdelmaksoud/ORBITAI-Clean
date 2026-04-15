@@ -143,7 +143,7 @@ const DEMO_GAME_HTML = `
   </div>
 
   <script>
-    console.log('[CUA-Demo] Demo game loaded');
+    logger.info('[CUA-Demo] Demo game loaded');
     
     const startBtn = document.getElementById('start-game');
     const gameCanvas = document.getElementById('game-canvas');
@@ -160,7 +160,7 @@ const DEMO_GAME_HTML = `
     let obstacleInterval;
     
     function startGame() {
-      console.log('[CUA-Demo] Game started!');
+      logger.info('[CUA-Demo] Game started!');
       container.classList.add('game-active');
       gameRunning = true;
       score = 0;
@@ -214,7 +214,7 @@ const DEMO_GAME_HTML = `
     }
     
     function endGame() {
-      console.log('[CUA-Demo] Game over! Score:', score);
+      logger.info('[CUA-Demo] Game over! Score:', score);
       gameRunning = false;
       clearInterval(obstacleInterval);
       finalScoreEl.textContent = score;
@@ -239,7 +239,7 @@ const DEMO_GAME_HTML = `
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', restartGame);
     
-    console.log('[CUA-Demo] Event listeners attached');
+    logger.info('[CUA-Demo] Event listeners attached');
   </script>
 </body>
 </html>
@@ -250,7 +250,7 @@ const DEMO_GAME_HTML = `
  * Returns demo game HTML for CUA testing
  * No authentication required
  */
-router.get('/prototype', (req, res) => {
+router.get('/prototype', (_req, res) => {
     logger.info('[Demo] Serving demo prototype for CUA testing');
     res.json({
         success: true,
@@ -275,7 +275,7 @@ router.get('/prototype', (req, res) => {
  * Returns raw HTML for iframe embedding
  * No authentication required
  */
-router.get('/prototype/html', (req, res) => {
+router.get('/prototype/html', (_req, res) => {
     logger.info('[Demo] Serving raw demo prototype HTML');
     res.setHeader('Content-Type', 'text/html');
     res.send(DEMO_GAME_HTML);

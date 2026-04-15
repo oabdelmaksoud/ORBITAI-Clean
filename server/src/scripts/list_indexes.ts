@@ -14,7 +14,7 @@ const listIndexes = async () => {
 
         await mongoose.disconnect();
         console.log('Disconnected.');
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error listing indexes:', error);
         process.exit(1);
     }

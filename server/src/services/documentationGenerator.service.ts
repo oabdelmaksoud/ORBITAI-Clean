@@ -6,14 +6,10 @@
 
 import { logger } from '../utils/logger.js';
 import { llmRouter } from './llm/LLMRouter.js';
-import { Project } from '../models/Project.model.js';
-import { Type, Schema } from '@google/genai';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+// import { Type, Schema } from '@google/genai';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const ___dirname = path.dirname(__filename);
 
 export interface DocumentationPackage {
   readme: string;
@@ -75,7 +71,7 @@ class DocumentationGeneratorService {
    */
   async generateREADME(
     project: any,
-    options: DocumentationOptions = {}
+    _options: DocumentationOptions = {}
   ): Promise<string> {
     try {
       const prompt = `Generate a comprehensive README.md file for the following project.
@@ -109,7 +105,7 @@ Include the following sections:
 
 Make it professional, clear, and comprehensive. Use proper markdown formatting.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'documentation',
         agentRole: 'Requirements Agent',
@@ -163,7 +159,7 @@ Generate a complete ${format === 'openapi' ? 'OpenAPI 3.0' : 'Swagger 2.0'} spec
 
 Return valid ${format === 'openapi' ? 'OpenAPI' : 'Swagger'} JSON/YAML.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'api_documentation',
         agentRole: 'Implementation Agent',
@@ -186,7 +182,7 @@ Return valid ${format === 'openapi' ? 'OpenAPI' : 'Swagger'} JSON/YAML.`;
    */
   async generateUserGuide(
     project: any,
-    options: DocumentationOptions = {}
+    _options: DocumentationOptions = {}
   ): Promise<string> {
     try {
       const prompt = `Generate a comprehensive user guide for the following project.
@@ -208,7 +204,7 @@ Include:
 
 Make it user-friendly, clear, and include examples where helpful.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'documentation',
         agentRole: 'Requirements Agent',
@@ -253,7 +249,7 @@ Make it user-friendly, clear, and include examples where helpful.`;
   private async generateDeploymentGuide(
     project: any,
     platform: string,
-    options: DocumentationOptions = {}
+    _options: DocumentationOptions = {}
   ): Promise<string> {
     const prompt = `Generate a detailed deployment guide for deploying this project to ${platform}.
 
@@ -275,7 +271,7 @@ Include:
 
 Make it platform-specific and actionable.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'deployment_guide',
         agentRole: 'Integration Agent',
@@ -293,7 +289,7 @@ Make it platform-specific and actionable.`;
    */
   async generateArchitectureDocs(
     project: any,
-    options: DocumentationOptions = {}
+    _options: DocumentationOptions = {}
   ): Promise<string> {
     try {
       // Find architecture-related artifacts
@@ -327,7 +323,7 @@ Include:
 
 Use diagrams (Mermaid format) where helpful.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'architecture_documentation',
         agentRole: 'Design/Architecture Agent',
@@ -350,7 +346,7 @@ Use diagrams (Mermaid format) where helpful.`;
   async addCodeComments(
     code: string,
     language: string,
-    filePath?: string
+    _filePath?: string
   ): Promise<string> {
     try {
       const prompt = `Add comprehensive comments to the following ${language} code.
@@ -369,7 +365,7 @@ Requirements:
 
 Return the code with comments added.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'code_documentation',
         agentRole: 'Implementation Agent',

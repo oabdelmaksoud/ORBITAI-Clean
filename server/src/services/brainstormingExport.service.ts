@@ -5,7 +5,6 @@
 
 import { BrainstormingRoom } from '../models/BrainstormingRoom.model.js';
 import { Project } from '../models/Project.model.js';
-import { AgentKnowledge } from '../models/AgentKnowledge.model.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -55,7 +54,8 @@ export async function exportToProject(
     includeEvaluated = true,
     minScore = 0,
     maxTasks = 20,
-    groupByCategory = true
+    // @ts-ignore TS6133
+    _groupByCategory = true
   } = options;
 
   // Get the brainstorming room
@@ -70,15 +70,15 @@ export async function exportToProject(
   // Filter by evaluation criteria
   if (includeEvaluated) {
     ideas = ideas.filter(idea => {
-      const score = idea.evaluation?.overall || 0;
+      const score = (idea as any).evaluation?.overall || 0;
       return score >= minScore;
     });
   }
 
   // Sort by evaluation score (highest first)
   ideas.sort((a, b) => {
-    const scoreA = a.evaluation?.overall || 0;
-    const scoreB = b.evaluation?.overall || 0;
+    const scoreA = (a as any).evaluation?.overall || 0;
+    const scoreB = (b as any).evaluation?.overall || 0;
     return scoreB - scoreA;
   });
 
@@ -91,11 +91,11 @@ export async function exportToProject(
     title: idea.label,
     description: idea.description || `Implement: ${idea.label}`,
     category: idea.category || 'feature',
-    priority: mapScoreToPriority(idea.evaluation?.overall || 5),
+    priority: mapScoreToPriority((idea as any).evaluation?.overall || 5),
     estimatedEffort: estimateEffort(idea),
     sourceIdeaId: idea.id,
     sourceIdeaLabel: idea.label,
-    evaluation: idea.evaluation
+    evaluation: (idea as any).evaluation
   }));
 
   // Create project
@@ -115,7 +115,7 @@ export async function exportToProject(
       assignedTo: 'Orchestrator',
       createdBy: 'Brainstorming Export',
       createdAt: new Date(),
-      evaluation: task.evaluation
+      evaluation: (task as any).evaluation
     })),
     artifacts: [],
     logs: [{
@@ -171,7 +171,7 @@ export async function exportIdeasToProject(
   
   // Filter by score
   const filteredIdeas = ideas.filter(idea => 
-    !options.minScore || (idea.evaluation?.overall || 0) >= options.minScore
+    !options.minScore || ((idea as any).evaluation?.overall || 0) >= options.minScore
   );
 
   // Convert to tasks
@@ -180,11 +180,11 @@ export async function exportIdeasToProject(
     title: idea.label,
     description: idea.description || `Implement: ${idea.label}`,
     category: idea.category || 'feature',
-    priority: mapScoreToPriority(idea.evaluation?.overall || 5),
+    priority: mapScoreToPriority((idea as any).evaluation?.overall || 5),
     estimatedEffort: estimateEffort(idea),
     sourceIdeaId: idea.id,
     sourceIdeaLabel: idea.label,
-    evaluation: idea.evaluation
+    evaluation: (idea as any).evaluation
   }));
 
   // Add to project
@@ -199,7 +199,7 @@ export async function exportIdeasToProject(
     assignedTo: 'Orchestrator',
     createdBy: 'Brainstorming Export',
     createdAt: new Date(),
-    evaluation: task.evaluation
+    evaluation: (task as any).evaluation
   })));
 
   await Project.updateOne(
@@ -243,7 +243,7 @@ function mapScoreToPriority(score: number): 'low' | 'medium' | 'high' | 'critica
  * Estimate effort based on evaluation
  */
 function estimateEffort(idea: any): string {
-  const feasibility = idea.evaluation?.feasibility || 5;
+  const feasibility = (idea as any).evaluation?.feasibility || 5;
   
   if (feasibility >= 9) return '1-2 hours';
   if (feasibility >= 7) return '4-8 hours';

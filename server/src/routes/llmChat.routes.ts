@@ -30,10 +30,11 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
         const { prompt, context = {}, useInternet = false } = req.body;
 
         if (!prompt) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Prompt is required'
             });
+            return;
         }
 
         const userId = req.user?.id;
@@ -85,10 +86,11 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
         const { prompt, context = {}, useInternet = false } = req.body;
 
         if (!prompt) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Prompt is required'
             });
+            return;
         }
 
         const userId = req.user?.id;

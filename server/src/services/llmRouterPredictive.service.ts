@@ -7,7 +7,6 @@
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { logger } from '../utils/logger.js';
 import { modelRegistry } from './llm/models/ModelRegistry.js';
-import { TaskAnalysis } from './TaskAnalyzer.js';
 
 export interface PredictionFeatures {
   agentRole?: string;

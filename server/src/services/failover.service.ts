@@ -6,7 +6,7 @@ import { FailoverPolicy, MultiCloudStatus } from '../types/multiCloud.types';
 
 export class FailoverService {
   // Trigger failover from one platform to another
-  async triggerFailover(policy: FailoverPolicy, status: MultiCloudStatus[]): Promise<MultiCloudStatus> {
+  async triggerFailover(_policy: FailoverPolicy, _status: MultiCloudStatus[]): Promise<MultiCloudStatus> {
     // 1. Validate failover policy and current status
     // 2. Identify unhealthy deployments
     // 3. Route traffic to fallback platforms
@@ -15,7 +15,7 @@ export class FailoverService {
   }
 
   // Monitor and self-heal unhealthy deployments
-  async selfHeal(status: MultiCloudStatus[]): Promise<MultiCloudStatus[]> {
+  async selfHeal(_status: MultiCloudStatus[]): Promise<MultiCloudStatus[]> {
     // 1. Detect unhealthy deployments
     // 2. Attempt recovery or redeploy
     throw new Error('Not yet implemented: selfHeal');

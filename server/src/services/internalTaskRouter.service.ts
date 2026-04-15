@@ -14,7 +14,7 @@ import { logger } from '../utils/logger.js';
 import { modelRegistry, ModelCapabilities } from './llm/models/ModelRegistry.js';
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { InternalRoutingConfig, IInternalRoutingConfig } from '../models/InternalRoutingConfig.model.js';
-import { InternalRoutingHistory, IInternalRoutingHistory } from '../models/InternalRoutingHistory.model.js';
+import { InternalRoutingHistory} from '../models/InternalRoutingHistory.model.js';
 
 // Model tier definitions
 export type ModelTier = 'economy' | 'standard' | 'premium';
@@ -221,7 +221,7 @@ class InternalTaskRouterService {
       return {
         selectedModel: fallbackModel,
         tier: 'economy',
-        reasoning: `Fallback due to routing error: ${error.message}`,
+        reasoning: `Fallback due to routing error: ${(error instanceof Error ? error.message : String(error))}`,
         confidence: 0.3,
         estimatedCost: 0,
         alternativeModels: [],
@@ -360,7 +360,7 @@ class InternalTaskRouterService {
       }
 
       return results[0].successfulRequests / results[0].totalRequests;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('[InternalRouter] Failed to get historical success rate:', error);
       return 0.85; // Default
     }
@@ -399,7 +399,7 @@ class InternalTaskRouterService {
 
       // Calculate pressure (0 = no pressure, 1 = at limit)
       return Math.min(spent / limit, 1);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('[InternalRouter] Failed to calculate budget pressure:', error);
       return 0.3;
     }
@@ -410,12 +410,12 @@ class InternalTaskRouterService {
    */
   private determineTier(
     complexity: 'simple' | 'moderate' | 'complex',
-    tokenEstimate: number,
+    _tokenEstimate: number,
     requiredCapabilities: string[],
     isUserFacing: boolean,
     isCritical: boolean,
     budgetPressure: number,
-    config: IInternalRoutingConfig
+    _config: IInternalRoutingConfig
   ): ModelTier {
     // Critical or user-facing tasks get premium treatment
     if (isCritical) {
@@ -581,7 +581,7 @@ class InternalTaskRouterService {
           avgLatency: r.avgLatency || 1000
         });
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('[InternalRouter] Failed to get model performance:', error);
     }
 
@@ -677,7 +677,7 @@ class InternalTaskRouterService {
         processingTimeMs,
         timestamp: new Date()
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('[InternalRouter] Failed to log decision:', error);
     }
   }
@@ -711,7 +711,7 @@ class InternalTaskRouterService {
         logger.info(`[InternalRouter] Economy tier failed for ${decision.taskType}, will consider escalation for similar tasks`);
         // This data will be used by getHistoricalSuccessRate to influence future decisions
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('[InternalRouter] Failed to record outcome:', error);
     }
   }
@@ -753,7 +753,7 @@ class InternalTaskRouterService {
       this.configCacheTime = now;
 
       return config;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[InternalRouter] Failed to get config:', error);
 
       // Return default config
@@ -820,7 +820,7 @@ class InternalTaskRouterService {
       });
 
       return config;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[InternalRouter] Failed to update config:', error);
       throw error;
     }
@@ -904,7 +904,7 @@ class InternalTaskRouterService {
         topModels,
         costSavings
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[InternalRouter] Failed to get statistics:', error);
       throw error;
     }

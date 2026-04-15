@@ -4,9 +4,6 @@ import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { User } from '../models/User.model.js';
 import { Project } from '../models/Project.model.js';
 import { ActivityEvent } from '../models/ActivityEvent.model.js';
-import { AuditLog } from '../models/AuditLog.model.js';
-import { AppError } from '../middleware/errorHandler.js';
-import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -24,15 +21,15 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    // Get all users
-    const users = await User.find({}).lean();
+    // Get users (limited to prevent full table scans)
+    const users = await User.find({}).limit(1000).lean();
 
     // Get activity data for each user
     const userActivity = await ActivityEvent.aggregate([
       {
         $match: {
-          timestamp: { $gte: ninetyDaysAgo }
-        }
+          timestamp: { $gte: ninetyDaysAgo },
+        },
       },
       {
         $group: {
@@ -41,21 +38,19 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
           activityCount: { $sum: 1 },
           activityLast30Days: {
             $sum: {
-              $cond: [{ $gte: ['$timestamp', thirtyDaysAgo] }, 1, 0]
-            }
+              $cond: [{ $gte: ['$timestamp', thirtyDaysAgo] }, 1, 0],
+            },
           },
           activityLast60Days: {
             $sum: {
-              $cond: [{ $gte: ['$timestamp', sixtyDaysAgo] }, 1, 0]
-            }
-          }
-        }
-      }
+              $cond: [{ $gte: ['$timestamp', sixtyDaysAgo] }, 1, 0],
+            },
+          },
+        },
+      },
     ]);
 
-    const activityMap = new Map(
-      userActivity.map(item => [item._id, item])
-    );
+    const activityMap = new Map(userActivity.map(item => [item._id, item]));
 
     // Calculate churn risk for each user
     const churnPredictions = users.map(user => {
@@ -63,7 +58,7 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
         lastActivity: user.lastLogin || user.createdAt,
         activityCount: 0,
         activityLast30Days: 0,
-        activityLast60Days: 0
+        activityLast60Days: 0,
       };
 
       const daysSinceLastActivity = Math.floor(
@@ -114,9 +109,8 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
         activityCount: activity.activityCount,
         activityLast30Days: activity.activityLast30Days,
         lastActivity: activity.lastActivity,
-        predictedChurnDate: riskScore >= 50 
-          ? new Date(now.getTime() + (30 - riskScore) * 24 * 60 * 60 * 1000)
-          : null
+        predictedChurnDate:
+          riskScore >= 50 ? new Date(now.getTime() + (30 - riskScore) * 24 * 60 * 60 * 1000) : null,
       };
     });
 
@@ -130,15 +124,16 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
       high: churnPredictions.filter(p => p.riskLevel === 'high').length,
       medium: churnPredictions.filter(p => p.riskLevel === 'medium').length,
       low: churnPredictions.filter(p => p.riskLevel === 'low').length,
-      averageRiskScore: churnPredictions.reduce((sum, p) => sum + p.riskScore, 0) / churnPredictions.length
+      averageRiskScore:
+        churnPredictions.reduce((sum, p) => sum + p.riskScore, 0) / churnPredictions.length,
     };
 
     res.json({
       success: true,
       data: {
         predictions: churnPredictions,
-        summary
-      }
+        summary,
+      },
     });
   } catch (error: unknown) {
     next(error);
@@ -152,21 +147,26 @@ router.get('/churn-prediction', async (_req: AdminRequest, res, next) => {
 router.get('/segmentation', async (_req: AdminRequest, res, next) => {
   try {
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // const _thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    // Get user data with activity
-    const users = await User.find({}).lean();
-    const projects = await Project.find({}).lean();
+    // Get user data with activity (limited to prevent full table scans)
+    const users = await User.find({}).limit(1000).lean();
+    const projects = await Project.find({}).limit(1000).lean();
     const activityEvents = await ActivityEvent.find({
-      timestamp: { $gte: ninetyDaysAgo }
-    }).lean();
+      timestamp: { $gte: ninetyDaysAgo },
+    })
+      .limit(1000)
+      .lean();
 
     // Group projects by user
     const projectsByUser = new Map<string, number>();
     projects.forEach(project => {
       if (project.userId) {
-        projectsByUser.set(project.userId.toString(), (projectsByUser.get(project.userId.toString()) || 0) + 1);
+        projectsByUser.set(
+          project.userId.toString(),
+          (projectsByUser.get(project.userId.toString()) || 0) + 1
+        );
       }
     });
 
@@ -185,7 +185,7 @@ router.get('/segmentation', async (_req: AdminRequest, res, next) => {
       casualUsers: [] as any[],
       atRiskUsers: [] as any[],
       newUsers: [] as any[],
-      inactiveUsers: [] as any[]
+      inactiveUsers: [] as any[],
     };
 
     users.forEach(user => {
@@ -207,7 +207,7 @@ router.get('/segmentation', async (_req: AdminRequest, res, next) => {
         activityCount,
         daysSinceSignup,
         daysSinceLastActivity,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
       };
 
       // Segmentation logic
@@ -231,33 +231,45 @@ router.get('/segmentation', async (_req: AdminRequest, res, next) => {
       powerUsers: {
         count: segments.powerUsers.length,
         percentage: (segments.powerUsers.length / users.length) * 100,
-        avgProjects: segments.powerUsers.reduce((sum, u) => sum + u.projectCount, 0) / segments.powerUsers.length || 0,
-        avgActivity: segments.powerUsers.reduce((sum, u) => sum + u.activityCount, 0) / segments.powerUsers.length || 0
+        avgProjects:
+          segments.powerUsers.reduce((sum, u) => sum + u.projectCount, 0) /
+            segments.powerUsers.length || 0,
+        avgActivity:
+          segments.powerUsers.reduce((sum, u) => sum + u.activityCount, 0) /
+            segments.powerUsers.length || 0,
       },
       activeUsers: {
         count: segments.activeUsers.length,
         percentage: (segments.activeUsers.length / users.length) * 100,
-        avgProjects: segments.activeUsers.reduce((sum, u) => sum + u.projectCount, 0) / segments.activeUsers.length || 0,
-        avgActivity: segments.activeUsers.reduce((sum, u) => sum + u.activityCount, 0) / segments.activeUsers.length || 0
+        avgProjects:
+          segments.activeUsers.reduce((sum, u) => sum + u.projectCount, 0) /
+            segments.activeUsers.length || 0,
+        avgActivity:
+          segments.activeUsers.reduce((sum, u) => sum + u.activityCount, 0) /
+            segments.activeUsers.length || 0,
       },
       casualUsers: {
         count: segments.casualUsers.length,
         percentage: (segments.casualUsers.length / users.length) * 100,
-        avgProjects: segments.casualUsers.reduce((sum, u) => sum + u.projectCount, 0) / segments.casualUsers.length || 0,
-        avgActivity: segments.casualUsers.reduce((sum, u) => sum + u.activityCount, 0) / segments.casualUsers.length || 0
+        avgProjects:
+          segments.casualUsers.reduce((sum, u) => sum + u.projectCount, 0) /
+            segments.casualUsers.length || 0,
+        avgActivity:
+          segments.casualUsers.reduce((sum, u) => sum + u.activityCount, 0) /
+            segments.casualUsers.length || 0,
       },
       atRiskUsers: {
         count: segments.atRiskUsers.length,
-        percentage: (segments.atRiskUsers.length / users.length) * 100
+        percentage: (segments.atRiskUsers.length / users.length) * 100,
       },
       newUsers: {
         count: segments.newUsers.length,
-        percentage: (segments.newUsers.length / users.length) * 100
+        percentage: (segments.newUsers.length / users.length) * 100,
       },
       inactiveUsers: {
         count: segments.inactiveUsers.length,
-        percentage: (segments.inactiveUsers.length / users.length) * 100
-      }
+        percentage: (segments.inactiveUsers.length / users.length) * 100,
+      },
     };
 
     res.json({
@@ -265,8 +277,8 @@ router.get('/segmentation', async (_req: AdminRequest, res, next) => {
       data: {
         segments,
         segmentStats,
-        totalUsers: users.length
-      }
+        totalUsers: users.length,
+      },
     });
   } catch (error: unknown) {
     next(error);
@@ -280,9 +292,9 @@ router.get('/segmentation', async (_req: AdminRequest, res, next) => {
 router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
   try {
     const now = new Date();
-    const users = await User.find({}).lean();
-    const projects = await Project.find({}).lean();
-    const activityEvents = await ActivityEvent.find({}).lean();
+    const users = await User.find({}).limit(1000).lean();
+    const projects = await Project.find({}).limit(1000).lean();
+    const activityEvents = await ActivityEvent.find({}).limit(1000).lean();
 
     // Group data by user
     const projectsByUser = new Map<string, any[]>();
@@ -313,7 +325,7 @@ router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
       engagement: [] as any[], // 30-90 days, > 10 activities
       retention: [] as any[], // 90+ days, regular activity
       dormant: [] as any[], // No activity in 30+ days
-      churned: [] as any[] // No activity in 90+ days
+      churned: [] as any[], // No activity in 90+ days
     };
 
     users.forEach(user => {
@@ -336,7 +348,7 @@ router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
         daysSinceLastActivity,
         projectCount: userProjects.length,
         activityCount: userActivities.length,
-        stage: '' as string
+        stage: '' as string,
       };
 
       if (daysSinceLastActivity > 90) {
@@ -367,7 +379,8 @@ router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
     const stageStats = Object.keys(lifecycleStages).map(stage => ({
       stage,
       count: lifecycleStages[stage as keyof typeof lifecycleStages].length,
-      percentage: (lifecycleStages[stage as keyof typeof lifecycleStages].length / users.length) * 100
+      percentage:
+        (lifecycleStages[stage as keyof typeof lifecycleStages].length / users.length) * 100,
     }));
 
     res.json({
@@ -375,8 +388,8 @@ router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
       data: {
         lifecycleStages,
         stageStats,
-        totalUsers: users.length
-      }
+        totalUsers: users.length,
+      },
     });
   } catch (error: unknown) {
     next(error);
@@ -384,19 +397,3 @@ router.get('/lifecycle', async (_req: AdminRequest, res, next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

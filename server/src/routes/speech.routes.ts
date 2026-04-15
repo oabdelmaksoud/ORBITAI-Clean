@@ -5,16 +5,14 @@
 
 import express from 'express';
 import multer from 'multer';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { AuthRequest } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
 import { speechProviderService } from '../services/speechProvider.service.js';
 import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const ___dirname = path.dirname(__filename);
 
 // Configure multer for audio file uploads
 const upload = multer({
@@ -22,7 +20,7 @@ const upload = multer({
   limits: {
     fileSize: 25 * 1024 * 1024, // 25MB limit (Whisper supports up to 25MB)
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     // Accept audio formats
     const allowedMimes = [
       'audio/webm',
@@ -46,49 +44,54 @@ const upload = multer({
 /**
  * POST /api/speech/transcribe
  * Transcribe audio to text using Whisper (open-source)
- * 
+ *
  * @body {File} audio - Audio file (webm, wav, mp3, etc.)
  * @returns {Object} { text: string, language?: string }
  */
 router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No audio file provided' 
+      res.status(400).json({
+        success: false,
+        error: 'No audio file provided',
       });
+      return;
     }
 
-    logger.info(`[Speech] Transcribing audio file: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(
+      `[Speech] Transcribing audio file: ${req.file.originalname} (${req.file.size} bytes)`
+    );
 
     // Transcribe using available provider (OpenAI, Google, Azure, etc.) with automatic fallback
     let transcription;
     try {
-      transcription = await speechProviderService.transcribeAudio(
-        req.file.path,
-        req.file.mimetype
-      );
+      transcription = await speechProviderService.transcribeAudio(req.file.path, req.file.mimetype);
     } catch (error: unknown) {
       // Clean up uploaded file
       await fs.unlink(req.file.path).catch(() => {});
-      
+
       // Provide helpful error message
-      const errorMessage = error.message || 'Speech recognition service not configured.';
-      const isQuotaError = error?.status === 429 || error?.message?.includes('quota');
-      
+      const errorMessage =
+        (error instanceof Error ? error.message : String(error)) ||
+        'Speech recognition service not configured.';
+      const isQuotaError =
+        (error as any)?.status === 429 || (error as any)?.message?.includes('quota');
+
       logger.error(`[Speech] Transcription failed: ${errorMessage}`);
-      
-      return res.status(isQuotaError ? 429 : 503).json({
+
+      res.status(isQuotaError ? 429 : 503).json({
         success: false,
-        error: isQuotaError 
+        error: isQuotaError
           ? 'All speech providers have exceeded their quota. Please check your API key billing or configure additional providers via Admin Console → Settings → API Keys.'
-          : errorMessage + ' Please configure at least one provider (OpenAI, Google, or Azure) via Admin Console → Settings → API Keys.',
+          : errorMessage +
+            ' Please configure at least one provider (OpenAI, Google, or Azure) via Admin Console → Settings → API Keys.',
       });
+      return;
     }
 
     // Clean up uploaded file
-    await fs.unlink(req.file.path).catch(() => {
-      logger.warn(`[Speech] Failed to delete temp file: ${req.file.path}`);
+    await fs.unlink(req.file!.path).catch(() => {
+      logger.warn(`[Speech] Failed to delete temp file: ${req.file!.path}`);
     });
 
     logger.info(`[Speech] Transcription successful: ${transcription.text.substring(0, 50)}...`);
@@ -107,7 +110,8 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
     logger.error('[Speech] Transcription error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to transcribe audio',
+      error:
+        (error instanceof Error ? error.message : String(error)) || 'Failed to transcribe audio',
     });
   }
 });
@@ -115,10 +119,10 @@ router.post('/transcribe', upload.single('audio'), async (req: AuthRequest, res)
 /**
  * POST /api/speech/synthesize
  * Convert text to speech using open-source TTS
- * 
+ *
  * @body {Object} { text: string, voice?: string, language?: string }
  * @returns {Buffer} Audio file (MP3 or WAV)
- * 
+ *
  * Note: For now, we'll use OpenAI's TTS API which uses open-source models.
  * In the future, this can be replaced with fully local solutions like Coqui TTS.
  */
@@ -127,10 +131,11 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
     const { text, voice = 'alloy', language = 'en' } = req.body;
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Text is required',
       });
+      return;
     }
 
     // Limit text length to prevent abuse
@@ -142,27 +147,30 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
     // Synthesize using available provider (OpenAI, Google, Azure, etc.) with automatic fallback
     let synthesisResult;
     try {
-      synthesisResult = await speechProviderService.synthesizeSpeech(
-        textToSpeak,
-        voice,
-        language
-      );
+      synthesisResult = await speechProviderService.synthesizeSpeech(textToSpeak, voice, language);
     } catch (error: unknown) {
       // Provide helpful error message
-      const errorMessage = error.message || 'Text-to-speech service not configured.';
-      const isQuotaError = error?.status === 429 || error?.message?.includes('quota');
-      
+      const errorMessage =
+        (error instanceof Error ? error.message : String(error)) ||
+        'Text-to-speech service not configured.';
+      const isQuotaError =
+        (error as any)?.status === 429 || (error as any)?.message?.includes('quota');
+
       logger.error(`[Speech] Synthesis failed: ${errorMessage}`);
-      
-      return res.status(isQuotaError ? 429 : 503).json({
+
+      res.status(isQuotaError ? 429 : 503).json({
         success: false,
-        error: isQuotaError 
+        error: isQuotaError
           ? 'All speech providers have exceeded their quota. Please check your API key billing or configure additional providers via Admin Console → Settings → API Keys.'
-          : errorMessage + ' Please configure at least one provider (OpenAI, Google, or Azure) via Admin Console → Settings → API Keys.',
+          : errorMessage +
+            ' Please configure at least one provider (OpenAI, Google, or Azure) via Admin Console → Settings → API Keys.',
       });
+      return;
     }
 
-    logger.info(`[Speech] Speech generated successfully (${synthesisResult.audioBuffer.length} bytes)`);
+    logger.info(
+      `[Speech] Speech generated successfully (${synthesisResult.audioBuffer.length} bytes)`
+    );
 
     // Set headers for audio response
     res.setHeader('Content-Type', synthesisResult.mimeType);
@@ -174,7 +182,8 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
     logger.error('[Speech] Synthesis error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to synthesize speech',
+      error:
+        (error instanceof Error ? error.message : String(error)) || 'Failed to synthesize speech',
     });
   }
 });
@@ -182,19 +191,21 @@ router.post('/synthesize', async (req: AuthRequest, res) => {
 /**
  * GET /api/speech/voices
  * Get available TTS voices
- * 
+ *
  * @returns {Object} { voices: Array<{id: string, name: string, language: string}> }
  */
-router.get('/voices', async (req: AuthRequest, res) => {
+router.get('/voices', async (_req: AuthRequest, res) => {
   try {
     // Get voices from available provider
     const voices = await speechProviderService.getVoices();
-    
+
     if (voices.length === 0) {
-      return res.status(503).json({
+      res.status(503).json({
         success: false,
-        error: 'No speech provider available. Please configure at least one provider (OpenAI, Google, or Azure) via Admin Console → Settings → API Keys.',
+        error:
+          'No speech provider available. Please configure at least one provider (OpenAI, Google, or Azure) via Admin Console → Settings → API Keys.',
       });
+      return;
     }
 
     res.json({
@@ -205,7 +216,7 @@ router.get('/voices', async (req: AuthRequest, res) => {
     logger.error('[Speech] Error getting voices:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get voices',
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get voices',
     });
   }
 });
@@ -214,7 +225,7 @@ router.get('/voices', async (req: AuthRequest, res) => {
  * GET /api/speech/providers
  * Get available speech providers
  */
-router.get('/providers', async (req: AuthRequest, res) => {
+router.get('/providers', async (_req: AuthRequest, res) => {
   try {
     const providers = await speechProviderService.getAvailableProviders();
     const preferred = await speechProviderService.getPreferredProvider();
@@ -228,12 +239,9 @@ router.get('/providers', async (req: AuthRequest, res) => {
     logger.error('[Speech] Error getting providers:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get providers',
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get providers',
     });
   }
 });
 
 export default router;
-
-
-

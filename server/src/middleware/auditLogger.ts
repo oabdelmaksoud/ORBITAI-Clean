@@ -49,7 +49,7 @@ export async function logAudit(
       errorMessage: context.errorMessage,
       complianceTags: context.complianceTags || []
     });
-  } catch (error) {
+  } catch (error: unknown) {
     // Don't throw - audit logging should not break the request
     logger.error('Failed to log audit:', error);
   }
@@ -79,7 +79,7 @@ export async function createAuditLog(
       status,
       errorMessage
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to create audit log:', error);
   }
 }

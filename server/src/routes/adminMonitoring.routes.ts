@@ -22,7 +22,7 @@ router.get('/metrics', async (_req: AdminRequest, res, next) => {
       success: true,
       data: metrics
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -49,7 +49,7 @@ router.get('/live', async (req: AdminRequest, res, next) => {
       try {
         const metrics = await monitoringService.getSystemMetrics();
         res.write(`data: ${JSON.stringify({ type: 'metrics', data: metrics })}\n\n`);
-      } catch (error) {
+      } catch (error: unknown) {
         res.write(`data: ${JSON.stringify({ type: 'error', error: (error as Error).message })}\n\n`);
       }
     }, 2000);
@@ -59,7 +59,7 @@ router.get('/live', async (req: AdminRequest, res, next) => {
       clearInterval(interval);
       res.end();
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -75,7 +75,7 @@ router.get('/active-sessions', async (_req: AdminRequest, res, next) => {
       success: true,
       data: { sessions }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -92,7 +92,7 @@ router.post('/kill-session/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Session killed successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -108,7 +108,7 @@ router.get('/active-requests', async (_req: AdminRequest, res, next) => {
       success: true,
       data: { requests }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -133,7 +133,7 @@ router.post('/cancel-request/:id', async (req: AdminRequest, res, next) => {
         error: 'Request not found'
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -149,7 +149,7 @@ router.get('/queue-status', async (_req: AdminRequest, res, next) => {
       success: true,
       data: status
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -165,7 +165,7 @@ router.post('/clear-queue', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Queue cleared successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

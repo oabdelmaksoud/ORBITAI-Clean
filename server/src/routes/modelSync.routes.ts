@@ -18,7 +18,7 @@ const router = express.Router();
  * Get public model registry - all known models without needing API keys
  * This is public to allow frontend to show available models before configuration
  */
-router.get('/registry', async (req: express.Request, res) => {
+router.get('/registry', async (_req: express.Request, res) => {
   try {
     const registry = modelSyncService.getPublicModelRegistry();
     res.json({
@@ -30,18 +30,18 @@ router.get('/registry', async (req: express.Request, res) => {
           description: p.description,
           website: p.website,
           apiDocsUrl: p.apiDocsUrl,
-          modelCount: p.models.length
+          modelCount: p.models.length,
         })),
         models: registry.models,
         totalProviders: registry.providers.length,
-        totalModels: registry.models.length
-      }
+        totalModels: registry.models.length,
+      },
     });
   } catch (error: unknown) {
     logger.error('Failed to get model registry:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -50,18 +50,18 @@ router.get('/registry', async (req: express.Request, res) => {
  * GET /api/admin/models/discover
  * Discover new providers from public sources (OpenRouter)
  */
-router.get('/discover', async (req: express.Request, res) => {
+router.get('/discover', async (_req: express.Request, res) => {
   try {
     const discovery = await modelSyncService.discoverNewProviders();
     res.json({
       success: true,
-      data: discovery
+      data: discovery,
     });
   } catch (error: unknown) {
     logger.error('Failed to discover providers:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -76,13 +76,13 @@ router.get('/with-fallback/:provider', async (req: express.Request, res) => {
     const result = await modelSyncService.getModelsWithFallback(provider);
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error: unknown) {
     logger.error(`Failed to get models with fallback for ${provider}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -94,19 +94,19 @@ router.use(authenticateToken, requireAdmin);
  * GET /api/admin/models/sync/status
  * Get current sync status
  */
-router.get('/sync/status', async (req: AdminRequest, res) => {
+router.get('/sync/status', async (_req: AdminRequest, res) => {
   try {
     // Use async version to load from DB if not in memory
     const status = await modelSyncService.getSyncStatusAsync();
     res.json({
       success: true,
-      data: status
+      data: status,
     });
   } catch (error: unknown) {
     logger.error('Failed to get sync status:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -115,18 +115,18 @@ router.get('/sync/status', async (req: AdminRequest, res) => {
  * GET /api/admin/models/sync/results
  * Get last sync results from database
  */
-router.get('/sync/results', async (req: AdminRequest, res) => {
+router.get('/sync/results', async (_req: AdminRequest, res) => {
   try {
     const results = await modelSyncService.getLastSyncResults();
     res.json({
       success: true,
-      data: results
+      data: results,
     });
   } catch (error: unknown) {
     logger.error('Failed to get sync results:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -146,13 +146,13 @@ router.post('/sync', async (req: AdminRequest, res) => {
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error: unknown) {
     logger.error('Model sync failed:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -199,21 +199,22 @@ router.post('/sync/:provider', async (req: AdminRequest, res) => {
         result = await modelSyncService.fetchTogetherModels();
         break;
       default:
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
-          error: `Unknown provider: ${provider}. Supported providers: openai, anthropic, gemini, groq, mistral, openrouter, deepseek, cohere, together`
+          error: `Unknown provider: ${provider}. Supported providers: openai, anthropic, gemini, groq, mistral, openrouter, deepseek, cohere, together`,
         });
+        return;
     }
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error: unknown) {
     logger.error(`Model sync for ${provider} failed:`, error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -222,7 +223,7 @@ router.post('/sync/:provider', async (req: AdminRequest, res) => {
  * GET /api/admin/models
  * Get all models from the registry
  */
-router.get('/', async (req: AdminRequest, res) => {
+router.get('/', async (_req: AdminRequest, res) => {
   try {
     const models = modelRegistry.getAllModels();
     const providers = modelRegistry.getProviders();
@@ -242,15 +243,15 @@ router.get('/', async (req: AdminRequest, res) => {
           pricing: m.pricing,
           limits: m.limits,
           capabilities: m.capabilities,
-          performance: m.performance
-        }))
-      }
+          performance: m.performance,
+        })),
+      },
     });
   } catch (error: unknown) {
     logger.error('Failed to get models:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -266,21 +267,22 @@ router.get('/:id', async (req: AdminRequest, res) => {
     const model = modelRegistry.getModel(id);
 
     if (!model) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
-        error: `Model not found: ${id}`
+        error: `Model not found: ${id}`,
       });
+      return;
     }
 
     res.json({
       success: true,
-      data: model
+      data: model,
     });
   } catch (error: unknown) {
     logger.error(`Failed to get model ${id}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -296,10 +298,11 @@ router.put('/:id/enable', async (req: AdminRequest, res) => {
     const model = modelRegistry.getModel(id);
 
     if (!model) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
-        error: `Model not found: ${id}`
+        error: `Model not found: ${id}`,
       });
+      return;
     }
 
     modelRegistry.updateModel(id, { isEnabled: true, status: 'active' });
@@ -308,13 +311,13 @@ router.put('/:id/enable', async (req: AdminRequest, res) => {
 
     res.json({
       success: true,
-      message: `Model ${id} enabled`
+      message: `Model ${id} enabled`,
     });
   } catch (error: unknown) {
     logger.error(`Failed to enable model ${id}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -330,10 +333,11 @@ router.put('/:id/disable', async (req: AdminRequest, res) => {
     const model = modelRegistry.getModel(id);
 
     if (!model) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
-        error: `Model not found: ${id}`
+        error: `Model not found: ${id}`,
       });
+      return;
     }
 
     modelRegistry.updateModel(id, { isEnabled: false });
@@ -342,13 +346,13 @@ router.put('/:id/disable', async (req: AdminRequest, res) => {
 
     res.json({
       success: true,
-      message: `Model ${id} disabled`
+      message: `Model ${id} disabled`,
     });
   } catch (error: unknown) {
     logger.error(`Failed to disable model ${id}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -364,10 +368,11 @@ router.delete('/:id', async (req: AdminRequest, res) => {
     const model = modelRegistry.getModel(id);
 
     if (!model) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
-        error: `Model not found: ${id}`
+        error: `Model not found: ${id}`,
       });
+      return;
     }
 
     modelRegistry.removeModel(id);
@@ -376,13 +381,13 @@ router.delete('/:id', async (req: AdminRequest, res) => {
 
     res.json({
       success: true,
-      message: `Model ${id} removed`
+      message: `Model ${id} removed`,
     });
   } catch (error: unknown) {
     logger.error(`Failed to remove model ${id}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -399,13 +404,13 @@ router.post('/scheduler/start', async (req: AdminRequest, res) => {
 
     res.json({
       success: true,
-      message: 'Monthly sync scheduler started'
+      message: 'Monthly sync scheduler started',
     });
   } catch (error: unknown) {
     logger.error('Failed to start scheduler:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -422,13 +427,13 @@ router.post('/scheduler/stop', async (req: AdminRequest, res) => {
 
     res.json({
       success: true,
-      message: 'Monthly sync scheduler stopped'
+      message: 'Monthly sync scheduler stopped',
     });
   } catch (error: unknown) {
     logger.error('Failed to stop scheduler:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -464,31 +469,31 @@ async function updateModelRegistry(syncResult: FullSyncResult): Promise<void> {
               longContext: (model.contextWindow || 0) > 32000,
               fastResponse: model.provider === 'groq',
               streaming: model.capabilities?.streaming || true,
-              functionCalling: model.capabilities?.functionCalling || false
+              functionCalling: model.capabilities?.functionCalling || false,
             },
             limits: {
               maxTokens: model.contextWindow || 8192,
-              maxContextLength: model.contextWindow || 8192
+              maxContextLength: model.contextWindow || 8192,
             },
             pricing: {
-              inputCostPer1MTokens: model.inputPricePerMillion || 1.00,
-              outputCostPer1MTokens: model.outputPricePerMillion || 3.00
+              inputCostPer1MTokens: model.inputPricePerMillion || 1.0,
+              outputCostPer1MTokens: model.outputPricePerMillion || 3.0,
             },
             performance: {
               avgLatencyMs: 1000,
-              reliability: 0.98
+              reliability: 0.98,
             },
             recommendedFor: {
               agentRoles: [],
               taskTypes: [],
-              complexity: ['moderate']
+              complexity: ['moderate'],
             },
             status: model.isDeprecated ? 'deprecated' : 'active',
-            isEnabled: false // New models start disabled
+            isEnabled: false, // New models start disabled
           });
           providerResult.modelsAdded++;
           logger.info(`Added new model: ${model.id}`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to add model ${model.id}:`, error);
         }
       } else {
@@ -497,10 +502,12 @@ async function updateModelRegistry(syncResult: FullSyncResult): Promise<void> {
         if (existingModel) {
           modelRegistry.updateModel(existingModel.id, {
             pricing: {
-              inputCostPer1MTokens: model.inputPricePerMillion || existingModel.pricing.inputCostPer1MTokens,
-              outputCostPer1MTokens: model.outputPricePerMillion || existingModel.pricing.outputCostPer1MTokens
+              inputCostPer1MTokens:
+                model.inputPricePerMillion || existingModel.pricing.inputCostPer1MTokens,
+              outputCostPer1MTokens:
+                model.outputPricePerMillion || existingModel.pricing.outputCostPer1MTokens,
             },
-            status: model.isDeprecated ? 'deprecated' : existingModel.status
+            status: model.isDeprecated ? 'deprecated' : existingModel.status,
           });
           providerResult.modelsUpdated++;
         }
@@ -512,7 +519,7 @@ async function updateModelRegistry(syncResult: FullSyncResult): Promise<void> {
       if (!newIds.has(existingModel.modelIdentifier) && existingModel.status === 'active') {
         modelRegistry.updateModel(existingModel.id, {
           status: 'deprecated',
-          isEnabled: false
+          isEnabled: false,
         });
         providerResult.modelsDisabled++;
         logger.info(`Disabled discontinued model: ${existingModel.id}`);
@@ -526,8 +533,8 @@ async function updateModelRegistry(syncResult: FullSyncResult): Promise<void> {
       let shouldRemove = false;
 
       // Check if this model is marked as deprecated in the new sync results
-      const deprecatedInSync = providerResult.models?.some(m =>
-        m.modelIdentifier === existingModel.modelIdentifier && m.isDeprecated === true
+      const deprecatedInSync = providerResult.models?.some(
+        m => m.modelIdentifier === existingModel.modelIdentifier && m.isDeprecated === true
       );
 
       // Also remove existing deprecated models that are no longer in the provider's list
@@ -544,12 +551,12 @@ async function updateModelRegistry(syncResult: FullSyncResult): Promise<void> {
           modelRegistry.removeModel(existingModel.id);
 
           // Remove from database
-          const { LLMModelConfig } = await import('../../models/LLMModelConfig.model.js');
+          const { LLMModelConfig } = await import('../models/LLMModelConfig.model.js');
           await LLMModelConfig.deleteOne({ modelId: existingModel.id });
 
           providerResult.modelsRemoved = (providerResult.modelsRemoved || 0) + 1;
           logger.info(`Removed deprecated model: ${existingModel.id} (${existingModel.name})`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to remove deprecated model ${existingModel.id}:`, error);
         }
       }
@@ -558,5 +565,3 @@ async function updateModelRegistry(syncResult: FullSyncResult): Promise<void> {
 }
 
 export default router;
-
-

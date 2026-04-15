@@ -5,11 +5,11 @@
 
 import express, { Request, Response } from 'express';
 import { requireAdmin } from '../middleware/adminAuth.js';
+// @ts-ignore TS6192
 import { llmRouterAutoTuneService, ABTestConfiguration, PerformanceMetrics } from '../services/llmRouterAutoTune.service.js';
 import { llmRouterSettingsService } from '../services/llmRouterSettings.service.js';
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { logger } from '../utils/logger.js';
-import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -70,7 +70,7 @@ router.get('/ab-tests', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve A/B tests',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -85,10 +85,11 @@ router.get('/ab-tests/:testId', async (req: Request, res: Response) => {
     const test = abTestsStorage.get(testId);
     
     if (!test) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
+      return;
     }
     
     res.json({
@@ -100,7 +101,7 @@ router.get('/ab-tests/:testId', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve A/B test',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -116,26 +117,29 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
     
     // Validate input
     if (!name) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Test name is required'
       });
+      return;
     }
     
     if (!variants || !Array.isArray(variants) || variants.length < 2) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'At least 2 variants are required'
       });
+      return;
     }
     
     // Validate traffic percentages sum to 100
     const totalTraffic = variants.reduce((sum: number, v: any) => sum + (v.trafficPercent || 0), 0);
     if (Math.abs(totalTraffic - 100) > 0.01) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Variant traffic percentages must sum to 100'
       });
+      return;
     }
     
     // Create test
@@ -188,7 +192,7 @@ router.post('/ab-tests', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create A/B test',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -203,17 +207,19 @@ router.post('/ab-tests/:testId/complete', async (req: Request, res: Response) =>
     const test = abTestsStorage.get(testId);
     
     if (!test) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
+      return;
     }
     
     if (test.status !== 'running') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: `Cannot complete test with status: ${test.status}`
       });
+      return;
     }
     
     // Calculate final metrics and determine winner
@@ -257,7 +263,7 @@ router.post('/ab-tests/:testId/complete', async (req: Request, res: Response) =>
     res.status(500).json({
       success: false,
       message: 'Failed to complete A/B test',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -272,32 +278,36 @@ router.post('/ab-tests/:testId/apply-winner', async (req: Request, res: Response
     const test = abTestsStorage.get(testId);
     
     if (!test) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
+      return;
     }
     
     if (test.status !== 'completed') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Test must be completed before applying winner'
       });
+      return;
     }
     
     if (!test.winner) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'No winner determined for this test'
       });
+      return;
     }
     
     const winningVariant = test.variants.find(v => v.id === test.winner);
     if (!winningVariant) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Winner variant not found'
       });
+      return;
     }
     
     // Apply the winning configuration to global settings
@@ -315,7 +325,7 @@ router.post('/ab-tests/:testId/apply-winner', async (req: Request, res: Response
     res.status(500).json({
       success: false,
       message: 'Failed to apply winning configuration',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -330,10 +340,11 @@ router.delete('/ab-tests/:testId', async (req: Request, res: Response) => {
     const test = abTestsStorage.get(testId);
     
     if (!test) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
+      return;
     }
     
     if (test.status === 'running') {
@@ -354,7 +365,7 @@ router.delete('/ab-tests/:testId', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete A/B test',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -369,10 +380,11 @@ router.get('/ab-tests/:testId/metrics', async (req: Request, res: Response) => {
     const test = abTestsStorage.get(testId);
     
     if (!test) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'A/B test not found'
       });
+      return;
     }
     
     // Calculate current metrics
@@ -399,7 +411,7 @@ router.get('/ab-tests/:testId/metrics', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve test metrics',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -425,7 +437,7 @@ async function calculateTestMetrics(test: ABTestWithVariants): Promise<void> {
     
     // Simulate variant assignment (in production, this would be tracked per request)
     // For now, distribute usage data across variants based on traffic percentages
-    let currentIndex = 0;
+    // let _currentIndex = 0;
     const variantAssignments: { [key: string]: typeof usageData } = {};
     
     test.variants.forEach(v => {
@@ -475,7 +487,7 @@ async function calculateTestMetrics(test: ABTestWithVariants): Promise<void> {
           : 0
       };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to calculate test metrics:', error);
   }
 }

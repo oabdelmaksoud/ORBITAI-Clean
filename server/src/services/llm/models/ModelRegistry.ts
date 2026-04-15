@@ -5,7 +5,22 @@
 import { logger } from '../../../utils/logger.js';
 import { toApiError } from '../../../errors/ApiError.js';
 
-export type LLMProvider = 'gemini' | 'openai' | 'anthropic' | 'deepseek' | 'grok' | 'mistral' | 'qwen' | 'openrouter' | 'groq' | 'vertex' | 'azure' | 'custom' | 'ollama' | 'vllm' | 'openai_compatible';
+export type LLMProvider =
+  | 'gemini'
+  | 'openai'
+  | 'anthropic'
+  | 'deepseek'
+  | 'grok'
+  | 'mistral'
+  | 'qwen'
+  | 'openrouter'
+  | 'groq'
+  | 'vertex'
+  | 'azure'
+  | 'custom'
+  | 'ollama'
+  | 'vllm'
+  | 'openai_compatible';
 export type TaskComplexity = 'simple' | 'moderate' | 'complex';
 
 export interface ModelCapabilities {
@@ -30,7 +45,7 @@ export interface ModelCapabilities {
   };
 
   pricing: {
-    inputCostPer1MTokens: number;  // Cost per 1M input tokens
+    inputCostPer1MTokens: number; // Cost per 1M input tokens
     outputCostPer1MTokens: number; // Cost per 1M output tokens
   };
 
@@ -73,27 +88,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: false // gemini-2.5-flash doesn't support function calling (use Gemini 3 Pro or 2.5 Pro for function calling)
+          functionCalling: false, // gemini-2.5-flash doesn't support function calling (use Gemini 3 Pro or 2.5 Pro for function calling)
         },
         limits: {
           maxTokens: 1000000,
-          maxContextLength: 1000000
+          maxContextLength: 1000000,
         },
         pricing: {
           inputCostPer1MTokens: 0.075,
-          outputCostPer1MTokens: 0.30
+          outputCostPer1MTokens: 0.3,
         },
         performance: {
           avgLatencyMs: 200,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator'],
           taskTypes: ['chat', 'conversation', 'prompt-enhancement'],
-          complexity: ['simple']
+          complexity: ['simple'],
         },
         status: 'active',
-        isEnabled: true
+        isEnabled: true,
       },
       {
         id: 'gemini-2.5-pro',
@@ -106,27 +121,38 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Gemini 2.5 Pro supports function calling
+          functionCalling: true, // Gemini 2.5 Pro supports function calling
         },
         limits: {
           maxTokens: 1000000,
-          maxContextLength: 1000000
+          maxContextLength: 1000000,
         },
         pricing: {
           inputCostPer1MTokens: 1.25, // Updated 2025 pricing
-          outputCostPer1MTokens: 5.00
+          outputCostPer1MTokens: 5.0,
         },
         performance: {
           avgLatencyMs: 1200,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
-          agentRoles: ['Requirements Agent', 'Design/Architecture Agent', 'QA/Audit Agent', 'Implementation Agent'],
-          taskTypes: ['structured-output', 'analysis', 'documentation', 'multimodal', 'code-generation'],
-          complexity: ['moderate', 'complex']
+          agentRoles: [
+            'Requirements Agent',
+            'Design/Architecture Agent',
+            'QA/Audit Agent',
+            'Implementation Agent',
+          ],
+          taskTypes: [
+            'structured-output',
+            'analysis',
+            'documentation',
+            'multimodal',
+            'code-generation',
+          ],
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key (alternative to Gemini 3 Pro)
+        isEnabled: false, // Requires API key (alternative to Gemini 3 Pro)
       },
       {
         id: 'gemini-3-pro',
@@ -139,27 +165,33 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // gemini-3-pro supports function calling
+          functionCalling: true, // gemini-3-pro supports function calling
         },
         limits: {
           maxTokens: 2000000,
-          maxContextLength: 2000000
+          maxContextLength: 2000000,
         },
         pricing: {
           inputCostPer1MTokens: 1.25, // Updated: Current rate as of 2025
-          outputCostPer1MTokens: 5.00 // Updated: Current rate as of 2025
+          outputCostPer1MTokens: 5.0, // Updated: Current rate as of 2025
         },
         performance: {
           avgLatencyMs: 1500,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
-          agentRoles: ['Requirements Agent', 'Design/Architecture Agent', 'QA/Audit Agent', 'Integration Agent', 'Test Agent'],
+          agentRoles: [
+            'Requirements Agent',
+            'Design/Architecture Agent',
+            'QA/Audit Agent',
+            'Integration Agent',
+            'Test Agent',
+          ],
           taskTypes: ['structured-output', 'analysis', 'documentation', 'project-preview'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: true
+        isEnabled: true,
       },
       {
         id: 'gemini-3-flash',
@@ -172,27 +204,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 1000000,
-          maxContextLength: 1000000
+          maxContextLength: 1000000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.10,
-          outputCostPer1MTokens: 0.40
+          inputCostPer1MTokens: 0.1,
+          outputCostPer1MTokens: 0.4,
         },
         performance: {
           avgLatencyMs: 300,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'Implementation Agent'],
           taskTypes: ['code-generation', 'chat', 'real-time-assistants'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: true
+        isEnabled: true,
       },
       {
         id: 'gpt-4o',
@@ -205,27 +237,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // GPT-4o supports function calling
+          functionCalling: true, // GPT-4o supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 2.50,
-          outputCostPer1MTokens: 10.00
+          inputCostPer1MTokens: 2.5,
+          outputCostPer1MTokens: 10.0,
         },
         performance: {
           avgLatencyMs: 1200,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent', 'UX Designer', 'Design/Architecture Agent'],
           taskTypes: ['code-generation', 'creative', 'analysis'],
-          complexity: ['complex']
+          complexity: ['complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key
+        isEnabled: false, // Requires API key
       },
       {
         id: 'gpt-4o-mini',
@@ -238,27 +270,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // GPT-4o Mini supports function calling
+          functionCalling: true, // GPT-4o Mini supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
           inputCostPer1MTokens: 0.15,
-          outputCostPer1MTokens: 0.60
+          outputCostPer1MTokens: 0.6,
         },
         performance: {
           avgLatencyMs: 400,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator'],
           taskTypes: ['chat', 'simple-tasks'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false // Requires API key
+        isEnabled: false, // Requires API key
       },
       {
         id: 'claude-3-5-sonnet',
@@ -271,27 +303,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Claude 3.5 Sonnet supports function calling
+          functionCalling: true, // Claude 3.5 Sonnet supports function calling
         },
         limits: {
           maxTokens: 200000,
-          maxContextLength: 200000
+          maxContextLength: 200000,
         },
         pricing: {
-          inputCostPer1MTokens: 3.00,
-          outputCostPer1MTokens: 15.00
+          inputCostPer1MTokens: 3.0,
+          outputCostPer1MTokens: 15.0,
         },
         performance: {
           avgLatencyMs: 1800,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Requirements Agent', 'UX Designer', 'Design/Architecture Agent'],
           taskTypes: ['documentation', 'long-context', 'writing', 'analysis', 'code-generation'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key (Claude 4.5 Sonnet recommended for new projects)
+        isEnabled: false, // Requires API key (Claude 4.5 Sonnet recommended for new projects)
       },
       {
         id: 'claude-opus-4',
@@ -304,27 +336,32 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Claude Opus 4 supports function calling
+          functionCalling: true, // Claude Opus 4 supports function calling
         },
         limits: {
           maxTokens: 200000,
-          maxContextLength: 200000
+          maxContextLength: 200000,
         },
         pricing: {
-          inputCostPer1MTokens: 15.00,
-          outputCostPer1MTokens: 75.00
+          inputCostPer1MTokens: 15.0,
+          outputCostPer1MTokens: 75.0,
         },
         performance: {
           avgLatencyMs: 2000,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
-          agentRoles: ['Requirements Agent', 'Implementation Agent', 'Design/Architecture Agent', 'QA/Audit Agent'],
+          agentRoles: [
+            'Requirements Agent',
+            'Implementation Agent',
+            'Design/Architecture Agent',
+            'QA/Audit Agent',
+          ],
           taskTypes: ['code-generation', 'analysis', 'reasoning', 'complex-problem-solving'],
-          complexity: ['complex']
+          complexity: ['complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - Premium pricing for advanced reasoning
+        isEnabled: false, // Requires API key - Premium pricing for advanced reasoning
       },
       {
         id: 'claude-haiku-4.5',
@@ -337,27 +374,32 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // Claude Haiku 4.5 supports function calling
+          functionCalling: true, // Claude Haiku 4.5 supports function calling
         },
         limits: {
           maxTokens: 200000,
-          maxContextLength: 200000
+          maxContextLength: 200000,
         },
         pricing: {
-          inputCostPer1MTokens: 1.00,
-          outputCostPer1MTokens: 5.00
+          inputCostPer1MTokens: 1.0,
+          outputCostPer1MTokens: 5.0,
         },
         performance: {
           avgLatencyMs: 600,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'UX Designer', 'Requirements Agent'],
-          taskTypes: ['real-time-assistants', 'customer-support', 'parallel-sub-agents', 'code-generation'],
-          complexity: ['simple', 'moderate']
+          taskTypes: [
+            'real-time-assistants',
+            'customer-support',
+            'parallel-sub-agents',
+            'code-generation',
+          ],
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - Cost-effective for real-time applications
+        isEnabled: false, // Requires API key - Cost-effective for real-time applications
       },
       {
         id: 'deepseek-chat',
@@ -370,27 +412,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // DeepSeek Chat supports function calling
+          functionCalling: true, // DeepSeek Chat supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
           inputCostPer1MTokens: 0.14,
-          outputCostPer1MTokens: 0.28
+          outputCostPer1MTokens: 0.28,
         },
         performance: {
           avgLatencyMs: 600,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent', 'Design/Architecture Agent', 'Requirements Agent'],
           taskTypes: ['code-generation', 'documentation', 'analysis', 'long-context'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key (DeepSeek-R1 is free alternative)
+        isEnabled: false, // Requires API key (DeepSeek-R1 is free alternative)
       },
       {
         id: 'deepseek-coder',
@@ -403,27 +445,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // DeepSeek Coder supports function calling
+          functionCalling: true, // DeepSeek Coder supports function calling
         },
         limits: {
           maxTokens: 16384,
-          maxContextLength: 16384
+          maxContextLength: 16384,
         },
         pricing: {
           inputCostPer1MTokens: 0.14,
-          outputCostPer1MTokens: 0.28
+          outputCostPer1MTokens: 0.28,
         },
         performance: {
           avgLatencyMs: 500,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent'],
           taskTypes: ['code-generation'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key
+        isEnabled: false, // Requires API key
       },
       {
         id: 'claude-4.5-sonnet',
@@ -436,27 +478,40 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Claude 4.5 supports function calling
+          functionCalling: true, // Claude 4.5 supports function calling
         },
         limits: {
           maxTokens: 1000000,
-          maxContextLength: 1000000 // 1M tokens
+          maxContextLength: 1000000, // 1M tokens
         },
         pricing: {
-          inputCostPer1MTokens: 3.00, // $3-$15 range, using base
-          outputCostPer1MTokens: 15.00
+          inputCostPer1MTokens: 3.0, // $3-$15 range, using base
+          outputCostPer1MTokens: 15.0,
         },
         performance: {
           avgLatencyMs: 1500,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
-          agentRoles: ['Requirements Agent', 'Implementation Agent', 'Design/Architecture Agent', 'QA/Audit Agent', 'Integration Agent'],
-          taskTypes: ['code-generation', 'documentation', 'analysis', 'structured-output', 'long-context', 'multimodal'],
-          complexity: ['moderate', 'complex']
+          agentRoles: [
+            'Requirements Agent',
+            'Implementation Agent',
+            'Design/Architecture Agent',
+            'QA/Audit Agent',
+            'Integration Agent',
+          ],
+          taskTypes: [
+            'code-generation',
+            'documentation',
+            'analysis',
+            'structured-output',
+            'long-context',
+            'multimodal',
+          ],
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key
+        isEnabled: false, // Requires API key
       },
       {
         id: 'gpt-5',
@@ -469,27 +524,32 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // GPT-5 supports function calling
+          functionCalling: true, // GPT-5 supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 20.00, // Premium pricing
-          outputCostPer1MTokens: 60.00
+          inputCostPer1MTokens: 20.0, // Premium pricing
+          outputCostPer1MTokens: 60.0,
         },
         performance: {
           avgLatencyMs: 1400,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
-          agentRoles: ['Implementation Agent', 'Design/Architecture Agent', 'UX Designer', 'QA/Audit Agent'],
+          agentRoles: [
+            'Implementation Agent',
+            'Design/Architecture Agent',
+            'UX Designer',
+            'QA/Audit Agent',
+          ],
           taskTypes: ['code-generation', 'analysis', 'creative', 'multimodal'],
-          complexity: ['complex']
+          complexity: ['complex'],
         },
         status: 'maintenance', // Model may not be released yet - verify with OpenAI
-        isEnabled: false // Disabled until model is confirmed available
+        isEnabled: false, // Disabled until model is confirmed available
       },
       // OpenRouter Models (300+ models via unified API)
       {
@@ -503,27 +563,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 20.00,
-          outputCostPer1MTokens: 60.00
+          inputCostPer1MTokens: 20.0,
+          outputCostPer1MTokens: 60.0,
         },
         performance: {
           avgLatencyMs: 1400,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent', 'Design/Architecture Agent', 'QA/Audit Agent'],
           taskTypes: ['code-generation', 'analysis', 'creative', 'multimodal'],
-          complexity: ['complex']
+          complexity: ['complex'],
         },
         status: 'maintenance', // Verify model availability
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'openrouter-llama-3.3-70b',
@@ -536,27 +596,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
           inputCostPer1MTokens: 0.59,
-          outputCostPer1MTokens: 0.79
+          outputCostPer1MTokens: 0.79,
         },
         performance: {
           avgLatencyMs: 800,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Requirements Agent', 'Implementation Agent', 'Design/Architecture Agent'],
           taskTypes: ['code-generation', 'documentation', 'analysis'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'openrouter-deepseek-v3',
@@ -569,27 +629,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
           inputCostPer1MTokens: 0.14,
-          outputCostPer1MTokens: 0.28
+          outputCostPer1MTokens: 0.28,
         },
         performance: {
           avgLatencyMs: 600,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent', 'Design/Architecture Agent'],
           taskTypes: ['code-generation', 'documentation', 'analysis'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       // Groq Models (ultra-fast inference)
       {
@@ -603,27 +663,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
           inputCostPer1MTokens: 0.59,
-          outputCostPer1MTokens: 0.79
+          outputCostPer1MTokens: 0.79,
         },
         performance: {
           avgLatencyMs: 200, // Ultra-fast with Groq
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'Requirements Agent', 'Implementation Agent'],
           taskTypes: ['real-time-assistants', 'code-generation', 'analysis'],
-          complexity: ['simple', 'moderate', 'complex']
+          complexity: ['simple', 'moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'groq-llama-3.1-8b',
@@ -636,27 +696,27 @@ export class ModelRegistry {
           longContext: false,
           fastResponse: true,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 8192,
-          maxContextLength: 8192
+          maxContextLength: 8192,
         },
         pricing: {
           inputCostPer1MTokens: 0.05,
-          outputCostPer1MTokens: 0.08
+          outputCostPer1MTokens: 0.08,
         },
         performance: {
           avgLatencyMs: 100, // Extremely fast
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator'],
           taskTypes: ['real-time-assistants', 'simple-tasks', 'chat'],
-          complexity: ['simple']
+          complexity: ['simple'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'groq-mixtral-8x7b',
@@ -669,27 +729,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 32768,
-          maxContextLength: 32768
+          maxContextLength: 32768,
         },
         pricing: {
           inputCostPer1MTokens: 0.24,
-          outputCostPer1MTokens: 0.24
+          outputCostPer1MTokens: 0.24,
         },
         performance: {
           avgLatencyMs: 150,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'Requirements Agent', 'Implementation Agent'],
           taskTypes: ['code-generation', 'analysis', 'documentation'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       // Vertex AI Models (Google Cloud)
       {
@@ -703,27 +763,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 1000000,
-          maxContextLength: 1000000
+          maxContextLength: 1000000,
         },
         pricing: {
           inputCostPer1MTokens: 0.075,
-          outputCostPer1MTokens: 0.30
+          outputCostPer1MTokens: 0.3,
         },
         performance: {
           avgLatencyMs: 200,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'Requirements Agent'],
           taskTypes: ['chat', 'conversation', 'real-time-assistants'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'vertex-gemini-1.5-pro',
@@ -736,27 +796,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 1000000,
-          maxContextLength: 1000000
+          maxContextLength: 1000000,
         },
         pricing: {
           inputCostPer1MTokens: 1.25,
-          outputCostPer1MTokens: 5.00
+          outputCostPer1MTokens: 5.0,
         },
         performance: {
           avgLatencyMs: 1200,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Requirements Agent', 'Design/Architecture Agent', 'QA/Audit Agent'],
           taskTypes: ['structured-output', 'analysis', 'documentation', 'multimodal'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       // Azure OpenAI Models
       {
@@ -770,27 +830,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 20.00,
-          outputCostPer1MTokens: 60.00
+          inputCostPer1MTokens: 20.0,
+          outputCostPer1MTokens: 60.0,
         },
         performance: {
           avgLatencyMs: 1400,
-          reliability: 0.99
+          reliability: 0.99,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent', 'Design/Architecture Agent', 'QA/Audit Agent'],
           taskTypes: ['code-generation', 'analysis', 'creative', 'multimodal'],
-          complexity: ['complex']
+          complexity: ['complex'],
         },
         status: 'maintenance', // Verify model availability
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'azure-gpt-4o-mini',
@@ -803,27 +863,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true
+          functionCalling: true,
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
           inputCostPer1MTokens: 0.15,
-          outputCostPer1MTokens: 0.60
+          outputCostPer1MTokens: 0.6,
         },
         performance: {
           avgLatencyMs: 400,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator'],
           taskTypes: ['chat', 'simple-tasks'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false
+        isEnabled: false,
       },
       {
         id: 'grok-3',
@@ -836,27 +896,27 @@ export class ModelRegistry {
           longContext: false,
           fastResponse: false,
           streaming: true,
-          functionCalling: false // Grok 3 doesn't support function calling
+          functionCalling: false, // Grok 3 doesn't support function calling
         },
         limits: {
           maxTokens: 8192,
-          maxContextLength: 8192
+          maxContextLength: 8192,
         },
         pricing: {
-          inputCostPer1MTokens: 0.10,
-          outputCostPer1MTokens: 0.30
+          inputCostPer1MTokens: 0.1,
+          outputCostPer1MTokens: 0.3,
         },
         performance: {
           avgLatencyMs: 1000,
-          reliability: 0.95
+          reliability: 0.95,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'UX Designer', 'Requirements Agent'],
           taskTypes: ['conversation', 'creative', 'documentation'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active', // Still available via API (deprecated June 2025, but may still work)
-        isEnabled: false // Requires API key
+        isEnabled: false, // Requires API key
       },
       {
         id: 'grok-4',
@@ -869,27 +929,32 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Grok 4 supports function calling
+          functionCalling: true, // Grok 4 supports function calling
         },
         limits: {
           maxTokens: 2000000,
-          maxContextLength: 2000000 // 2M tokens
+          maxContextLength: 2000000, // 2M tokens
         },
         pricing: {
           inputCostPer1MTokens: 0.15, // Estimated - verify with xAI
-          outputCostPer1MTokens: 0.45
+          outputCostPer1MTokens: 0.45,
         },
         performance: {
           avgLatencyMs: 1200,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
-          agentRoles: ['Implementation Agent', 'Design/Architecture Agent', 'QA/Audit Agent', 'Requirements Agent'],
+          agentRoles: [
+            'Implementation Agent',
+            'Design/Architecture Agent',
+            'QA/Audit Agent',
+            'Requirements Agent',
+          ],
           taskTypes: ['code-generation', 'long-context', 'analysis', 'documentation', 'multimodal'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key
+        isEnabled: false, // Requires API key
       },
       // Mistral AI Models
       {
@@ -903,27 +968,32 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Mistral Medium 3 supports function calling
+          functionCalling: true, // Mistral Medium 3 supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.40,
-          outputCostPer1MTokens: 2.00
+          inputCostPer1MTokens: 0.4,
+          outputCostPer1MTokens: 2.0,
         },
         performance: {
           avgLatencyMs: 1000,
-          reliability: 0.98
+          reliability: 0.98,
         },
         recommendedFor: {
-          agentRoles: ['Implementation Agent', 'Design/Architecture Agent', 'Requirements Agent', 'QA/Audit Agent'],
+          agentRoles: [
+            'Implementation Agent',
+            'Design/Architecture Agent',
+            'Requirements Agent',
+            'QA/Audit Agent',
+          ],
           taskTypes: ['code-generation', 'documentation', 'analysis', 'enterprise-reasoning'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - Cost-effective enterprise model
+        isEnabled: false, // Requires API key - Cost-effective enterprise model
       },
       {
         id: 'devstral-small',
@@ -936,27 +1006,27 @@ export class ModelRegistry {
           longContext: false,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // Devstral supports function calling
+          functionCalling: true, // Devstral supports function calling
         },
         limits: {
           maxTokens: 32000,
-          maxContextLength: 32000
+          maxContextLength: 32000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.00, // FREE (Apache 2.0)
-          outputCostPer1MTokens: 0.00 // FREE (Apache 2.0)
+          inputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
+          outputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
         },
         performance: {
           avgLatencyMs: 700,
-          reliability: 0.96
+          reliability: 0.96,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent'],
           taskTypes: ['code-generation', 'software-engineering', 'agentic-tasks'],
-          complexity: ['simple', 'moderate', 'complex']
+          complexity: ['simple', 'moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - FREE agentic coding model
+        isEnabled: false, // Requires API key - FREE agentic coding model
       },
       {
         id: 'magistral-small',
@@ -969,27 +1039,27 @@ export class ModelRegistry {
           longContext: false,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // Magistral Small supports function calling
+          functionCalling: true, // Magistral Small supports function calling
         },
         limits: {
           maxTokens: 32000,
-          maxContextLength: 32000
+          maxContextLength: 32000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.00, // FREE (Apache 2.0)
-          outputCostPer1MTokens: 0.00 // FREE (Apache 2.0)
+          inputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
+          outputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
         },
         performance: {
           avgLatencyMs: 600,
-          reliability: 0.95
+          reliability: 0.95,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'Requirements Agent', 'UX Designer'],
           taskTypes: ['reasoning', 'chain-of-thought', 'analysis'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - FREE reasoning model
+        isEnabled: false, // Requires API key - FREE reasoning model
       },
       // Qwen (Alibaba) Models
       {
@@ -1003,27 +1073,32 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Qwen3 Max supports function calling
+          functionCalling: true, // Qwen3 Max supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.00, // FREE (Apache 2.0)
-          outputCostPer1MTokens: 0.00 // FREE (Apache 2.0)
+          inputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
+          outputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
         },
         performance: {
           avgLatencyMs: 1200,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
-          agentRoles: ['Requirements Agent', 'Implementation Agent', 'Design/Architecture Agent', 'QA/Audit Agent'],
+          agentRoles: [
+            'Requirements Agent',
+            'Implementation Agent',
+            'Design/Architecture Agent',
+            'QA/Audit Agent',
+          ],
           taskTypes: ['code-generation', 'documentation', 'analysis', 'multilingual', 'multimodal'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - FREE high-performance model
+        isEnabled: false, // Requires API key - FREE high-performance model
       },
       {
         id: 'qwen3-coder',
@@ -1036,27 +1111,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Qwen3 Coder supports function calling
+          functionCalling: true, // Qwen3 Coder supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.00, // FREE (Apache 2.0)
-          outputCostPer1MTokens: 0.00 // FREE (Apache 2.0)
+          inputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
+          outputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
         },
         performance: {
           avgLatencyMs: 1000,
-          reliability: 0.97
+          reliability: 0.97,
         },
         recommendedFor: {
           agentRoles: ['Implementation Agent'],
           taskTypes: ['code-generation', 'software-development', 'coding'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - FREE coding model
+        isEnabled: false, // Requires API key - FREE coding model
       },
       {
         id: 'qwen3-omni',
@@ -1069,27 +1144,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: false,
           streaming: true,
-          functionCalling: true // Qwen3 Omni supports function calling
+          functionCalling: true, // Qwen3 Omni supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.00, // FREE (Apache 2.0)
-          outputCostPer1MTokens: 0.00 // FREE (Apache 2.0)
+          inputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
+          outputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
         },
         performance: {
           avgLatencyMs: 1500,
-          reliability: 0.96
+          reliability: 0.96,
         },
         recommendedFor: {
           agentRoles: ['Requirements Agent', 'Implementation Agent', 'UX Designer'],
           taskTypes: ['multimodal', 'text-image-audio-video', 'real-time-streaming'],
-          complexity: ['moderate', 'complex']
+          complexity: ['moderate', 'complex'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - FREE multimodal model
+        isEnabled: false, // Requires API key - FREE multimodal model
       },
       {
         id: 'qwen3-next',
@@ -1102,27 +1177,27 @@ export class ModelRegistry {
           longContext: true,
           fastResponse: true,
           streaming: true,
-          functionCalling: true // Qwen3 Next supports function calling
+          functionCalling: true, // Qwen3 Next supports function calling
         },
         limits: {
           maxTokens: 128000,
-          maxContextLength: 128000
+          maxContextLength: 128000,
         },
         pricing: {
-          inputCostPer1MTokens: 0.00, // FREE (Apache 2.0)
-          outputCostPer1MTokens: 0.00 // FREE (Apache 2.0)
+          inputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
+          outputCostPer1MTokens: 0.0, // FREE (Apache 2.0)
         },
         performance: {
           avgLatencyMs: 800,
-          reliability: 0.96
+          reliability: 0.96,
         },
         recommendedFor: {
           agentRoles: ['Orchestrator', 'Implementation Agent', 'Requirements Agent'],
           taskTypes: ['code-generation', 'analysis', 'efficient-processing'],
-          complexity: ['simple', 'moderate']
+          complexity: ['simple', 'moderate'],
         },
         status: 'active',
-        isEnabled: false // Requires API key - FREE efficient model
+        isEnabled: false, // Requires API key - FREE efficient model
       },
     ];
 
@@ -1151,7 +1226,11 @@ export class ModelRegistry {
     return Array.from(this.models.values()).filter(m => m.capabilities[capability] === true);
   }
 
-  getRecommendedModels(agentRole?: string, taskType?: string, complexity?: TaskComplexity): ModelCapabilities[] {
+  getRecommendedModels(
+    agentRole?: string,
+    taskType?: string,
+    complexity?: TaskComplexity
+  ): ModelCapabilities[] {
     const activeModels = this.getActiveModels();
 
     return activeModels.filter(model => {
@@ -1190,14 +1269,16 @@ export class ModelRegistry {
 
         // Verify database connection
         if (mongoose.default.connection.readyState !== 1) {
-          logger.error(`Database not connected. Connection state: ${mongoose.default.connection.readyState}`);
+          logger.error(
+            `Database not connected. Connection state: ${mongoose.default.connection.readyState}`
+          );
           return false;
         }
 
         // Save to database with explicit error handling
         // Use upsert to create if doesn't exist, update if it does
         const updateDoc: any = {
-          $set: persistableUpdates
+          $set: persistableUpdates,
         };
 
         // Only set default status on insert (when creating new document)
@@ -1205,41 +1286,49 @@ export class ModelRegistry {
         if (!persistableUpdates.status) {
           updateDoc.$setOnInsert = {
             modelId,
-            status: model.status || 'active'
+            status: model.status || 'active',
           };
         }
 
-        const result = await LLMModelConfig.findOneAndUpdate(
-          { modelId },
-          updateDoc,
-          {
-            upsert: true,
-            new: true,
-            runValidators: true
-          }
-        );
+        const result = await LLMModelConfig.findOneAndUpdate({ modelId }, updateDoc, {
+          upsert: true,
+          new: true,
+          runValidators: true,
+        });
 
         if (!result) {
-          logger.error(`Failed to persist model update for ${modelId}: Database operation returned null`);
+          logger.error(
+            `Failed to persist model update for ${modelId}: Database operation returned null`
+          );
           return false;
         }
 
         // Verify the save was successful by checking the saved values
-        if (persistableUpdates.isEnabled !== undefined && result.isEnabled !== persistableUpdates.isEnabled) {
-          logger.error(`Database save verification failed for ${modelId}: Expected isEnabled=${persistableUpdates.isEnabled}, got ${result.isEnabled}`);
+        if (
+          persistableUpdates.isEnabled !== undefined &&
+          result.isEnabled !== persistableUpdates.isEnabled
+        ) {
+          logger.error(
+            `Database save verification failed for ${modelId}: Expected isEnabled=${persistableUpdates.isEnabled}, got ${result.isEnabled}`
+          );
           return false;
         }
 
         // Verify status was saved correctly
-        if (persistableUpdates.status !== undefined && result.status !== persistableUpdates.status) {
-          logger.error(`Database save verification failed for ${modelId}: Expected status=${persistableUpdates.status}, got ${result.status}`);
+        if (
+          persistableUpdates.status !== undefined &&
+          result.status !== persistableUpdates.status
+        ) {
+          logger.error(
+            `Database save verification failed for ${modelId}: Expected status=${persistableUpdates.status}, got ${result.status}`
+          );
           return false;
         }
 
         logger.info(`Successfully persisted model update for ${modelId}:`, {
           isEnabled: result.isEnabled,
           status: result.status,
-          updatedAt: result.updatedAt
+          updatedAt: result.updatedAt,
         });
       } catch (error: unknown) {
         logger.error(`Failed to persist model update for ${modelId}:`, {
@@ -1247,7 +1336,7 @@ export class ModelRegistry {
           name: (error as Error).name,
           code: (error as any).code,
           persistableUpdates,
-          stack: (error as Error).stack
+          stack: (error as Error).stack,
         });
         // Return false to indicate failure - this will cause the API to return an error
         return false;
@@ -1307,22 +1396,24 @@ export class ModelRegistry {
                 modelIdentifier: model.modelIdentifier,
                 capabilities: model.capabilities,
                 limits: model.limits,
-                recommendedFor: model.recommendedFor
+                recommendedFor: model.recommendedFor,
               },
-              'metadata.syncedFromProvider': true
-            }
+              'metadata.syncedFromProvider': true,
+            },
           },
           { upsert: true, new: true, runValidators: true }
         );
 
         logger.info(`Persisted model ${model.id} to database`);
       } else {
-        logger.warn(`Database not connected when registering model ${model.id}. Model added to memory only.`);
+        logger.warn(
+          `Database not connected when registering model ${model.id}. Model added to memory only.`
+        );
       }
     } catch (error: unknown) {
       logger.error(`Failed to persist model ${model.id} to database:`, {
         error: toApiError(error).message,
-        stack: (error as Error).stack
+        stack: (error as Error).stack,
       });
       // Don't throw - model is still in memory, just not persisted
     }
@@ -1360,7 +1451,10 @@ export class ModelRegistry {
 
       // Verify database connection
       if (mongoose.default.connection.readyState !== 1) {
-        logger.warn('Database not connected when loading model configs. Connection state:', mongoose.default.connection.readyState);
+        logger.warn(
+          'Database not connected when loading model configs. Connection state:',
+          mongoose.default.connection.readyState
+        );
         this.initialized = true;
         return;
       }
@@ -1382,10 +1476,12 @@ export class ModelRegistry {
             isEnabled: saved.isEnabled,
             status: saved.status,
             ...(saved.pricing && { pricing: saved.pricing }),
-            ...(saved.performance && { performance: saved.performance })
+            ...(saved.performance && { performance: saved.performance }),
           });
           loadedCount++;
-          logger.debug(`Loaded config for ${saved.modelId}: isEnabled=${saved.isEnabled}, status=${saved.status}`);
+          logger.debug(
+            `Loaded config for ${saved.modelId}: isEnabled=${saved.isEnabled}, status=${saved.status}`
+          );
         } else if (saved.modelDefinition) {
           // Load synced model that doesn't exist in defaults
           // Skip if provider is missing or invalid
@@ -1403,36 +1499,40 @@ export class ModelRegistry {
             capabilities: saved.modelDefinition.capabilities,
             limits: saved.modelDefinition.limits,
             pricing: saved.pricing || {
-              inputCostPer1MTokens: 1.00,
-              outputCostPer1MTokens: 3.00
+              inputCostPer1MTokens: 1.0,
+              outputCostPer1MTokens: 3.0,
             },
             performance: saved.performance || {
               avgLatencyMs: 1000,
-              reliability: 0.98
+              reliability: 0.98,
             },
-            recommendedFor: saved.modelDefinition.recommendedFor || {
+            recommendedFor: (saved.modelDefinition.recommendedFor || {
               agentRoles: [],
               taskTypes: [],
-              complexity: [] as any
-            },
+              complexity: [] as any,
+            }) as any,
             status: saved.status,
-            isEnabled: saved.isEnabled
+            isEnabled: saved.isEnabled,
           };
 
           this.models.set(saved.modelId, syncedModel);
           syncedCount++;
-          logger.info(`Loaded synced model from database: ${saved.modelId} (${saved.modelDefinition.name})`);
+          logger.info(
+            `Loaded synced model from database: ${saved.modelId} (${saved.modelDefinition.name})`
+          );
         } else {
           logger.warn(`Saved config found for unknown model without definition: ${saved.modelId}`);
         }
       }
 
-      logger.info(`Successfully loaded ${loadedCount} default model configurations and ${syncedCount} synced models from database`);
+      logger.info(
+        `Successfully loaded ${loadedCount} default model configurations and ${syncedCount} synced models from database`
+      );
       this.initialized = true;
     } catch (error: unknown) {
       logger.error('Failed to load LLM model configurations from database:', {
         error: toApiError(error).message,
-        stack: (error as Error).stack
+        stack: (error as Error).stack,
       });
       // Continue with defaults if database load fails
       this.initialized = true;
@@ -1459,8 +1559,11 @@ export class ModelRegistry {
   private async enableModelsForConfiguredProviders(): Promise<void> {
     try {
       const { apiKeyProvider } = await import('../../apiKeyProvider.service.js');
-      
-      const llmProviders: Array<{ provider: string; apiKeyName: Parameters<typeof apiKeyProvider.getApiKey>[0] }> = [
+
+      const llmProviders: Array<{
+        provider: string;
+        apiKeyName: Parameters<typeof apiKeyProvider.getApiKey>[0];
+      }> = [
         { provider: 'openai', apiKeyName: 'openai' },
         { provider: 'gemini', apiKeyName: 'gemini' },
         { provider: 'anthropic', apiKeyName: 'anthropic' },
@@ -1475,13 +1578,13 @@ export class ModelRegistry {
       for (const { provider, apiKeyName } of llmProviders) {
         const hasKey = await apiKeyProvider.hasApiKey(apiKeyName);
         if (!hasKey) continue;
-        
+
         // Enable all disabled models for this provider
         for (const [modelId, model] of this.models.entries()) {
           if (model.provider === provider && !model.isEnabled) {
             // Update in-memory state
             this.models.set(modelId, { ...model, isEnabled: true, status: 'active' });
-            
+
             // Persist to DB so the change survives restarts
             try {
               const { LLMModelConfig } = await import('../../../models/LLMModelConfig.model.js');
@@ -1493,12 +1596,14 @@ export class ModelRegistry {
             } catch (dbErr) {
               logger.warn(`Failed to persist enable state for model ${modelId}:`, dbErr);
             }
-            
-            logger.info(`Auto-enabled model ${modelId} (provider: ${provider} has API key configured)`);
+
+            logger.info(
+              `Auto-enabled model ${modelId} (provider: ${provider} has API key configured)`
+            );
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Failed to auto-enable models for configured providers:', error);
     }
   }
@@ -1536,28 +1641,28 @@ export class ModelRegistry {
         longContext: false,
         fastResponse: true,
         streaming: true,
-        functionCalling: false
+        functionCalling: false,
       },
       limits: {
         maxTokens: 4096,
-        maxContextLength: 4096
+        maxContextLength: 4096,
       },
       pricing: {
         inputCostPer1MTokens: 0,
-        outputCostPer1MTokens: 0
+        outputCostPer1MTokens: 0,
       },
       performance: {
         avgLatencyMs: 500,
-        reliability: 0.95
+        reliability: 0.95,
       },
       recommendedFor: {
         agentRoles: ['Orchestrator', 'Implementation Agent'],
         taskTypes: ['chat', 'code-generation'],
-        complexity: ['simple', 'moderate']
+        complexity: ['simple', 'moderate'],
       },
       status: 'active',
       isEnabled: true,
-      ...capabilities
+      ...capabilities,
     };
 
     // Store baseUrl in metadata (we'll need to access it later)
@@ -1570,7 +1675,7 @@ export class ModelRegistry {
    * Discover models from a local LLM endpoint
    */
   async discoverLocalModels(
-    userId: string,
+    _userId: string,
     provider: 'ollama' | 'vllm' | 'openai_compatible',
     baseUrl: string
   ): Promise<string[]> {
@@ -1662,4 +1767,3 @@ export class ModelRegistry {
 }
 
 export const modelRegistry = new ModelRegistry();
-

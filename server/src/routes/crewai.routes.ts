@@ -13,7 +13,7 @@ const router = express.Router();
  * Initialize CrewAI service
  * POST /api/crewai/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (_req, res, _next) => {
   try {
     await crewAIService.initialize();
     res.json({
@@ -25,7 +25,7 @@ router.post('/initialize', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize CrewAI service',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -65,7 +65,7 @@ router.post('/agents', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create agent',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -96,7 +96,7 @@ router.get('/agents/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get agent',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -105,7 +105,7 @@ router.get('/agents/:id', async (req, res, _next) => {
  * List all agents
  * GET /api/crewai/agents
  */
-router.get('/agents', async (req, res, _next) => {
+router.get('/agents', async (_req, res, _next) => {
   try {
     const agents = crewAIService.listAgents();
     res.json({
@@ -117,7 +117,7 @@ router.get('/agents', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to list agents',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -155,7 +155,7 @@ router.post('/crews', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create crew',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -186,7 +186,7 @@ router.get('/crews/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get crew',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -195,7 +195,7 @@ router.get('/crews/:id', async (req, res, _next) => {
  * List all crews
  * GET /api/crewai/crews
  */
-router.get('/crews', async (req, res, _next) => {
+router.get('/crews', async (_req, res, _next) => {
   try {
     const crews = crewAIService.listCrews();
     res.json({
@@ -207,7 +207,7 @@ router.get('/crews', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to list crews',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -232,7 +232,7 @@ router.post('/crews/:id/execute', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Crew execution failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -264,7 +264,7 @@ router.post('/crews/simple', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create simple crew',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });

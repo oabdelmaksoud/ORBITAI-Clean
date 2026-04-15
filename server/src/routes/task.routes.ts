@@ -53,7 +53,7 @@ router.patch('/:projectId/:taskId', validate(updateTaskSchema), async (req: Auth
       success: true,
       data: { task: project.tasks[taskIndex] }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

@@ -7,7 +7,6 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { internalTaskRouter } from '../services/internalTaskRouter.service.js';
-import { InternalRoutingConfig } from '../models/InternalRoutingConfig.model.js';
 import { InternalRoutingHistory } from '../models/InternalRoutingHistory.model.js';
 import { logger } from '../utils/logger.js';
 
@@ -20,7 +19,7 @@ router.use(authenticateToken, requireAdmin);
  * GET /api/admin/internal-routing/config
  * Get current internal routing configuration
  */
-router.get('/config', async (req: AdminRequest, res) => {
+router.get('/config', async (_req: AdminRequest, res) => {
   try {
     const config = await internalTaskRouter.getConfig();
     res.json({
@@ -31,7 +30,7 @@ router.get('/config', async (req: AdminRequest, res) => {
     logger.error('Failed to get internal routing config:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get configuration'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get configuration'
     });
   }
 });
@@ -48,16 +47,18 @@ router.put('/config', async (req: AdminRequest, res) => {
     if (updates.tiers) {
       for (const tier of updates.tiers) {
         if (!['economy', 'standard', 'premium'].includes(tier.name)) {
-          return res.status(400).json({
+          res.status(400).json({
             success: false,
             error: `Invalid tier name: ${tier.name}`
           });
+          return;
         }
         if (!tier.models || tier.models.length === 0) {
-          return res.status(400).json({
+          res.status(400).json({
             success: false,
             error: `Tier ${tier.name} must have at least one model`
           });
+          return;
         }
       }
     }
@@ -74,7 +75,7 @@ router.put('/config', async (req: AdminRequest, res) => {
     logger.error('Failed to update internal routing config:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to update configuration'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to update configuration'
     });
   }
 });
@@ -88,10 +89,11 @@ router.post('/test', async (req: AdminRequest, res) => {
     const { prompt, taskType, agentRole, requiredCapabilities, isUserFacing, isCritical, context } = req.body;
     
     if (!prompt) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Prompt is required for testing'
       });
+      return;
     }
     
     const decision = await internalTaskRouter.routeTask({
@@ -129,7 +131,7 @@ router.post('/test', async (req: AdminRequest, res) => {
     logger.error('Failed to test routing:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to test routing'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to test routing'
     });
   }
 });
@@ -167,7 +169,7 @@ router.get('/statistics', async (req: AdminRequest, res) => {
     logger.error('Failed to get routing statistics:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get statistics'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get statistics'
     });
   }
 });
@@ -227,7 +229,7 @@ router.get('/history', async (req: AdminRequest, res) => {
     logger.error('Failed to get routing history:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get history'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get history'
     });
   }
 });
@@ -393,7 +395,7 @@ router.get('/analytics', async (req: AdminRequest, res) => {
     logger.error('Failed to get routing analytics:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to get analytics'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get analytics'
     });
   }
 });
@@ -416,7 +418,7 @@ router.post('/clear-cache', async (req: AdminRequest, res) => {
     logger.error('Failed to clear cache:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to clear cache'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to clear cache'
     });
   }
 });
@@ -448,7 +450,7 @@ router.delete('/history', async (req: AdminRequest, res) => {
     logger.error('Failed to delete history:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to delete history'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to delete history'
     });
   }
 });

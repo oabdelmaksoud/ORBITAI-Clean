@@ -70,7 +70,7 @@ export class SystemControlService {
         platform: os.platform()
       };
     } catch (error: unknown) {
-      throw new AppError(`Failed to get system health: ${error.message}`, 500);
+      throw new AppError(`Failed to get system health: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -181,14 +181,14 @@ export class SystemControlService {
         entityType: 'process',
         details: {
           pid,
-          error: error.message
+          error: (error instanceof Error ? error.message : String(error))
         },
         ipAddress: 'admin-console',
         userAgent: 'admin-console',
         success: false
       }).catch(() => {});
 
-      throw new AppError(`Failed to kill process: ${error.message}`, 500);
+      throw new AppError(`Failed to kill process: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -217,7 +217,7 @@ export class SystemControlService {
         success: true
       });
     } catch (error: unknown) {
-      throw new AppError(`Failed to set maintenance mode: ${error.message}`, 500);
+      throw new AppError(`Failed to set maintenance mode: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -245,11 +245,11 @@ export class SystemControlService {
       if (!cacheType || cacheType === 'redis') {
         try {
           if (redisService.isConnected()) {
-            await redisService.flushAll();
+            await (redisService as any).flushAll();
             results.cleared.push('redis');
           }
         } catch (error: unknown) {
-          results.errors.push({ type: 'redis', error: error.message });
+          results.errors.push({ type: 'redis', error: (error instanceof Error ? error.message : String(error)) });
         }
       }
 
@@ -261,7 +261,7 @@ export class SystemControlService {
             results.cleared.push('memory');
           }
         } catch (error: unknown) {
-          results.errors.push({ type: 'memory', error: error.message });
+          results.errors.push({ type: 'memory', error: (error instanceof Error ? error.message : String(error)) });
         }
       }
 
@@ -283,7 +283,7 @@ export class SystemControlService {
 
       return results;
     } catch (error: unknown) {
-      throw new AppError(`Failed to clear cache: ${error.message}`, 500);
+      throw new AppError(`Failed to clear cache: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -318,7 +318,7 @@ export class SystemControlService {
         process.exit(0);
       }, delaySeconds * 1000);
     } catch (error: unknown) {
-      throw new AppError(`Failed to schedule restart: ${error.message}`, 500);
+      throw new AppError(`Failed to schedule restart: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -344,7 +344,7 @@ export class SystemControlService {
         throw new AppError('Garbage collection not available (run Node with --expose-gc)', 400);
       }
     } catch (error: unknown) {
-      throw new AppError(`Failed to force GC: ${error.message}`, 500);
+      throw new AppError(`Failed to force GC: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 }

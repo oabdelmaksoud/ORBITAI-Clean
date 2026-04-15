@@ -26,7 +26,7 @@ export async function generatePDFReport(data: ProjectReportData, options: Report
   let PDFDocument: any;
   try {
     PDFDocument = (await import('pdfkit')).default;
-  } catch (error) {
+  } catch (error: unknown) {
     throw new Error('PDFKit is not installed. Please install it: npm install pdfkit @types/pdfkit');
   }
   
@@ -167,7 +167,7 @@ export async function generateWordReport(data: ProjectReportData, options: Repor
   let docxLib: any;
   try {
     docxLib = await import('docx');
-  } catch (error) {
+  } catch (error: unknown) {
     throw new Error('docx is not installed. Please install it: npm install docx');
   }
   

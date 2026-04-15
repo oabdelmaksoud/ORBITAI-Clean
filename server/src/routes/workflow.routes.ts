@@ -8,7 +8,6 @@ import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { workflowEngineService } from '../services/workflowEngine.service.js';
 import { Workflow } from '../models/Workflow.model.js';
-import { logger } from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 const router = express.Router();

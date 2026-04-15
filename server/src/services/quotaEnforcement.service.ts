@@ -46,7 +46,7 @@ class QuotaEnforcementService {
     for (const callback of this.alertCallbacks) {
       try {
         callback(alert);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('[QuotaEnforcement] Alert callback error:', error);
       }
     }
@@ -103,7 +103,7 @@ class QuotaEnforcementService {
         percentUsed: 0,
         message: 'Request allowed',
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[QuotaEnforcement] Check quota error:', error);
       // Allow on error to prevent blocking
       return {
@@ -163,7 +163,7 @@ class QuotaEnforcementService {
         // Check for alerts
         await this.checkAndEmitAlerts(quota);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[QuotaEnforcement] Record usage error:', error);
     }
   }

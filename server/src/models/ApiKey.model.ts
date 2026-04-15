@@ -3,7 +3,6 @@
  */
 
 import mongoose, { Schema, Document } from 'mongoose';
-import crypto from 'crypto';
 
 export interface IApiKey extends Document {
   provider: 'gemini' | 'openai' | 'anthropic' | 'deepseek' | 'grok' | 'mistral' | 'qwen' | 'huggingface' | 'e2b' | 'google_search' | 'openrouter' | 'groq' | 'vertex' | 'azure' | 'custom';

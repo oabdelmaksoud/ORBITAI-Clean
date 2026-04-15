@@ -6,14 +6,18 @@
 import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { checkFeatureAccess, FeatureRequest } from '../middleware/featureCheck.js';
-import { codeGeneratorService, CodeGenerationRequest, GeneratedFile } from '../services/codeGenerator.service.js';
+import {
+  codeGeneratorService,
+  CodeGenerationRequest,
+  GeneratedFile,
+} from '../services/codeGenerator.service.js';
 import { Project } from '../models/Project.model.js';
 import { Artifact } from '../models/Artifact.model.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { webSocketService } from '../services/websocket.service.js';
+import mongoose from 'mongoose';
 import * as JSZip from 'jszip';
-import * as path from 'path';
 
 const router = express.Router();
 
@@ -35,8 +39,10 @@ router.post(
 
       // Validate input
       if (!projectId) throw new AppError('Project ID is required', 400);
-      if (!dataModels || !Array.isArray(dataModels)) throw new AppError('Data models are required', 400);
-      if (!apiEndpoints || !Array.isArray(apiEndpoints)) throw new AppError('API endpoints are required', 400);
+      if (!dataModels || !Array.isArray(dataModels))
+        throw new AppError('Data models are required', 400);
+      if (!apiEndpoints || !Array.isArray(apiEndpoints))
+        throw new AppError('API endpoints are required', 400);
       if (!framework) throw new AppError('Framework is required', 400);
 
       // Fetch project
@@ -46,7 +52,7 @@ router.post(
       logger.info(`🔧 Generating code for project: ${project.name} (${projectId})`);
 
       // Emit progress update via WebSocket
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'code_generation_started',
         projectId,
         message: 'Code generation started...',
@@ -68,7 +74,7 @@ router.post(
       const result = await codeGeneratorService.generateBackendCode(generationRequest);
 
       if (!result.success) {
-        webSocketService.broadcast(userId, {
+        (webSocketService as any).broadcast(userId, {
           type: 'code_generation_failed',
           projectId,
           errors: result.validationReport?.errors,
@@ -111,7 +117,7 @@ router.post(
       project.lastModified = new Date();
       await project.save();
 
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'code_generation_completed',
         projectId,
         message: `Generated ${result.statistics.totalFiles} files with ${result.statistics.totalLines} lines of code`,
@@ -119,7 +125,9 @@ router.post(
         artifactId: codeArtifact._id,
       });
 
-      logger.info(`✅ Code generation completed: ${result.statistics.totalFiles} files, ${result.statistics.totalLines} LOC`);
+      logger.info(
+        `✅ Code generation completed: ${result.statistics.totalFiles} files, ${result.statistics.totalLines} LOC`
+      );
 
       res.json({
         success: true,
@@ -130,7 +138,7 @@ router.post(
           fileCount: result.files.length,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -140,167 +148,155 @@ router.post(
  * GET /api/code-generation/files/:projectId
  * Get all generated files for a project
  */
-router.get(
-  '/files/:projectId',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const userId = req.user!.id;
-      const { projectId } = req.params;
+router.get('/files/:projectId', async (req: AuthRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const { projectId } = req.params;
 
-      const project = await Project.findOne({ _id: projectId, userId });
-      if (!project) throw new AppError('Project not found', 404);
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) throw new AppError('Project not found', 404);
 
-      const artifact = await Artifact.findOne({
+    const artifact = await Artifact.findOne({
+      projectId,
+      type: 'code',
+    }).sort({ createdAt: -1 });
+
+    if (!artifact) throw new AppError('No generated code found', 404);
+
+    const data = JSON.parse(artifact.content);
+
+    res.json({
+      success: true,
+      data: {
         projectId,
-        type: 'code',
-      }).sort({ createdAt: -1 });
-
-      if (!artifact) throw new AppError('No generated code found', 404);
-
-      const data = JSON.parse(artifact.content);
-
-      res.json({
-        success: true,
-        data: {
-          projectId,
-          generatedAt: artifact.createdAt,
-          statistics: data.statistics,
-          files: data.files,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+        generatedAt: artifact.createdAt,
+        statistics: data.statistics,
+        files: data.files,
+      },
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * GET /api/code-generation/download/:projectId
  * Download all generated files as ZIP
  */
-router.get(
-  '/download/:projectId',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const userId = req.user!.id;
-      const { projectId } = req.params;
+router.get('/download/:projectId', async (req: AuthRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const { projectId } = req.params;
 
-      const project = await Project.findOne({ _id: projectId, userId });
-      if (!project) throw new AppError('Project not found', 404);
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) throw new AppError('Project not found', 404);
 
-      // Fetch generated code from storage
-      // This would typically fetch from a code storage service
-      // For now, we'll create a ZIP with metadata
-      const zip = new JSZip();
+    // Fetch generated code from storage
+    // This would typically fetch from a code storage service
+    // For now, we'll create a ZIP with metadata
+    const zip = new (JSZip as any)();
 
-      const artifact = await Artifact.findOne({
-        projectId,
-        type: 'code',
-      }).sort({ createdAt: -1 });
+    const artifact = await Artifact.findOne({
+      projectId,
+      type: 'code',
+    }).sort({ createdAt: -1 });
 
-      if (!artifact) throw new AppError('No generated code found', 404);
+    if (!artifact) throw new AppError('No generated code found', 404);
 
-      const data = JSON.parse(artifact.content);
+    const data = JSON.parse(artifact.content);
 
-      // Add README
-      zip.file(
-        'README.md',
-        `# ${project.name}\n\nGenerated code from ORBIT-AI\n\nFramework: ${data.statistics.framework || 'Unknown'}\nGenerated: ${new Date().toISOString()}`
-      );
+    // Add README
+    zip.file(
+      'README.md',
+      `# ${project.name}\n\nGenerated code from ORBIT-AI\n\nFramework: ${data.statistics.framework || 'Unknown'}\nGenerated: ${new Date().toISOString()}`
+    );
 
-      // Add file manifest
-      zip.file('MANIFEST.json', JSON.stringify(data, null, 2));
+    // Add file manifest
+    zip.file('MANIFEST.json', JSON.stringify(data, null, 2));
 
-      // Generate ZIP
-      const zipped = await zip.generateAsync({ type: 'nodebuffer' });
+    // Generate ZIP
+    const zipped = await zip.generateAsync({ type: 'nodebuffer' });
 
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${project.name.toLowerCase().replace(/\\s+/g, '-')}-generated.zip"`
-      );
-      res.send(zipped);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${project.name.toLowerCase().replace(/\\s+/g, '-')}-generated.zip"`
+    );
+    res.send(zipped);
 
-      logger.info(`📦 Downloaded generated code for project: ${project.name}`);
-    } catch (error) {
-      next(error);
-    }
+    logger.info(`📦 Downloaded generated code for project: ${project.name}`);
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * POST /api/code-generation/validate
  * Validate generated code before deployment
  */
-router.post(
-  '/validate',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const userId = req.user!.id;
-      const { projectId, files } = req.body;
+router.post('/validate', async (req: AuthRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const { projectId, files } = req.body;
 
-      if (!projectId) throw new AppError('Project ID is required', 400);
-      if (!files || !Array.isArray(files)) throw new AppError('Files are required', 400);
+    if (!projectId) throw new AppError('Project ID is required', 400);
+    if (!files || !Array.isArray(files)) throw new AppError('Files are required', 400);
 
-      const project = await Project.findOne({ _id: projectId, userId });
-      if (!project) throw new AppError('Project not found', 404);
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) throw new AppError('Project not found', 404);
 
-      // Validate syntax, imports, and structure
-      const validationResults = await validateFiles(files);
+    // Validate syntax, imports, and structure
+    const validationResults = await validateFiles(files);
 
-      const allValid = validationResults.every(r => r.isValid);
+    const allValid = validationResults.every(r => r.isValid);
 
-      res.json({
-        success: true,
-        data: {
-          projectId,
-          allValid,
-          results: validationResults,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: {
+        projectId,
+        allValid,
+        results: validationResults,
+      },
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * POST /api/code-generation/preview/:projectId
  * Get a preview of a specific generated file
  */
-router.post(
-  '/preview/:projectId',
-  async (req: AuthRequest, res: Response, next) => {
-    try {
-      const userId = req.user!.id;
-      const { projectId } = req.params;
-      const { filePath } = req.body;
+router.post('/preview/:projectId', async (req: AuthRequest, res: Response, next) => {
+  try {
+    const userId = req.user!.id;
+    const { projectId } = req.params;
+    const { filePath } = req.body;
 
-      if (!filePath) throw new AppError('File path is required', 400);
+    if (!filePath) throw new AppError('File path is required', 400);
 
-      const project = await Project.findOne({ _id: projectId, userId });
-      if (!project) throw new AppError('Project not found', 404);
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) throw new AppError('Project not found', 404);
 
-      // In production, would fetch from code storage service
-      // For now, return mock preview
-      const lines = 100;
-      const mockContent = generateMockFileContent(filePath);
+    // In production, would fetch from code storage service
+    // For now, return mock preview
+    // const _lines = 100;
+    const mockContent = generateMockFileContent(filePath);
 
-      res.json({
-        success: true,
-        data: {
-          projectId,
-          filePath,
-          language: this.detectLanguageFromPath(filePath),
-          content: mockContent,
-          totalLines: mockContent.split('\n').length,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: {
+        projectId,
+        filePath,
+        language: 'typescript',
+        content: mockContent,
+        totalLines: mockContent.split('\n').length,
+      },
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * Helper methods
@@ -321,21 +317,21 @@ function detectLanguage(framework: string): 'typescript' | 'python' | 'go' | 'ja
   }
 }
 
-function detectLanguageFromPath(filePath: string): string {
-  const ext = path.extname(filePath);
-  const map: Record<string, string> = {
-    '.ts': 'typescript',
-    '.js': 'javascript',
-    '.py': 'python',
-    '.go': 'go',
-    '.json': 'json',
-    '.yaml': 'yaml',
-    '.yml': 'yaml',
-    '.dockerfile': 'dockerfile',
-    '.md': 'markdown',
-  };
-  return map[ext] || 'text';
-}
+// function _detectLanguageFromPath(filePath: string): string {
+//   const ext = path.extname(filePath);
+//   const map: Record<string, string> = {
+//     '.ts': 'typescript',
+//     '.js': 'javascript',
+//     '.py': 'python',
+//     '.go': 'go',
+//     '.json': 'json',
+//     '.yaml': 'yaml',
+//     '.yml': 'yaml',
+//     '.dockerfile': 'dockerfile',
+//     '.md': 'markdown',
+//   };
+//   return map[ext] || 'text';
+// }
 
 async function validateFiles(
   files: GeneratedFile[]
@@ -361,7 +357,7 @@ function extractErrors(file: GeneratedFile): string[] {
   const errors: string[] = [];
 
   // Check for syntax errors in TypeScript/JavaScript
-  if (file.fileType === 'typescript' || file.fileType === 'javascript') {
+  if (file.fileType === 'typescript' || (file.fileType as string) === 'javascript') {
     if (file.content.includes('TODO:')) {
       errors.push('Contains TODO comments - implementation incomplete');
     }

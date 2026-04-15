@@ -65,7 +65,7 @@ export class MultiCloudOrchestratorService {
 
     // Advanced cost optimization: aggregate and suggest best platform
     const totalCost = deployments.reduce((sum, d) => sum + (d.cost || 0), 0);
-    const cheapest = deployments.reduce((min, d) => (d.cost !== undefined && d.cost < min.cost ? d : min), deployments[0]);
+    const cheapest = deployments.reduce((min, d) => (d.cost !== undefined && d.cost < min.cost! ? d : min), deployments[0]);
 
     // 3. Configure load balancer (stub)
     const lbService = new LoadBalancerService();

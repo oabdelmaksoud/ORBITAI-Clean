@@ -6,7 +6,8 @@ import express from 'express';
 import { mcpService } from '../services/mcp.service.js';
 import { vectorSearchService } from '../services/vectorSearch.service.js';
 import { logger } from '../utils/logger.js';
-import { MCPServer } from '../../../types.js';
+// MCPServer type - originally from shared types
+type MCPServer = any;
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.post('/discover', async (req, res, _next) => {
     if (!servers || !Array.isArray(servers)) {
       res.status(400).json({
         success: false,
-        message: 'servers array is required'
+        message: 'servers array is required',
       });
       return;
     }
@@ -29,7 +30,7 @@ router.post('/discover', async (req, res, _next) => {
     logger.info(`Discovering MCP tools from ${servers.length} servers`);
 
     const allTools = await mcpService.getAllTools(servers as MCPServer[]);
-    
+
     // Convert Map to Record for JSON serialization
     const toolsByServer: Record<string, any[]> = {};
     for (const [serverId, tools] of allTools.entries()) {
@@ -39,19 +40,21 @@ router.post('/discover', async (req, res, _next) => {
     res.json({
       success: true,
       data: toolsByServer,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error('MCP tool discovery failed:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to discover MCP tools',
       error: {
-        message: error.message || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -67,7 +70,7 @@ router.post('/call', async (req, res, _next) => {
     if (!serverId || !toolName) {
       res.status(400).json({
         success: false,
-        message: 'serverId and toolName are required'
+        message: 'serverId and toolName are required',
       });
       return;
     }
@@ -79,19 +82,21 @@ router.post('/call', async (req, res, _next) => {
     res.json({
       success: true,
       data: result,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error('MCP tool call failed:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to call MCP tool',
       error: {
-        message: error.message || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -107,7 +112,7 @@ router.post('/vector-search/initialize', async (req, res, _next) => {
     if (!artifacts || !Array.isArray(artifacts)) {
       res.status(400).json({
         success: false,
-        message: 'artifacts array is required'
+        message: 'artifacts array is required',
       });
       return;
     }
@@ -126,8 +131,8 @@ router.post('/vector-search/initialize', async (req, res, _next) => {
           metadata: {
             type: artifact.type || 'unknown',
             title: artifact.title || artifact.id,
-            projectId: artifact.projectId || 'unknown'
-          }
+            projectId: artifact.projectId || 'unknown',
+          },
         });
       }
     }
@@ -135,19 +140,21 @@ router.post('/vector-search/initialize', async (req, res, _next) => {
     res.json({
       success: true,
       message: `Vector search initialized with ${artifacts.length} artifacts`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error('Vector search initialization failed:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to initialize vector search',
       error: {
-        message: error.message || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -163,7 +170,7 @@ router.post('/vector-search', async (req, res, _next) => {
     if (!query) {
       res.status(400).json({
         success: false,
-        message: 'query is required'
+        message: 'query is required',
       });
       return;
     }
@@ -175,19 +182,21 @@ router.post('/vector-search', async (req, res, _next) => {
     res.json({
       success: true,
       data: results,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error('Vector search failed:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to perform vector search',
       error: {
-        message: error.message || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -203,7 +212,7 @@ router.post('/vector-search/recall-context', async (req, res, _next) => {
     if (!query) {
       res.status(400).json({
         success: false,
-        message: 'query is required'
+        message: 'query is required',
       });
       return;
     }
@@ -215,22 +224,23 @@ router.post('/vector-search/recall-context', async (req, res, _next) => {
     res.json({
       success: true,
       data: context,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error('Context recall failed:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to recall context',
       error: {
-        message: error.message || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
 
 export default router;
-

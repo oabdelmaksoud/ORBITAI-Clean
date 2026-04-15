@@ -29,10 +29,11 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
     // Slack OAuth URL
     const clientId = process.env.SLACK_CLIENT_ID;
     if (!clientId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Slack integration not configured. Please set SLACK_CLIENT_ID environment variable.'
       });
+      return;
     }
 
     const scopes = ['chat:write', 'channels:read', 'users:read'];
@@ -55,7 +56,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
     logger.error('Failed to initiate Slack OAuth:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to initiate Slack OAuth'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to initiate Slack OAuth'
     });
   }
 });
@@ -66,13 +67,15 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { code, state } = req.query;
+    // @ts-ignore TS6133
+    const { code, _state } = req.query;
 
     if (!code) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Authorization code is required'
       });
+      return;
     }
 
     // Exchange code for access token
@@ -81,10 +84,11 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/slack/callback`;
 
     if (!clientId || !clientSecret) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Slack integration not configured'
       });
+      return;
     }
 
     // Exchange code for token (simplified - in production, store tokens securely)
@@ -103,8 +107,8 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
 
     const tokenData = await tokenResponse.json();
 
-    if (!tokenData.ok) {
-      throw new Error(tokenData.error || 'Failed to exchange code for token');
+    if (!(tokenData as any).ok) {
+      throw new Error((tokenData as any).error || 'Failed to exchange code for token');
     }
 
     // Store token (in production, save to database)
@@ -114,15 +118,15 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
       success: true,
       message: 'Slack integration connected successfully',
       data: {
-        teamId: tokenData.team?.id,
-        teamName: tokenData.team?.name
+        teamId: (tokenData as any).team?.id,
+        teamName: (tokenData as any).team?.name
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to handle Slack OAuth callback:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to complete Slack OAuth'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to complete Slack OAuth'
     });
   }
 });
@@ -137,7 +141,8 @@ router.post('/webhook', async (req, res) => {
 
     // Slack URL verification
     if (type === 'url_verification') {
-      return res.json({ challenge });
+      res.json({ challenge });
+      return;
     }
 
     // Handle events
@@ -151,7 +156,7 @@ router.post('/webhook', async (req, res) => {
     logger.error('Failed to handle Slack webhook:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to process webhook'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to process webhook'
     });
   }
 });
@@ -165,20 +170,22 @@ router.post('/send-message', authenticateToken, async (req: AuthRequest, res) =>
     const { channel, message } = req.body;
 
     if (!channel || !message) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'channel and message are required'
       });
+      return;
     }
 
     // In production, retrieve stored token from database
     const token = process.env.SLACK_BOT_TOKEN;
 
     if (!token) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Slack bot token not configured'
       });
+      return;
     }
 
     const response = await fetch('https://slack.com/api/chat.postMessage', {
@@ -195,22 +202,22 @@ router.post('/send-message', authenticateToken, async (req: AuthRequest, res) =>
 
     const data = await response.json();
 
-    if (!data.ok) {
-      throw new Error(data.error || 'Failed to send message');
+    if (!(data as any).ok) {
+      throw new Error((data as any).error || 'Failed to send message');
     }
 
     res.json({
       success: true,
       data: {
-        ts: data.ts,
-        channel: data.channel
+        ts: (data as any).ts,
+        channel: (data as any).channel
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to send Slack message:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to send message'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to send message'
     });
   }
 });

@@ -16,13 +16,14 @@ router.get('/:pageKey', async (req, res, next) => {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       // MongoDB not connected - return empty sections
-      return res.json({
+      res.json({
         success: true,
         data: {
           pageKey,
           sections: {}
         }
       });
+      return;
     }
     
     const sections = await PageContent.find({ 

@@ -13,7 +13,7 @@ const router = express.Router();
  * Initialize knowledge graph service
  * POST /api/knowledge-graph/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (_req, res, _next) => {
   try {
     await knowledgeGraphService.initialize();
     res.json({
@@ -25,7 +25,7 @@ router.post('/initialize', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize Knowledge Graph service',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -63,7 +63,7 @@ router.post('/entities', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to add entity',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -102,7 +102,7 @@ router.post('/relationships', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to add relationship',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -133,7 +133,7 @@ router.post('/entities/search', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Entity search failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -164,7 +164,7 @@ router.get('/entities/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get entity',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -192,7 +192,7 @@ router.get('/entities/:id/relationships', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get relationships',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -236,7 +236,7 @@ router.get('/path', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Path finding failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -267,7 +267,7 @@ router.post('/extract', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Extraction failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -276,7 +276,7 @@ router.post('/extract', async (req, res, _next) => {
  * Get graph statistics
  * GET /api/knowledge-graph/stats
  */
-router.get('/stats', async (req, res, _next) => {
+router.get('/stats', async (_req, res, _next) => {
   try {
     const stats = await knowledgeGraphService.getGraphStats();
     res.json({
@@ -288,7 +288,7 @@ router.get('/stats', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get graph statistics',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });

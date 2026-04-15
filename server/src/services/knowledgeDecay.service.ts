@@ -64,7 +64,7 @@ class KnowledgeDecayService {
   }> {
     const knowledgeItems = await KnowledgeBase.find({
       status: { $in: ['active', 'draft'] }
-    }).lean();
+    }).lean() as any;
 
     let archived = 0;
     let updated = 0;

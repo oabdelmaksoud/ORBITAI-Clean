@@ -161,7 +161,7 @@ export class AgentKnowledgeLearningService {
             agentKnowledge.skills.push({
               skill: skillName,
               category: this.inferCategory(skillName),
-              proficiency: initialProficiency,
+              proficiency: initialProficiency, confidence: initialProficiency,
               experienceLevel: initialProficiency >= 75 ? 'intermediate' : 'beginner',
               lastUsed: new Date(),
               successRate: data.success ? 100 : 0,
@@ -194,7 +194,7 @@ export class AgentKnowledgeLearningService {
             
             agentKnowledge.knowledgeDomains.push({
               domain: domainName,
-              level: initialLevel,
+              level: initialLevel, confidence: initialLevel,
               lastUpdated: new Date(),
               examples: []
             });
@@ -374,7 +374,8 @@ export class AgentKnowledgeLearningService {
         if (!agent) continue;
 
         // Update metrics
-        const successRate = stat.totalCalls > 0
+        // @ts-ignore TS6133
+        const _successRate = stat.totalCalls > 0
           ? (stat.successfulCalls / stat.totalCalls) * 100
           : 0;
 
@@ -436,7 +437,7 @@ export class AgentKnowledgeLearningService {
   /**
    * Extract skills and domains from task description using keyword matching
    */
-  extractSkillsFromTask(taskTitle: string, taskDescription: string, agentRole: string): string[] {
+  extractSkillsFromTask(taskTitle: string, taskDescription: string, _agentRole: string): string[] {
     const skills: string[] = [];
     const description = `${taskTitle} ${taskDescription}`.toLowerCase();
 

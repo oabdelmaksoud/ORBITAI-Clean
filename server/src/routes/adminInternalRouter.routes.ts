@@ -7,7 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
 import { internalTaskRouter } from '../services/internalTaskRouter.service.js';
-import { InternalRoutingConfig, IInternalRoutingConfig } from '../models/InternalRoutingConfig.model.js';
+import { InternalRoutingConfig} from '../models/InternalRoutingConfig.model.js';
 import { InternalRoutingHistory } from '../models/InternalRoutingHistory.model.js';
 import { modelRegistry } from '../services/llm/models/ModelRegistry.js';
 import { logger } from '../utils/logger.js';
@@ -22,7 +22,7 @@ router.use(requireAdmin);
  * GET /api/admin/internal-router/config
  * Get current internal router configuration
  */
-router.get('/config', async (req, res) => {
+router.get('/config', async (_req, res) => {
   try {
     const config = await internalTaskRouter.getConfig();
     
@@ -43,7 +43,7 @@ router.get('/config', async (req, res) => {
     logger.error('Failed to get internal router config:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to get configuration' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to get configuration' }
     });
   }
 });
@@ -59,10 +59,11 @@ router.put('/config', async (req, res) => {
     // Validate updates
     if (updates.minConfidenceThreshold !== undefined) {
       if (updates.minConfidenceThreshold < 0 || updates.minConfidenceThreshold > 1) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: { message: 'minConfidenceThreshold must be between 0 and 1' }
         });
+        return;
       }
     }
     
@@ -70,10 +71,11 @@ router.put('/config', async (req, res) => {
       if (updates.budgetLimits.dailyLimit < 0 || 
           updates.budgetLimits.monthlyLimit < 0 || 
           updates.budgetLimits.perTaskLimit < 0) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: { message: 'Budget limits cannot be negative' }
         });
+        return;
       }
     }
     
@@ -89,7 +91,7 @@ router.put('/config', async (req, res) => {
     logger.error('Failed to update internal router config:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to update configuration' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to update configuration' }
     });
   }
 });
@@ -118,7 +120,7 @@ router.get('/statistics', async (req, res) => {
     logger.error('Failed to get internal router statistics:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to get statistics' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to get statistics' }
     });
   }
 });
@@ -177,7 +179,7 @@ router.get('/history', async (req, res) => {
     logger.error('Failed to get internal router history:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to get history' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to get history' }
     });
   }
 });
@@ -191,10 +193,11 @@ router.post('/test', async (req, res) => {
     const { prompt, taskType, agentRole, requiredCapabilities, context } = req.body;
     
     if (!prompt) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'prompt is required' }
       });
+      return;
     }
     
     const decision = await internalTaskRouter.routeTask({
@@ -213,7 +216,7 @@ router.post('/test', async (req, res) => {
     logger.error('Failed to test internal routing:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to test routing' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to test routing' }
     });
   }
 });
@@ -228,17 +231,19 @@ router.post('/tiers', async (req, res) => {
     
     // Validate tier config
     if (!tierConfig.name || !['economy', 'standard', 'premium'].includes(tierConfig.name)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'Invalid tier name. Must be economy, standard, or premium' }
       });
+      return;
     }
     
     if (!tierConfig.models || !Array.isArray(tierConfig.models) || tierConfig.models.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'Tier must have at least one model' }
       });
+      return;
     }
     
     const config = await internalTaskRouter.getConfig();
@@ -264,7 +269,7 @@ router.post('/tiers', async (req, res) => {
     logger.error('Failed to update tier:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to update tier' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to update tier' }
     });
   }
 });
@@ -278,17 +283,19 @@ router.post('/task-overrides', async (req, res) => {
     const override = req.body;
     
     if (!override.taskType) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'taskType is required' }
       });
+      return;
     }
     
     if (!override.preferredTier || !['economy', 'standard', 'premium'].includes(override.preferredTier)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'Invalid preferredTier. Must be economy, standard, or premium' }
       });
+      return;
     }
     
     const config = await internalTaskRouter.getConfig();
@@ -314,7 +321,7 @@ router.post('/task-overrides', async (req, res) => {
     logger.error('Failed to update task override:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to update task override' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to update task override' }
     });
   }
 });
@@ -333,10 +340,11 @@ router.delete('/task-overrides/:taskType', async (req, res) => {
     const filteredOverrides = existingOverrides.filter(o => o.taskType !== taskType);
     
     if (filteredOverrides.length === existingOverrides.length) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: { message: 'Task type override not found' }
       });
+      return;
     }
     
     const updatedConfig = await internalTaskRouter.updateConfig({ taskTypeOverrides: filteredOverrides });
@@ -351,7 +359,7 @@ router.delete('/task-overrides/:taskType', async (req, res) => {
     logger.error('Failed to delete task override:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to delete task override' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to delete task override' }
     });
   }
 });
@@ -365,17 +373,19 @@ router.post('/context-overrides', async (req, res) => {
     const override = req.body;
     
     if (!override.context) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'context is required' }
       });
+      return;
     }
     
     if (!override.preferredTier || !['economy', 'standard', 'premium'].includes(override.preferredTier)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'Invalid preferredTier. Must be economy, standard, or premium' }
       });
+      return;
     }
     
     const config = await internalTaskRouter.getConfig();
@@ -401,7 +411,7 @@ router.post('/context-overrides', async (req, res) => {
     logger.error('Failed to update context override:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to update context override' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to update context override' }
     });
   }
 });
@@ -420,10 +430,11 @@ router.delete('/context-overrides/:context', async (req, res) => {
     const filteredOverrides = existingOverrides.filter(o => o.context !== context);
     
     if (filteredOverrides.length === existingOverrides.length) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: { message: 'Context override not found' }
       });
+      return;
     }
     
     const updatedConfig = await internalTaskRouter.updateConfig({ contextOverrides: filteredOverrides });
@@ -438,7 +449,7 @@ router.delete('/context-overrides/:context', async (req, res) => {
     logger.error('Failed to delete context override:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to delete context override' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to delete context override' }
     });
   }
 });
@@ -461,7 +472,7 @@ router.post('/clear-cache', async (req, res) => {
     logger.error('Failed to clear cache:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to clear cache' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to clear cache' }
     });
   }
 });
@@ -491,7 +502,7 @@ router.post('/reset', async (req, res) => {
     logger.error('Failed to reset config:', error);
     res.status(500).json({
       success: false,
-      error: { message: error.message || 'Failed to reset configuration' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to reset configuration' }
     });
   }
 });
