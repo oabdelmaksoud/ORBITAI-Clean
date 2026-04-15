@@ -53,7 +53,7 @@ export class VLLMService {
         headers
       });
       return response.ok;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug(`vLLM not available at ${this.baseUrl}:`, error);
       return false;
     }
@@ -81,7 +81,7 @@ export class VLLMService {
       }
 
       const data = await response.json();
-      return (data.data || []).map((model: any) => model.id || model.name);
+      return ((data as any).data || []).map((model: any) => model.id || model.name);
     } catch (error: unknown) {
       const apiError = toApiError(error);
       logger.error('Failed to fetch vLLM models:', apiError);
@@ -149,7 +149,7 @@ export class VLLMService {
 
       const data = await response.json();
 
-      const choice = data.choices?.[0];
+      const choice = (data as any).choices?.[0];
       const text = choice?.message?.content || '';
 
       // Extract function calls if present
@@ -166,7 +166,7 @@ export class VLLMService {
                 name: toolCall.function.name,
                 args: args || {}
               });
-            } catch (e) {
+            } catch (e: unknown) {
               logger.warn('Failed to parse vLLM function call:', e);
             }
           }
@@ -176,9 +176,9 @@ export class VLLMService {
       const result: any = {
         text,
         usage: {
-          promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0,
-          totalTokens: data.usage?.total_tokens || 0
+          promptTokens: (data as any).usage?.prompt_tokens || 0,
+          completionTokens: (data as any).usage?.completion_tokens || 0,
+          totalTokens: (data as any).usage?.total_tokens || 0
         }
       };
 
@@ -199,7 +199,7 @@ export class VLLMService {
    */
   async generateStructuredOutput(
     prompt: string,
-    schema: any,
+    _schema: any,
     model: string
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema.`;
@@ -215,7 +215,7 @@ export class VLLMService {
 
     try {
       return JSON.parse(result.text);
-    } catch (error) {
+    } catch (error: unknown) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

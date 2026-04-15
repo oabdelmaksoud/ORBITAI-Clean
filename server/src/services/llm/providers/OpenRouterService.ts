@@ -82,7 +82,7 @@ class OpenRouterService {
       }
 
       const data = await response.json();
-      return data.data || [];
+      return (data as any).data || [];
     } catch (error: unknown) {
       const apiError = toApiError(error);
       logger.error('[OpenRouter] Failed to fetch models:', apiError);
@@ -138,11 +138,11 @@ class OpenRouterService {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-        throw new Error(error.error?.message || `OpenRouter API error: ${response.statusText}`);
+        throw new Error((error as any).error?.message || `OpenRouter API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      const choice = data.choices?.[0];
+      const choice = (data as any).choices?.[0];
 
       if (!choice) {
         throw new Error('No response from OpenRouter');
@@ -162,9 +162,9 @@ class OpenRouterService {
 
       // Calculate usage
       const usage = {
-        promptTokens: data.usage?.prompt_tokens || 0,
-        completionTokens: data.usage?.completion_tokens || 0,
-        totalTokens: data.usage?.total_tokens || 0
+        promptTokens: (data as any).usage?.prompt_tokens || 0,
+        completionTokens: (data as any).usage?.completion_tokens || 0,
+        totalTokens: (data as any).usage?.total_tokens || 0
       };
 
       return {

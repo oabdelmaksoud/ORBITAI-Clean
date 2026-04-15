@@ -113,7 +113,7 @@ class DeploymentMonitoringService {
   /**
    * Get logs
    */
-  private async getLogs(deploymentId: string): Promise<MonitoringMetrics['logs']> {
+  private async getLogs(_deploymentId: string): Promise<MonitoringMetrics['logs']> {
     // Placeholder: would integrate with logging service (CloudWatch, Datadog, etc.)
     return {
       errorCount: 0,
@@ -126,7 +126,7 @@ class DeploymentMonitoringService {
   /**
    * Get metrics
    */
-  private async getMetrics(deploymentId: string): Promise<MonitoringMetrics['metrics']> {
+  private async getMetrics(_deploymentId: string): Promise<MonitoringMetrics['metrics']> {
     // Placeholder: would integrate with monitoring service
     return {
       cpu: 0,
@@ -141,7 +141,7 @@ class DeploymentMonitoringService {
    */
   private checkAlerts(
     health: MonitoringMetrics['health'],
-    logs: MonitoringMetrics['logs'],
+    _logs: MonitoringMetrics['logs'],
     metrics: MonitoringMetrics['metrics']
   ): MonitoringMetrics['alerts'] {
     const alerts: MonitoringMetrics['alerts'] = [];

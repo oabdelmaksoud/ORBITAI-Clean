@@ -373,7 +373,7 @@ class RequirementsValidationService {
    */
   checkTraceability(
     requirements: ParsedRequirement[],
-    artifacts: IArtifact[]
+    _artifacts: IArtifact[]
   ): TraceabilityReport {
     let withTraceRefs = 0;
     let withoutTraceRefs = 0;
@@ -502,7 +502,7 @@ class RequirementsValidationService {
    */
   async detectMissingRequirements(
     projectId: string,
-    newArtifact: IArtifact
+    _newArtifact: IArtifact
   ): Promise<ValidationIssue[]> {
     // Get all requirements for the project
     const reqArtifacts = await Artifact.find({

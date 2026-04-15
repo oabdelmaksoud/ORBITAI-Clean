@@ -4,15 +4,18 @@ FROM node:22-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies — needed for TypeScript compile)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build application
+# Build application (requires typescript from devDependencies)
 RUN npm run build
+
+# Prune to production-only deps after build
+RUN npm prune --production
 
 # Production stage
 FROM node:22-alpine AS production

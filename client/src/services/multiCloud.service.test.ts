@@ -6,8 +6,11 @@ import { FailoverService } from './failover.service';
 describe('MultiCloudOrchestratorService', () => {
   it('should deploy to multiple platforms', async () => {
     const service = new MultiCloudOrchestratorService();
-    const result = await service.deployToMultiplePlatforms({});
-    expect(result.status).toBe('not implemented');
+    const result = await service.deployToMultiplePlatforms({
+      projectId: 'test-project',
+      platforms: [],
+    });
+    expect(result.status).toBe('success');
   });
 });
 

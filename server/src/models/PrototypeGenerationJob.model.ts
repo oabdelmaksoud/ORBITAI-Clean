@@ -54,76 +54,76 @@ const prototypeGenerationJobSchema = new Schema<IPrototypeGenerationJob>(
     conversationId: {
       type: String,
       required: true,
-      index: true
+      index: true,
     },
     userId: {
       type: String,
       required: true,
-      index: true
+      index: true,
     },
     status: {
       type: String,
       enum: ['pending', 'running', 'completed', 'failed'],
       default: 'pending',
-      index: true
+      index: true,
     },
     progress: {
       type: Number,
       default: 0,
       min: 0,
-      max: 100
+      max: 100,
     },
     currentStage: {
-      type: String
+      type: String,
     },
     userGoal: {
       type: String,
-      required: true
+      required: true,
     },
     conversationHistory: {
-      type: [Schema.Types.Mixed],
-      default: []
+      type: [Schema.Types.Mixed] as any,
+      default: [],
     },
     useInternet: {
       type: Boolean,
-      default: false
+      default: false,
     },
     useEnhanced: {
       type: Boolean,
-      default: true
+      default: true,
     },
     isRegeneration: {
       type: Boolean,
-      default: false
+      default: false,
     },
     brainstormingContext: {
-      type: Schema.Types.Mixed
+      type: Schema.Types.Mixed,
     },
     generationSessionId: {
       type: String,
-      index: true
+      index: true,
     },
     result: {
-      type: Schema.Types.Mixed
+      type: Schema.Types.Mixed,
     },
     error: {
-      type: String
+      type: String,
     },
     startedAt: {
       type: Date,
       default: Date.now,
-      index: true
+      index: true,
     },
     completedAt: {
-      type: Date
+      type: Date,
     },
     metadata: {
       type: Schema.Types.Mixed,
-      default: {}
-    }
+      default: {},
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
@@ -136,5 +136,3 @@ export const PrototypeGenerationJob = mongoose.model<IPrototypeGenerationJob>(
   'PrototypeGenerationJob',
   prototypeGenerationJobSchema
 );
-
-

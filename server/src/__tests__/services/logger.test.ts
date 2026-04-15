@@ -2,7 +2,7 @@
  * Logger Utility Tests
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect} from 'vitest';
 import { logger } from '../../utils/logger.js';
 
 describe('Logger Utility', () => {

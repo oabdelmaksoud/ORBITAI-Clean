@@ -6,20 +6,20 @@
 import { config } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { embeddingService } from './embedding.service.js';
-import { Artifact } from '../../../types.js';
+type Artifact = any;
 
 // Lazy import Weaviate to avoid startup failure if package not installed
 let weaviateClient: any = null;
-let WeaviateClient: any = null;
+// let weaviateClient: any = null;
 let ApiKey: any = null;
 
 async function loadWeaviateClient() {
   if (weaviateClient !== null) return; // Already loaded or attempted
-  
+
   try {
     const weaviateModule = await import('weaviate-ts-client');
     weaviateClient = weaviateModule.default;
-    WeaviateClient = weaviateModule.WeaviateClient;
+    weaviateClient = (weaviateModule as any).WeaviateClient;
     ApiKey = weaviateModule.ApiKey;
   } catch (error: unknown) {
     logger.warn('Weaviate package not installed. Vector search will use in-memory fallback.');
@@ -60,7 +60,7 @@ export class WeaviateService {
 
     // Lazy load Weaviate client
     await loadWeaviateClient();
-    
+
     if (weaviateClient === false) {
       // Weaviate package not available
       logger.debug('Weaviate not available, service will be disabled');
@@ -97,7 +97,7 @@ export class WeaviateService {
 
       // Check connection
       await this.client.misc.metaGetter().do();
-      
+
       // Create schema if it doesn't exist
       await this.ensureSchema();
 
@@ -127,7 +127,7 @@ export class WeaviateService {
       }
 
       // Create class schema
-      const embeddingDimensions = embeddingService.getEmbeddingDimensions();
+      // const _embeddingDimensions = embeddingService.getEmbeddingDimensions();
 
       const classDefinition = {
         class: this.className,
@@ -206,7 +206,7 @@ export class WeaviateService {
       await this.client.schema.classCreator().withClass(classDefinition).do();
       logger.info(`✅ Created Weaviate class: ${this.className}`);
     } catch (error: unknown) {
-      if (error.message?.includes('already exists')) {
+      if ((error instanceof Error ? error.message : String(error))?.includes('already exists')) {
         logger.debug(`Weaviate class "${this.className}" already exists`);
       } else {
         logger.error('Failed to create Weaviate schema:', error);
@@ -227,7 +227,7 @@ export class WeaviateService {
    */
   async initializeWithArtifacts(artifacts: Artifact[]): Promise<void> {
     await this.initialize();
-    
+
     if (!this.isAvailable()) {
       logger.warn('Weaviate not available, skipping artifact initialization');
       return;
@@ -281,8 +281,7 @@ export class WeaviateService {
       };
 
       // Upsert (insert or update)
-      await this.client!.data
-        .merger()
+      await this.client!.data.merger()
         .withId(artifact.id)
         .withClassName(this.className)
         .withProperties(weaviateObject)
@@ -305,11 +304,7 @@ export class WeaviateService {
     }
 
     try {
-      await this.client!.data
-        .deleter()
-        .withId(artifactId)
-        .withClassName(this.className)
-        .do();
+      await this.client!.data.deleter().withId(artifactId).withClassName(this.className).do();
 
       logger.debug(`Deleted artifact from Weaviate: ${artifactId}`);
     } catch (error: unknown) {
@@ -330,12 +325,14 @@ export class WeaviateService {
       type?: string;
       phase?: string;
     }
-  ): Promise<Array<{
-    id: string;
-    text: string;
-    score: number;
-    metadata?: Record<string, any>;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      text: string;
+      score: number;
+      metadata?: Record<string, any>;
+    }>
+  > {
     if (!this.isAvailable()) {
       logger.warn('Weaviate not available, returning empty results');
       return [];
@@ -389,8 +386,7 @@ export class WeaviateService {
       }
 
       // Perform vector search
-      const result = await this.client!.graphql
-        .get()
+      const result = await this.client!.graphql.get()
         .withClassName(this.className)
         .withFields('artifactId title content type phase createdBy tags')
         .withNearVector({
@@ -403,7 +399,7 @@ export class WeaviateService {
 
       // Transform results
       const artifacts = (result.data?.Get?.[this.className] as any[]) || [];
-      
+
       return artifacts.map((item: any) => ({
         id: item.artifactId || item._additional?.id,
         text: item.content || item.title,
@@ -434,12 +430,14 @@ export class WeaviateService {
       type?: string;
       phase?: string;
     }
-  ): Promise<Array<{
-    id: string;
-    text: string;
-    score: number;
-    metadata?: Record<string, any>;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      text: string;
+      score: number;
+      metadata?: Record<string, any>;
+    }>
+  > {
     if (!this.isAvailable()) {
       return await this.vectorSearch(query, topK, filters);
     }
@@ -492,8 +490,7 @@ export class WeaviateService {
       }
 
       // Perform hybrid search (vector + BM25 keyword search)
-      const result = await this.client!.graphql
-        .get()
+      const result = await this.client!.graphql.get()
         .withClassName(this.className)
         .withFields('artifactId title content type phase createdBy tags')
         .withHybrid({
@@ -507,7 +504,7 @@ export class WeaviateService {
 
       // Transform results
       const artifacts = (result.data?.Get?.[this.className] as any[]) || [];
-      
+
       return artifacts.map((item: any) => ({
         id: item.artifactId || item._additional?.id,
         text: item.content || item.title,
@@ -536,8 +533,7 @@ export class WeaviateService {
     }
 
     try {
-      const result = await this.client!.graphql
-        .aggregate()
+      const result = await this.client!.graphql.aggregate()
         .withClassName(this.className)
         .withFields('meta { count }')
         .do();
@@ -558,8 +554,7 @@ export class WeaviateService {
     }
 
     try {
-      await this.client!.batch
-        .objectsBatchDeleter()
+      await this.client!.batch.objectsBatchDeleter()
         .withClassName(this.className)
         .withWhere({
           operator: 'Like' as const,
@@ -577,4 +572,3 @@ export class WeaviateService {
 }
 
 export const weaviateService = new WeaviateService();
-

@@ -262,21 +262,8 @@ const AppContent: React.FC = () => {
   const isAdminUser = useCallback((user: UserProfile | null): boolean => {
     if (!user) return false;
 
-    // Check role from user object
-    let role = user.role?.toLowerCase()?.trim();
-
-    // Fallback: Check localStorage directly if role is missing
-    if (!role) {
-      try {
-        const storedUserStr = localStorage.getItem('orbitai_user');
-        if (storedUserStr) {
-          const storedUser = JSON.parse(storedUserStr);
-          role = storedUser?.role?.toLowerCase()?.trim();
-        }
-      } catch (e) {
-        console.error('Failed to check localStorage for role', e);
-      }
-    }
+    // Check role from user object (server API response only, never client-controlled storage)
+    const role = user.role?.toLowerCase()?.trim();
 
     const isAdmin = role === 'admin' || role === 'superadmin';
 
@@ -1704,7 +1691,7 @@ const AppContent: React.FC = () => {
     regressPhase,
     handleForceBuild,
     handleGlobalFileSelect
-  } = React.useMemo(() => createAiHandlers({
+  } = createAiHandlers({
     stateRef, dispatch, addLog, autoPilotStatus, autoPilotStatusRef, setAutoPilotStatus,
     isStoppingRef, isBatchingRef, activeTaskControllersRef,
     setGlobalMessages: safeSetGlobalMessages, globalMessages, setGlobalChatInput, globalChatInput,
@@ -1714,17 +1701,7 @@ const AppContent: React.FC = () => {
     user, handleUpgradeClick, pendingActionRef, setShowHITLPrompt, setAppSettings,
     startTransition, setActiveTab, executeTask, settingsRef, batchIntervalRef,
     setIsProcessingFile, globalFileInputRef
-  }), [
-    stateRef, dispatch, addLog, autoPilotStatus, autoPilotStatusRef, setAutoPilotStatus,
-    isStoppingRef, isBatchingRef, activeTaskControllersRef,
-    safeSetGlobalMessages, globalMessages, setGlobalChatInput, globalChatInput,
-    setSetupMessages, setSetupInput, setupInputRef, setupInput,
-    setIsEnhancingChat, setIsEnhancingInput, setIsResearchingChat, setIsResearching,
-    activeChatAgent, setActiveChatAgent, chatHistory, setChatHistory, setIsChatThinking, isChatThinking,
-    user, handleUpgradeClick, pendingActionRef, setShowHITLPrompt, setAppSettings,
-    startTransition, setActiveTab, executeTask, settingsRef, batchIntervalRef,
-    setIsProcessingFile, globalFileInputRef
-  ]);
+  });
 
   // Update proxy refs
   React.useEffect(() => {
@@ -2080,7 +2057,7 @@ const AppContent: React.FC = () => {
 
 
 
-  useEffect(() => { const handleMouseMove = (e: MouseEvent) => { if (isResizingLeft) setLeftWidth(Math.min(Math.max(e.clientX, 220), 500)); if (isResizingLogs) { setIsLogsCollapsed(false); setLogHeight(Math.min(Math.max(document.body.clientHeight - e.clientY, 36), 600)); } }; const handleMouseUp = () => { setIsResizingLeft(false); setIsResizingLogs(false); }; if (isResizingLeft || isResizingLogs) { document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', handleMouseUp); document.body.style.cursor = isResizingLogs ? 'row-resize' : 'col-resize'; document.body.style.userSelect = 'none'; } else { document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; } return () => { document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; }; }, [isResizingLeft, isResizingLogs]);
+  // Panel resize logic is handled in useAppState hook
 
 
 

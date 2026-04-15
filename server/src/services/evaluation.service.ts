@@ -1,7 +1,6 @@
 import { geminiService } from './gemini.service.js';
 import { logger } from '../utils/logger.js';
 import { Type, Schema } from '@google/genai';
-import { llmRouter } from './llm/LLMRouter.js';
 
 export interface EvaluationResult {
   score: number; // 0-100
@@ -49,7 +48,7 @@ export class EvaluationService {
       // Build evaluation prompt - Agent-to-Agent conversation format
       // QA/Audit Agent evaluates the output from another agent
       const standardsText = standards.length > 0 
-        ? `\n\nStandards to check:\n${standards.map(s => `- ${s}`).join('\n')}`
+        ? `\n\nStandards to check:\n${standards.map((s: any) => `- ${s}`).join('\n')}`
         : '';
 
       const projectContextText = projectContext 
@@ -163,21 +162,21 @@ Remember: Your evaluation will be used to refine the task and improve the output
       let enhancedReasoning = result.reasoning || 'Evaluation completed by QA/Audit Agent.';
       
       if (result.strengths && Array.isArray(result.strengths) && result.strengths.length > 0) {
-        enhancedReasoning += `\n\n**Strengths:**\n${result.strengths.map(s => `• ${s}`).join('\n')}`;
+        enhancedReasoning += `\n\n**Strengths:**\n${result.strengths.map((s: any) => `• ${s}`).join('\n')}`;
       }
       
       if (result.weaknesses && Array.isArray(result.weaknesses) && result.weaknesses.length > 0) {
-        enhancedReasoning += `\n\n**Areas for Improvement:**\n${result.weaknesses.map(w => `• ${w}`).join('\n')}`;
+        enhancedReasoning += `\n\n**Areas for Improvement:**\n${result.weaknesses.map((w: any) => `• ${w}`).join('\n')}`;
       }
       
       // Add refinement suggestions for agent-to-agent conversation
       if (result.refinementSuggestions && Array.isArray(result.refinementSuggestions) && result.refinementSuggestions.length > 0) {
-        enhancedReasoning += `\n\n**Refinement Suggestions for ${agentRole}:**\n${result.refinementSuggestions.map(s => `• ${s}`).join('\n')}`;
+        enhancedReasoning += `\n\n**Refinement Suggestions for ${agentRole}:**\n${result.refinementSuggestions.map((s: any) => `• ${s}`).join('\n')}`;
       }
       
       // Add process improvement insights
       if (result.processImprovements && Array.isArray(result.processImprovements) && result.processImprovements.length > 0) {
-        enhancedReasoning += `\n\n**Process Improvement Insights:**\n${result.processImprovements.map(p => `• ${p}`).join('\n')}`;
+        enhancedReasoning += `\n\n**Process Improvement Insights:**\n${result.processImprovements.map((p: any) => `• ${p}`).join('\n')}`;
       }
 
       // Ensure score is within valid range
@@ -201,7 +200,7 @@ Remember: Your evaluation will be used to refine the task and improve the output
       // Return a fallback evaluation on error
       return {
         score: 70,
-        reasoning: `Evaluation service encountered an error: ${error.message || 'Unknown error'}. Default score assigned.`,
+        reasoning: `Evaluation service encountered an error: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}. Default score assigned.`,
         criteria: ['Error Fallback'],
         timestamp: Date.now()
       };
@@ -211,7 +210,7 @@ Remember: Your evaluation will be used to refine the task and improve the output
   /**
    * Quick evaluation for simple tasks (faster, less detailed)
    */
-  async quickEvaluate(output: string, taskDescription: string): Promise<EvaluationResult> {
+  async quickEvaluate(output: string, _taskDescription: string): Promise<EvaluationResult> {
     if (!output || output.trim().length < 50) {
       return {
         score: 50,

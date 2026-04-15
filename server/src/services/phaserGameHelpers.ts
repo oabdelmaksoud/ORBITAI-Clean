@@ -26,9 +26,9 @@ export function detectComplexGame(features: string[], requirements: string[]): b
 export function buildPhaserGamePrompt(
   cleanGoal: string,
   playerFeatures: string[],
-  cleanRequirements: string[],
+  _cleanRequirements: string[],
   brainstormingContext: any,
-  targetPlatforms: string[]
+  _targetPlatforms: string[]
 ): string {
   const featuresList = playerFeatures.length > 0
     ? playerFeatures.map((f, i) => `${i + 1}. ${f}`).join('\n')

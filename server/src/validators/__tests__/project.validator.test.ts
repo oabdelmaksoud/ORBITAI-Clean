@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { createProjectSchema, updateProjectSchema } from '../project.validator.js';
-import { z } from 'zod';
 
 describe('Project Validator', () => {
   describe('createProjectSchema', () => {

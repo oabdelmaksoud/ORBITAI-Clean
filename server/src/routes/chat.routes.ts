@@ -158,7 +158,7 @@ router.post('/conversations', authenticateToken, validate(createConversationSche
       success: true,
       data: { conversation }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -212,7 +212,7 @@ router.get('/conversations', authenticateToken, async (req: AuthRequest, res, ne
       success: true,
       data: { conversations }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -239,7 +239,7 @@ router.get('/conversations/:id', authenticateToken, async (req: AuthRequest, res
       success: true,
       data: { conversation }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -274,7 +274,7 @@ router.post('/conversations/:id/messages', authenticateToken, validate(addMessag
       success: true,
       data: { conversation }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -308,7 +308,7 @@ router.put('/conversations/:id/answers', authenticateToken, validate(updateAnswe
       success: true,
       data: { conversation }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -361,7 +361,7 @@ router.put('/conversations/:id/neural-chat', authenticateToken, validate(updateN
       success: true,
       data: { conversation }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -406,7 +406,7 @@ router.put('/conversations/:id/folder', authenticateToken, async (req: AuthReque
           id,
           userId
         );
-      } catch (error) {
+      } catch (error: unknown) {
         // Log but continue
         logger.warn('Failed to remove conversation from old folder:', error);
       }
@@ -424,7 +424,7 @@ router.put('/conversations/:id/folder', authenticateToken, async (req: AuthReque
       success: true,
       data: { conversation }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -456,7 +456,7 @@ router.delete('/conversations/:id', authenticateToken, async (req: AuthRequest, 
           id,
           userId as string
         );
-      } catch (error) {
+      } catch (error: unknown) {
         // Log but continue with deletion
         logger.warn('Failed to remove conversation from folder:', error);
       }
@@ -475,7 +475,7 @@ router.delete('/conversations/:id', authenticateToken, async (req: AuthRequest, 
       success: true,
       message: 'Conversation deleted'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

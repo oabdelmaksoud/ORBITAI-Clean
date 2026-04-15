@@ -6,7 +6,6 @@
 import express from 'express';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { getPerformanceMetrics, clearPerformanceMetrics, getRawMetrics } from '../middleware/performanceMonitor.js';
-import { AppError } from '../middleware/errorHandler.js';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger.js';
 
@@ -19,7 +18,7 @@ router.use(requireAdmin);
  * GET /api/admin/performance/metrics
  * Get performance metrics
  */
-router.get('/metrics', async (req: AdminRequest, res, next) => {
+router.get('/metrics', async (_req: AdminRequest, res, next) => {
   try {
     const metrics = getPerformanceMetrics();
     res.json({
@@ -29,7 +28,7 @@ router.get('/metrics', async (req: AdminRequest, res, next) => {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -38,14 +37,14 @@ router.get('/metrics', async (req: AdminRequest, res, next) => {
  * DELETE /api/admin/performance/metrics
  * Clear performance metrics
  */
-router.delete('/metrics', async (req: AdminRequest, res, next) => {
+router.delete('/metrics', async (_req: AdminRequest, res, next) => {
   try {
     clearPerformanceMetrics();
     res.json({
       success: true,
       message: 'Performance metrics cleared',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -188,7 +187,7 @@ router.get('/api-metrics', async (req: AdminRequest, res, next) => {
         recentMetrics,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -197,7 +196,7 @@ router.get('/api-metrics', async (req: AdminRequest, res, next) => {
  * GET /api/admin/performance/slow-queries
  * Get slow database queries from MongoDB profiling data
  */
-router.get('/slow-queries', async (req: AdminRequest, res, next) => {
+router.get('/slow-queries', async (_req: AdminRequest, res, _next) => {
   try {
     if (!mongoose.connection.readyState) {
       res.json({
@@ -398,7 +397,7 @@ router.get('/slow-queries', async (req: AdminRequest, res, next) => {
           'Enable MongoDB profiling: db.setProfilingLevel(1, { slowms: 100 })',
           'Check MongoDB connection and permissions',
         ],
-        message: `Error fetching slow queries: ${error.message}`,
+        message: `Error fetching slow queries: ${(error instanceof Error ? error.message : String(error))}`,
       },
     });
   }
@@ -408,7 +407,7 @@ router.get('/slow-queries', async (req: AdminRequest, res, next) => {
  * GET /api/admin/performance/system-health
  * Get system health information
  */
-router.get('/system-health', async (req: AdminRequest, res, next) => {
+router.get('/system-health', async (_req: AdminRequest, res, next) => {
   try {
     // Database health
     const isConnected = mongoose.connection.readyState === 1;
@@ -433,7 +432,7 @@ router.get('/system-health', async (req: AdminRequest, res, next) => {
                 name: collectionInfo.name,
                 count,
               });
-            } catch (err) {
+            } catch (err: unknown) {
               // Skip collections that can't be counted
             }
           }
@@ -465,7 +464,7 @@ router.get('/system-health', async (req: AdminRequest, res, next) => {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -474,7 +473,7 @@ router.get('/system-health', async (req: AdminRequest, res, next) => {
  * GET /api/admin/performance/profiling-status
  * Check MongoDB profiling status and enable if needed
  */
-router.get('/profiling-status', async (req: AdminRequest, res, next) => {
+router.get('/profiling-status', async (_req: AdminRequest, res, next) => {
   try {
     if (!mongoose.connection.readyState) {
       res.json({

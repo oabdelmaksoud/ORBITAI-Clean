@@ -36,12 +36,13 @@ router.post(
         stateManagement,
         styling,
         apiIntegration,
-        authentication
+        authentication,
       } = req.body;
 
       // Validate input
       if (!projectId) throw new AppError('Project ID is required', 400);
-      if (!framework) throw new AppError('Framework is required (react, vue, angular, svelte)', 400);
+      if (!framework)
+        throw new AppError('Framework is required (react, vue, angular, svelte)', 400);
 
       // Fetch project
       const project = await Project.findOne({ _id: projectId, userId });
@@ -50,7 +51,7 @@ router.post(
       logger.info(`🎨 Generating frontend for project: ${project.name} (${projectId})`);
 
       // Emit progress update via WebSocket
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'frontend_generation_started',
         projectId,
         message: 'Frontend code generation started...',
@@ -66,17 +67,17 @@ router.post(
         stateManagement: stateManagement || 'context',
         styling: styling || 'tailwind',
         apiIntegration: apiIntegration || { baseUrl: '/api', endpoints: [] },
-        authentication: authentication || { enabled: false }
-      });
+        authentication: authentication || { enabled: false },
+      } as any);
 
       if (!result.success) {
-        webSocketService.broadcast(userId, {
+        (webSocketService as any).broadcast(userId, {
           type: 'frontend_generation_failed',
           projectId,
-          error: result.error
+          error: (result as any).error,
         });
 
-        throw new AppError(`Frontend generation failed: ${result.error}`, 400);
+        throw new AppError(`Frontend generation failed: ${(result as any).error}`, 400);
       }
 
       // Store generated files as artifact
@@ -85,9 +86,9 @@ router.post(
         files: result.files.map(f => ({
           path: f.path,
           type: f.fileType,
-          linesOfCode: f.content.split('\n').length
+          linesOfCode: f.content.split('\n').length,
         })),
-        fileCount: result.files.length
+        fileCount: result.files.length,
       });
 
       const frontendArtifact = new Artifact({
@@ -100,18 +101,18 @@ router.post(
         metadata: {
           generatedAt: new Date(),
           framework: result.framework,
-          fileCount: result.files.length
-        }
+          fileCount: result.files.length,
+        },
       });
 
       await frontendArtifact.save();
 
       // Emit success event
-      webSocketService.broadcast(userId, {
+      (webSocketService as any).broadcast(userId, {
         type: 'frontend_generation_completed',
         projectId,
         artifactId: frontendArtifact._id,
-        fileCount: result.files.length
+        fileCount: result.files.length,
       });
 
       logger.info(`✅ Frontend generated successfully: ${result.files.length} files`);
@@ -123,12 +124,12 @@ router.post(
           files: result.files.map(f => ({
             path: f.path,
             type: f.fileType,
-            preview: f.content.substring(0, 500) + (f.content.length > 500 ? '...' : '')
+            preview: f.content.substring(0, 500) + (f.content.length > 500 ? '...' : ''),
           })),
           fullFiles: result.files,
           artifactId: frontendArtifact._id,
-          fileCount: result.files.length
-        }
+          fileCount: result.files.length,
+        },
       });
     } catch (error: unknown) {
       logger.error('Frontend generation route error:', error);
@@ -146,14 +147,7 @@ router.post(
   checkFeatureAccess('code_generation'),
   async (req: AuthRequest & FeatureRequest, res: Response, next) => {
     try {
-      const {
-        projectId,
-        framework,
-        componentName,
-        componentType,
-        props,
-        styling
-      } = req.body;
+      const { projectId, framework, componentName, componentType, props, styling } = req.body;
 
       if (!projectId) throw new AppError('Project ID is required', 400);
       if (!framework) throw new AppError('Framework is required', 400);
@@ -165,29 +159,29 @@ router.post(
 
       // Generate single component based on framework
       let component;
-      
+
       if (framework === 'react') {
         component = (frontendCodeGeneratorService as any).generateReactComponent({
           name: componentName,
           type: componentType || 'functional',
           props: props || [],
-          styling: styling || 'tailwind'
+          styling: styling || 'tailwind',
         });
       } else if (framework === 'vue') {
         component = (frontendCodeGeneratorService as any).generateVueComponent({
           name: componentName,
           props: props || [],
-          styling: styling || 'tailwind'
+          styling: styling || 'tailwind',
         });
       } else if (framework === 'angular') {
         component = (frontendCodeGeneratorService as any).generateAngularComponent({
           name: componentName,
-          props: props || []
+          props: props || [],
         });
       } else if (framework === 'svelte') {
         component = (frontendCodeGeneratorService as any).generateSvelteComponent({
           name: componentName,
-          props: props || []
+          props: props || [],
         });
       }
 
@@ -196,8 +190,8 @@ router.post(
         data: {
           componentName,
           framework,
-          code: component
-        }
+          code: component,
+        },
       });
     } catch (error: unknown) {
       next(error);
@@ -220,7 +214,13 @@ router.get('/frameworks', async (_req, res) => {
           version: '18.x',
           stateManagement: ['context', 'redux', 'zustand', 'jotai', 'recoil'],
           styling: ['tailwind', 'styled-components', 'emotion', 'css-modules', 'sass'],
-          features: ['TypeScript', 'React Router', 'React Query', 'Form handling', 'Authentication']
+          features: [
+            'TypeScript',
+            'React Router',
+            'React Query',
+            'Form handling',
+            'Authentication',
+          ],
         },
         {
           id: 'vue',
@@ -228,7 +228,7 @@ router.get('/frameworks', async (_req, res) => {
           version: '3.x',
           stateManagement: ['pinia', 'vuex'],
           styling: ['tailwind', 'scss', 'css-modules'],
-          features: ['TypeScript', 'Vue Router', 'Composition API', 'Form handling']
+          features: ['TypeScript', 'Vue Router', 'Composition API', 'Form handling'],
         },
         {
           id: 'angular',
@@ -236,7 +236,7 @@ router.get('/frameworks', async (_req, res) => {
           version: '17.x',
           stateManagement: ['ngrx', 'akita', 'ngxs'],
           styling: ['scss', 'tailwind', 'angular-material'],
-          features: ['TypeScript', 'Angular Router', 'Reactive Forms', 'HTTP Client']
+          features: ['TypeScript', 'Angular Router', 'Reactive Forms', 'HTTP Client'],
         },
         {
           id: 'svelte',
@@ -244,10 +244,10 @@ router.get('/frameworks', async (_req, res) => {
           version: '5.x',
           stateManagement: ['stores', 'context'],
           styling: ['tailwind', 'scss', 'css'],
-          features: ['TypeScript', 'SvelteKit', 'Form handling', 'Transitions']
-        }
-      ]
-    }
+          features: ['TypeScript', 'SvelteKit', 'Form handling', 'Transitions'],
+        },
+      ],
+    },
   });
 });
 
@@ -260,14 +260,7 @@ router.post(
   checkFeatureAccess('code_generation'),
   async (req: AuthRequest & FeatureRequest, res: Response, next) => {
     try {
-      const {
-        framework,
-        projectName,
-        pages,
-        components,
-        stateManagement,
-        styling
-      } = req.body;
+      const { framework, projectName, pages, components, stateManagement, styling } = req.body;
 
       if (!framework) throw new AppError('Framework is required', 400);
 
@@ -281,8 +274,8 @@ router.post(
         stateManagement: stateManagement || 'context',
         styling: styling || 'tailwind',
         apiIntegration: { baseUrl: '/api', endpoints: [] },
-        authentication: { enabled: false }
-      });
+        authentication: { enabled: false },
+      } as any);
 
       res.json({
         success: true,
@@ -292,9 +285,9 @@ router.post(
           files: result.files.slice(0, 10).map(f => ({
             path: f.path,
             type: f.fileType,
-            preview: f.content.substring(0, 300)
-          }))
-        }
+            preview: f.content.substring(0, 300),
+          })),
+        },
       });
     } catch (error: unknown) {
       next(error);

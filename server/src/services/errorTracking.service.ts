@@ -45,7 +45,7 @@ export async function initErrorTracking(): Promise<void> {
         new Sentry.Integrations.Http({ tracing: true }),
         new Sentry.Integrations.Express({ app: undefined }), // Will be set later
       ],
-      beforeSend(event, hint) {
+      beforeSend(event: any, hint: any) {
         // Filter out known non-critical errors
         if (event.exception) {
           const error = hint.originalException;
@@ -63,7 +63,7 @@ export async function initErrorTracking(): Promise<void> {
     isSentryInitialized = true;
     logger.info('[Error Tracking] Sentry initialized');
   } catch (error: unknown) {
-    logger.warn('[Error Tracking] Failed to initialize Sentry:', error.message);
+    logger.warn('[Error Tracking] Failed to initialize Sentry:', (error instanceof Error ? error.message : String(error)));
     isSentryInitialized = true; // Mark as initialized (using logger fallback)
   }
 }

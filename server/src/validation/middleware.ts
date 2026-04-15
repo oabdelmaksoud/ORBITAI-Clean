@@ -14,7 +14,7 @@ export function validateBody<T>(schema: ZodSchema<T>) {
         try {
             req.body = schema.parse(req.body);
             next();
-        } catch (error) {
+        } catch (error: unknown) {
             if (error instanceof ZodError) {
                 const details = error.errors.reduce((acc, err) => {
                     const path = err.path.join('.');
@@ -22,9 +22,10 @@ export function validateBody<T>(schema: ZodSchema<T>) {
                     return acc;
                 }, {} as Record<string, string>);
 
-                return res.status(400).json(
+                res.status(400).json(
                     new ValidationError('Invalid request body', details).toJSON()
                 );
+                return;
             }
             next(error);
         }
@@ -39,7 +40,7 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
         try {
             req.query = schema.parse(req.query) as any;
             next();
-        } catch (error) {
+        } catch (error: unknown) {
             if (error instanceof ZodError) {
                 const details = error.errors.reduce((acc, err) => {
                     const path = err.path.join('.');
@@ -47,9 +48,10 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
                     return acc;
                 }, {} as Record<string, string>);
 
-                return res.status(400).json(
+                res.status(400).json(
                     new ValidationError('Invalid query parameters', details).toJSON()
                 );
+                return;
             }
             next(error);
         }
@@ -64,7 +66,7 @@ export function validateParams<T>(schema: ZodSchema<T>) {
         try {
             req.params = schema.parse(req.params) as any;
             next();
-        } catch (error) {
+        } catch (error: unknown) {
             if (error instanceof ZodError) {
                 const details = error.errors.reduce((acc, err) => {
                     const path = err.path.join('.');
@@ -72,9 +74,10 @@ export function validateParams<T>(schema: ZodSchema<T>) {
                     return acc;
                 }, {} as Record<string, string>);
 
-                return res.status(400).json(
+                res.status(400).json(
                     new ValidationError('Invalid URL parameters', details).toJSON()
                 );
+                return;
             }
             next(error);
         }
@@ -101,7 +104,7 @@ export function validate(options: {
                 req.params = options.params.parse(req.params) as any;
             }
             next();
-        } catch (error) {
+        } catch (error: unknown) {
             if (error instanceof ZodError) {
                 const details = error.errors.reduce((acc, err) => {
                     const path = err.path.join('.');
@@ -109,9 +112,10 @@ export function validate(options: {
                     return acc;
                 }, {} as Record<string, string>);
 
-                return res.status(400).json(
+                res.status(400).json(
                     new ValidationError('Validation failed', details).toJSON()
                 );
+                return;
             }
             next(error);
         }

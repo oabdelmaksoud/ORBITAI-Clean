@@ -1,204 +1,216 @@
 /**
  * CUA Adapter Service Tests
  * Tests for the CUA adapter bridging local Playwright and @trycua/agent SDK
- * 
+ *
  * @module __tests__/services/cua-adapter.service
  */
 
 import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
-import { cuaAdapterService } from '../../services/cua-adapter.service.js';
-import { cuaService } from '../../services/cua.service.js';
-import { webSocketService } from '../../services/websocket.service.js';
 
-// Mock dependencies
+// Mock dependencies BEFORE importing the service
 vi.mock('../../services/cua.service.js', () => ({
-    cuaService: {
-        testPrototypeLive: vi.fn(),
-        healthCheck: vi.fn()
-    }
+  cuaService: {
+    testPrototypeLive: vi.fn(),
+    healthCheck: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/cua-llm.service.js', () => ({
+  cuaLLMService: {
+    analyzeFailure: vi.fn(),
+    generateTestSummary: vi.fn(),
+  },
 }));
 
 vi.mock('../../services/websocket.service.js', () => ({
-    webSocketService: {
-        getIO: vi.fn(() => ({ emit: vi.fn() }))
-    }
+  webSocketService: {
+    getIO: vi.fn(() => ({ emit: vi.fn() })),
+  },
 }));
 
 vi.mock('../../utils/logger.js', () => ({
-    logger: {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn()
-    }
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
+// Mock @trycua/agent to prevent resolution failure
+vi.mock('@trycua/agent', () => ({
+  AgentClient: vi.fn(),
+}));
+
+import { cuaAdapterService } from '../../services/cua-adapter.service.js';
+import { cuaService } from '../../services/cua.service.js';
+
 describe('CUA Adapter Service', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('convertToCUAFormat', () => {
+    it('should convert local test results to CUA response format', () => {
+      const mockResult = {
+        sessionId: 'test-session-123',
+        status: 'passed' as const,
+        scenarios: [
+          {
+            id: 'scenario-1',
+            type: 'click' as const,
+            target: 'Button: "Submit"',
+            selector: '#submit-btn',
+            description: 'Click submit button',
+            expectedResult: 'Form submits',
+            status: 'passed' as const,
+            duration: 500,
+          },
+        ],
+        summary: '✓ All 1 tests passed!',
+        screenshot: 'data:image/png;base64,abc123',
+        passedCount: 1,
+        failedCount: 0,
+        totalDuration: 1000,
+      };
+
+      const response = cuaAdapterService.convertToCUAFormat(mockResult);
+
+      expect(response.status).toBe('completed');
+      expect(response.output).toBeInstanceOf(Array);
+      expect(response.output.length).toBeGreaterThan(0);
+
+      // Should have reasoning message
+      const reasoningMsg = response.output.find((m: any) => m.type === 'reasoning');
+      expect(reasoningMsg).toBeDefined();
+
+      // Should have computer call messages
+      const computerCallMsg = response.output.find((m: any) => m.type === 'computer_call');
+      expect(computerCallMsg).toBeDefined();
+
+      // Should have final assistant message
+      const assistantMsg = response.output.find((m: any) => m.type === 'message');
+      expect(assistantMsg).toBeDefined();
+
+      // Usage should be present (even if zeros for local execution)
+      expect(response.usage).toBeDefined();
+      expect(response.usage.total_tokens).toBe(0);
     });
 
-    describe('convertToCUAFormat', () => {
-        it('should convert local test results to CUA response format', () => {
-            const mockResult = {
-                sessionId: 'test-session-123',
-                status: 'passed' as const,
-                scenarios: [
-                    {
-                        id: 'scenario-1',
-                        type: 'click' as const,
-                        target: 'Button: "Submit"',
-                        selector: '#submit-btn',
-                        description: 'Click submit button',
-                        expectedResult: 'Form submits',
-                        status: 'passed' as const,
-                        duration: 500
-                    }
-                ],
-                summary: '✓ All 1 tests passed!',
-                screenshot: 'data:image/png;base64,abc123',
-                passedCount: 1,
-                failedCount: 0,
-                totalDuration: 1000
-            };
+    it('should handle failed test results', () => {
+      const mockResult = {
+        sessionId: 'test-session-456',
+        status: 'failed' as const,
+        scenarios: [
+          {
+            id: 'scenario-1',
+            type: 'click' as const,
+            target: 'Button: "Submit"',
+            description: 'Click submit button',
+            status: 'failed' as const,
+            error: 'Element not found',
+          },
+        ],
+        summary: '✗ 0/1 tests passed, 1 failed',
+        error: 'Test execution failed',
+        passedCount: 0,
+        failedCount: 1,
+      };
 
-            const response = cuaAdapterService.convertToCUAFormat(mockResult);
+      const response = cuaAdapterService.convertToCUAFormat(mockResult);
 
-            expect(response.status).toBe('completed');
-            expect(response.output).toBeInstanceOf(Array);
-            expect(response.output.length).toBeGreaterThan(0);
+      expect(response.status).toBe('failed');
+      expect(response.error).toBe('Test execution failed');
+    });
+  });
 
-            // Should have reasoning message
-            const reasoningMsg = response.output.find(m => m.type === 'reasoning');
-            expect(reasoningMsg).toBeDefined();
+  describe('executeLocal', () => {
+    it('should execute test using local Playwright service', async () => {
+      const mockResult = {
+        sessionId: 'local-test-123',
+        status: 'passed' as const,
+        scenarios: [],
+        summary: 'Test passed',
+        passedCount: 0,
+        failedCount: 0,
+      };
 
-            // Should have computer call messages
-            const computerCallMsg = response.output.find(m => m.type === 'computer_call');
-            expect(computerCallMsg).toBeDefined();
+      (cuaService.testPrototypeLive as Mock).mockResolvedValue(mockResult);
 
-            // Should have final assistant message
-            const assistantMsg = response.output.find(m => m.type === 'message');
-            expect(assistantMsg).toBeDefined();
+      const response = await cuaAdapterService.executeLocal('<html></html>', 'local-test-123');
 
-            // Usage should be present (even if zeros for local execution)
-            expect(response.usage).toBeDefined();
-            expect(response.usage.total_tokens).toBe(0);
-        });
-
-        it('should handle failed test results', () => {
-            const mockResult = {
-                sessionId: 'test-session-456',
-                status: 'failed' as const,
-                scenarios: [
-                    {
-                        id: 'scenario-1',
-                        type: 'click' as const,
-                        target: 'Button: "Submit"',
-                        description: 'Click submit button',
-                        status: 'failed' as const,
-                        error: 'Element not found'
-                    }
-                ],
-                summary: '✗ 0/1 tests passed, 1 failed',
-                error: 'Test execution failed',
-                passedCount: 0,
-                failedCount: 1
-            };
-
-            const response = cuaAdapterService.convertToCUAFormat(mockResult);
-
-            expect(response.status).toBe('failed');
-            expect(response.error).toBe('Test execution failed');
-        });
+      expect(cuaService.testPrototypeLive).toHaveBeenCalledWith('<html></html>', 'local-test-123');
+      expect(response.status).toBe('completed');
     });
 
-    describe('executeLocal', () => {
-        it('should execute test using local Playwright service', async () => {
-            const mockResult = {
-                sessionId: 'local-test-123',
-                status: 'passed' as const,
-                scenarios: [],
-                summary: 'Test passed',
-                passedCount: 0,
-                failedCount: 0
-            };
+    it('should handle local execution errors', async () => {
+      (cuaService.testPrototypeLive as Mock).mockRejectedValue(new Error('Browser crash'));
 
-            (cuaService.testPrototypeLive as Mock).mockResolvedValue(mockResult);
+      const response = await cuaAdapterService.executeLocal('<html></html>', 'error-test');
 
-            const response = await cuaAdapterService.executeLocal('<html></html>', 'local-test-123');
+      expect(response.status).toBe('failed');
+      expect(response.error).toBe('Browser crash');
+    });
+  });
 
-            expect(cuaService.testPrototypeLive).toHaveBeenCalledWith('<html></html>', 'local-test-123');
-            expect(response.status).toBe('completed');
-        });
+  describe('test', () => {
+    it('should use local mode by default', async () => {
+      const mockResult = {
+        sessionId: 'test-session',
+        status: 'passed' as const,
+        scenarios: [],
+        summary: 'OK',
+        passedCount: 0,
+        failedCount: 0,
+      };
 
-        it('should handle local execution errors', async () => {
-            (cuaService.testPrototypeLive as Mock).mockRejectedValue(new Error('Browser crash'));
+      (cuaService.testPrototypeLive as Mock).mockResolvedValue(mockResult);
 
-            const response = await cuaAdapterService.executeLocal('<html></html>', 'error-test');
+      await cuaAdapterService.test('<html></html>', 'test-session');
 
-            expect(response.status).toBe('failed');
-            expect(response.error).toBe('Browser crash');
-        });
+      expect(cuaService.testPrototypeLive).toHaveBeenCalled();
     });
 
-    describe('test', () => {
-        it('should use local mode by default', async () => {
-            const mockResult = {
-                sessionId: 'test-session',
-                status: 'passed' as const,
-                scenarios: [],
-                summary: 'OK',
-                passedCount: 0,
-                failedCount: 0
-            };
+    it('should accept mode option', async () => {
+      const mockResult = {
+        sessionId: 'test-session',
+        status: 'passed' as const,
+        scenarios: [],
+        summary: 'OK',
+        passedCount: 0,
+        failedCount: 0,
+      };
 
-            (cuaService.testPrototypeLive as Mock).mockResolvedValue(mockResult);
+      (cuaService.testPrototypeLive as Mock).mockResolvedValue(mockResult);
 
-            await cuaAdapterService.test('<html></html>', 'test-session');
+      await cuaAdapterService.test('<html></html>', 'test-session', { mode: 'local' });
 
-            expect(cuaService.testPrototypeLive).toHaveBeenCalled();
-        });
+      expect(cuaService.testPrototypeLive).toHaveBeenCalled();
+    });
+  });
 
-        it('should accept mode option', async () => {
-            const mockResult = {
-                sessionId: 'test-session',
-                status: 'passed' as const,
-                scenarios: [],
-                summary: 'OK',
-                passedCount: 0,
-                failedCount: 0
-            };
+  describe('healthCheck', () => {
+    it('should return health status for local service', async () => {
+      (cuaService.healthCheck as Mock).mockResolvedValue(true);
 
-            (cuaService.testPrototypeLive as Mock).mockResolvedValue(mockResult);
+      const health = await cuaAdapterService.healthCheck();
 
-            await cuaAdapterService.test('<html></html>', 'test-session', { mode: 'local' });
-
-            expect(cuaService.testPrototypeLive).toHaveBeenCalled();
-        });
+      expect(health.local).toBe(true);
+      expect(health.cloud).toBeNull(); // Cloud not configured in test
     });
 
-    describe('healthCheck', () => {
-        it('should return health status for local service', async () => {
-            (cuaService.healthCheck as Mock).mockResolvedValue(true);
+    it('should handle unhealthy local service', async () => {
+      (cuaService.healthCheck as Mock).mockResolvedValue(false);
 
-            const health = await cuaAdapterService.healthCheck();
+      const health = await cuaAdapterService.healthCheck();
 
-            expect(health.local).toBe(true);
-            expect(health.cloud).toBeNull(); // Cloud not configured in test
-        });
-
-        it('should handle unhealthy local service', async () => {
-            (cuaService.healthCheck as Mock).mockResolvedValue(false);
-
-            const health = await cuaAdapterService.healthCheck();
-
-            expect(health.local).toBe(false);
-        });
+      expect(health.local).toBe(false);
     });
+  });
 
-    describe('isCloudAvailable', () => {
-        it('should return false when cloud is not configured', () => {
-            // In test environment, CUA_CLOUD_URL and CUA_API_KEY are not set
-            expect(cuaAdapterService.isCloudAvailable()).toBe(false);
-        });
+  describe('isCloudAvailable', () => {
+    it('should return false when cloud is not configured', () => {
+      // In test environment, CUA_CLOUD_URL and CUA_API_KEY are not set
+      expect(cuaAdapterService.isCloudAvailable()).toBe(false);
     });
+  });
 });

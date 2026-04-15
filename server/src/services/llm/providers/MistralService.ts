@@ -15,17 +15,27 @@ async function getMistralApiKey(): Promise<string> {
   if (dbKey) {
     return dbKey;
   }
-  throw new Error('Mistral API key not configured. Please add it via Admin Console → Settings → API Keys');
+  throw new Error(
+    'Mistral API key not configured. Please add it via Admin Console → Settings → API Keys'
+  );
 }
 
 export class MistralService {
-  // Get client dynamically with current API key
+  private cachedClient: OpenAI | null = null;
+  private cachedApiKey: string | null = null;
+
+  // Get client dynamically with current API key, reusing if key unchanged
   private async getClient(): Promise<OpenAI> {
     const apiKey = await getMistralApiKey();
-    return new OpenAI({
+    if (this.cachedClient && this.cachedApiKey === apiKey) {
+      return this.cachedClient;
+    }
+    this.cachedClient = new OpenAI({
       apiKey,
-      baseURL: 'https://api.mistral.ai/v1'
+      baseURL: 'https://api.mistral.ai/v1',
     });
+    this.cachedApiKey = apiKey;
+    return this.cachedClient;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -66,7 +76,7 @@ export class MistralService {
     const modelMapping: Record<string, string> = {
       'magistral-small': 'mistral-small', // Fallback to mistral-small
       'magistral-medium': 'mistral-medium',
-      'devstral-small': 'mistral-small' // Fallback to mistral-small
+      'devstral-small': 'mistral-small', // Fallback to mistral-small
     };
 
     const apiModelName = modelMapping[model.toLowerCase()] || model;
@@ -77,20 +87,20 @@ export class MistralService {
       if (configOptions?.systemInstruction) {
         messages.push({
           role: 'system',
-          content: configOptions.systemInstruction
+          content: configOptions.systemInstruction,
         });
       }
 
       messages.push({
         role: 'user',
-        content: prompt
+        content: prompt,
       });
 
       const requestOptions: OpenAI.Chat.ChatCompletionCreateParams = {
         model: apiModelName,
         messages,
         temperature: configOptions?.temperature || 0.7,
-        max_tokens: configOptions?.maxTokens
+        max_tokens: configOptions?.maxTokens,
       };
 
       // Add tools if provided (for function calling)
@@ -111,16 +121,23 @@ export class MistralService {
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0
+          totalTokens: response.usage?.total_tokens || 0,
         },
-        functionCalls: functionCalls.length > 0 ? functionCalls.map(fc => {
-          // Handle both standard and custom tool call formats
-          const func = (fc as any).function || (fc as any);
-          return {
-            name: func?.name || '',
-            args: func?.arguments ? (typeof func.arguments === 'string' ? JSON.parse(func.arguments) : func.arguments) : {}
-          };
-        }) : undefined
+        functionCalls:
+          functionCalls.length > 0
+            ? functionCalls.map(fc => {
+                // Handle both standard and custom tool call formats
+                const func = (fc as any).function || (fc as any);
+                return {
+                  name: func?.name || '',
+                  args: func?.arguments
+                    ? typeof func.arguments === 'string'
+                      ? JSON.parse(func.arguments)
+                      : func.arguments
+                    : {},
+                };
+              })
+            : undefined,
       };
     } catch (error: unknown) {
       const apiError = toApiError(error);
@@ -141,9 +158,10 @@ export class MistralService {
         errorDetails.body = errorBody;
 
         if (errorBody?.error) {
-          errorMessage = typeof errorBody.error === 'string'
-            ? errorBody.error
-            : errorBody.error.message || errorBody.error.code || 'Unknown error';
+          errorMessage =
+            typeof errorBody.error === 'string'
+              ? errorBody.error
+              : errorBody.error.message || errorBody.error.code || 'Unknown error';
         } else if (errorBody?.message) {
           errorMessage = errorBody.message;
         } else if (status) {
@@ -163,10 +181,10 @@ export class MistralService {
         body: errorDetails.body,
         model: model,
         originalError: {
-          name: error.name,
-          message: error.message,
-          code: error.code
-        }
+          name: (error as any).name,
+          message: (error as any).message,
+          code: (error as any).code,
+        },
       });
 
       // Provide more helpful error message with model name
@@ -196,14 +214,14 @@ export class MistralService {
       function: {
         name: tool.name || tool.function?.name,
         description: tool.description || tool.function?.description,
-        parameters: tool.parameters || tool.function?.parameters || {}
-      }
+        parameters: tool.parameters || tool.function?.parameters || {},
+      },
     }));
   }
 
   async generateStructuredOutput(
     prompt: string,
-    schema: any,
+    _schema: any,
     model: string = 'mistral-medium-3'
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema. Always return valid JSON.`;
@@ -213,13 +231,13 @@ export class MistralService {
       model,
       {
         responseFormat: { type: 'json_object' },
-        temperature: 0.3
+        temperature: 0.3,
       }
     );
 
     try {
       return JSON.parse(result.text);
-    } catch (error) {
+    } catch (error: unknown) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -228,8 +246,6 @@ export class MistralService {
       throw new Error('Failed to parse structured output');
     }
   }
-
 }
 
 export const mistralService = new MistralService();
-

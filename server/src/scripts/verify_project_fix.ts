@@ -37,7 +37,7 @@ const verifyFix = async () => {
 
         await mongoose.disconnect();
         console.log('Disconnected.');
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('❌ Error verifying fix:', error);
         process.exit(1);
     }

@@ -8,7 +8,6 @@ import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { stripeService } from '../services/stripe.service.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
-import Stripe from 'stripe';
 
 const router = express.Router();
 
@@ -58,22 +57,25 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
   if (!webhookSecret) {
     logger.error('STRIPE_WEBHOOK_SECRET not configured');
-    return res.status(400).send('Webhook secret not configured');
+    res.status(400).send('Webhook secret not configured');
+    return;
   }
 
   if (!sig) {
-    return res.status(400).send('Missing stripe-signature header');
+    res.status(400).send('Missing stripe-signature header');
+    return;
   }
 
   try {
     if (!process.env.STRIPE_SECRET_KEY) {
-      return res.status(400).send('Stripe not configured');
+      res.status(400).send('Stripe not configured');
+      return;
     }
 
     // Get Stripe instance
     const Stripe = (await import('stripe')).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2024-12-18.acacia' as any,
     });
 
     const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
@@ -83,7 +85,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.json({ received: true });
   } catch (error: unknown) {
     logger.error('Webhook error:', error);
-    res.status(400).send(`Webhook Error: ${error.message}`);
+    res.status(400).send(`Webhook Error: ${(error instanceof Error ? error.message : String(error))}`);
   }
 });
 

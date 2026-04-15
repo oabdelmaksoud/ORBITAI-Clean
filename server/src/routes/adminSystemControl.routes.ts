@@ -22,9 +22,9 @@ router.get('/health', async (_req: AdminRequest, res, next) => {
     const health = await systemControlService.getSystemHealth();
     res.json({
       success: true,
-      data: health
+      data: health,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -38,9 +38,9 @@ router.get('/processes', async (_req: AdminRequest, res, next) => {
     const processes = await systemControlService.getProcesses();
     res.json({
       success: true,
-      data: { processes }
+      data: { processes },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -53,18 +53,19 @@ router.post('/kill-process/:pid', async (req: AdminRequest, res, next) => {
   try {
     const pid = parseInt(req.params.pid);
     if (isNaN(pid)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        error: 'Invalid process ID'
+        error: 'Invalid process ID',
       });
+      return;
     }
 
     await systemControlService.killProcess(pid, req.admin!.id);
     res.json({
       success: true,
-      message: `Process ${pid} killed successfully`
+      message: `Process ${pid} killed successfully`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -78,9 +79,9 @@ router.get('/maintenance-mode', async (_req: AdminRequest, res, next) => {
     const enabled = await systemControlService.isMaintenanceModeEnabled();
     res.json({
       success: true,
-      data: { enabled }
+      data: { enabled },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -94,19 +95,20 @@ router.post('/maintenance-mode', async (req: AdminRequest, res, next) => {
     const { enabled } = req.body;
 
     if (typeof enabled !== 'boolean') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        error: 'enabled must be a boolean'
+        error: 'enabled must be a boolean',
       });
+      return;
     }
 
     await systemControlService.setMaintenanceMode(enabled, req.admin!.id);
     res.json({
       success: true,
       message: `Maintenance mode ${enabled ? 'enabled' : 'disabled'}`,
-      data: { enabled }
+      data: { enabled },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -122,9 +124,9 @@ router.post('/clear-cache', async (req: AdminRequest, res, next) => {
     const result = await systemControlService.clearCache(type, req.admin!.id);
     res.json({
       success: true,
-      data: result
+      data: result,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -138,18 +140,19 @@ router.post('/restart', async (req: AdminRequest, res, next) => {
     const delaySeconds = parseInt(req.body.delaySeconds || '10');
 
     if (isNaN(delaySeconds) || delaySeconds < 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        error: 'delaySeconds must be a non-negative number'
+        error: 'delaySeconds must be a non-negative number',
       });
+      return;
     }
 
     await systemControlService.scheduleRestart(delaySeconds, req.admin!.id);
     res.json({
       success: true,
-      message: `Server will restart in ${delaySeconds} seconds`
+      message: `Server will restart in ${delaySeconds} seconds`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -162,30 +165,33 @@ router.get('/logs', async (req: AdminRequest, res, next) => {
   try {
     const { lines = 100, level } = req.query;
     const logDir = join(process.cwd(), 'server', 'logs');
-    
+
     try {
       const files = await readdir(logDir);
       const logFiles = files.filter(f => f.endsWith('.log'));
-      
+
       // Read the most recent log file
       if (logFiles.length > 0) {
         const latestLog = logFiles.sort().reverse()[0];
         const logPath = join(logDir, latestLog);
         const content = await readFile(logPath, 'utf-8');
-        const logLines = content.split('\n').filter(line => {
-          if (level && !line.toLowerCase().includes(level.toLowerCase())) {
-            return false;
-          }
-          return true;
-        }).slice(-parseInt(lines as string));
+        const logLines = content
+          .split('\n')
+          .filter(line => {
+            if (level && !line.toLowerCase().includes(String(level).toLowerCase())) {
+              return false;
+            }
+            return true;
+          })
+          .slice(-parseInt(lines as string));
 
         res.json({
           success: true,
           data: {
             file: latestLog,
             lines: logLines,
-            totalLines: content.split('\n').length
-          }
+            totalLines: content.split('\n').length,
+          },
         });
       } else {
         res.json({
@@ -194,8 +200,8 @@ router.get('/logs', async (req: AdminRequest, res, next) => {
             file: null,
             lines: [],
             totalLines: 0,
-            message: 'No log files found'
-          }
+            message: 'No log files found',
+          },
         });
       }
     } catch (error: unknown) {
@@ -206,11 +212,11 @@ router.get('/logs', async (req: AdminRequest, res, next) => {
           file: null,
           lines: [],
           totalLines: 0,
-          message: 'Log directory not found'
-        }
+          message: 'Log directory not found',
+        },
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -224,15 +230,11 @@ router.post('/gc', async (req: AdminRequest, res, next) => {
     await systemControlService.forceGarbageCollection(req.admin!.id);
     res.json({
       success: true,
-      message: 'Garbage collection completed'
+      message: 'Garbage collection completed',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
 
 export default router;
-
-
-
-

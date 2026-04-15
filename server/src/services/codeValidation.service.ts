@@ -121,21 +121,21 @@ class CodeValidationService {
 
       return result;
     } catch (error: unknown) {
-      logger.error(`Validation failed: ${error.message}`);
+      logger.error(`Validation failed: ${(error instanceof Error ? error.message : String(error))}`);
       return {
         valid: false,
-        syntaxErrors: [{ file: 'unknown', line: 0, column: 0, message: error.message, severity: 'error' }],
+        syntaxErrors: [{ file: 'unknown', line: 0, column: 0, message: (error instanceof Error ? error.message : String(error)), severity: 'error' }],
         typeErrors: [],
         lintWarnings: [],
         securityIssues: [],
         qualityScore: 0,
-        summary: `Validation failed: ${error.message}`,
+        summary: `Validation failed: ${(error instanceof Error ? error.message : String(error))}`,
       };
     } finally {
       // Cleanup temp directory
       try {
         await fs.rm(projectPath, { recursive: true, force: true });
-      } catch (e) {
+      } catch (e: unknown) {
         // Ignore cleanup errors
       }
     }
@@ -201,11 +201,11 @@ class CodeValidationService {
           // Parse TypeScript errors
           const tsErrors = this.parseTypeScriptErrors(stderr);
           typeErrors.push(...tsErrors);
-        } catch (e) {
+        } catch (e: unknown) {
           // TypeScript not available, skip type checking
           logger.debug('TypeScript compiler not available, skipping type checking');
         }
-      } catch (e) {
+      } catch (e: unknown) {
         // Continue without type checking
       }
     }
@@ -263,7 +263,7 @@ class CodeValidationService {
         const errors = this.parsePythonErrors(stderr);
         syntaxErrors.push(...errors);
       }
-    } catch (e) {
+    } catch (e: unknown) {
       // Python not available
     }
 
@@ -312,7 +312,7 @@ class CodeValidationService {
         const errors = this.parseGoErrors(stderr);
         syntaxErrors.push(...errors);
       }
-    } catch (e) {
+    } catch (e: unknown) {
       // Go not available
     }
 
@@ -557,7 +557,7 @@ class CodeValidationService {
     const errors: SyntaxError[] = [];
     const lines = content.split('\n');
 
-    let indentStack: number[] = [0];
+    // let _indentStack: number[] = [0];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];

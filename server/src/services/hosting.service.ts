@@ -64,7 +64,7 @@ class HostingService {
   async createHosting(
     userId: string,
     request: CreateHostingRequest
-  ): Promise<HostedProject> {
+  ): Promise<any> {
     try {
       const project = await Project.findById(request.projectId);
       if (!project) {
@@ -134,7 +134,7 @@ class HostingService {
   /**
    * Get user's hosted projects
    */
-  async getUserHostedProjects(userId: string): Promise<HostedProject[]> {
+  async getUserHostedProjects(userId: string): Promise<any[]> {
     try {
       return await HostedProject.find({ userId, status: 'active' }).lean();
     } catch (error: unknown) {

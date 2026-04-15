@@ -4,7 +4,6 @@
  * Applies best practices: XML delimiters, few-shot examples, chain-of-thought, quality gates
  */
 
-import { logger } from '../utils/logger.js';
 
 export interface PromptContext {
   role?: string;
@@ -223,7 +222,7 @@ BEGIN TASK GENERATION:
 /**
  * Get relevant requirement content for agent prompts
  */
-function getRelevantRequirementContent(artifacts: any[], task: any): string {
+function getRelevantRequirementContent(artifacts: any[], _task: any): string {
   // Filter requirement artifacts
   const reqArtifacts = artifacts.filter((a: any) => a.type === 'requirement');
   
@@ -431,7 +430,7 @@ export function enhanceResearchPrompt(query: string): EnhancedPromptResult {
 /**
  * Enhance prompt enhancement prompt (Polish feature)
  */
-export function enhancePromptEnhancementPrompt(input: string, useInternet: boolean = false): EnhancedPromptResult {
+export function enhancePromptEnhancementPrompt(input: string, _useInternet: boolean = false): EnhancedPromptResult {
   // This uses the same structure as the enhance-prompt endpoint
   // The full implementation is already in gemini.routes.ts
   // This is a placeholder for consistency

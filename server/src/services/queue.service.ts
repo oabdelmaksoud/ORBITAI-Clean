@@ -5,7 +5,6 @@
 
 import Bull, { Queue, Job } from 'bull';
 import { logger } from '../utils/logger.js';
-import { redisService } from './redis.service.js';
 
 // Queue names
 export enum QueueName {
@@ -93,7 +92,7 @@ class QueueService {
       this.isInitialized = true;
       logger.info('Queue service initialized');
     } catch (error: unknown) {
-      logger.warn('Queue service initialization failed, continuing without queues:', error.message);
+      logger.warn('Queue service initialization failed, continuing without queues:', (error instanceof Error ? error.message : String(error)));
       this.isInitialized = false;
     }
   }

@@ -61,8 +61,7 @@ const activityEventSchema = new Schema<IActivityEvent>(
     timestamp: {
       type: Date,
       required: true,
-      default: Date.now,
-      index: true
+      default: Date.now
     }
   },
   {

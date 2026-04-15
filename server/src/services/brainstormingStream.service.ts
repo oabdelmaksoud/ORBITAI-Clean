@@ -50,15 +50,15 @@ export async function emitIdea(
         id: idea.id,
         label: idea.label,
         description: idea.description,
-        category: idea.category,
+        category: idea.category as any,
         priority: idea.priority || 0,
         tags: [],
-        createdAt: new Date(),
+        createdAt: Date.now(),
         createdBy: 'Brainstorming Agent',
-        evaluation: idea.evaluation,
-        isImported: false
-      });
-      
+        isImported: false,
+        ...(idea.evaluation ? { evaluation: idea.evaluation } : {}),
+      } as any);
+
       await BrainstormingRoom.updateOne(
         { id: roomId },
         { $set: { ideas, lastModified: new Date() } }
@@ -66,14 +66,16 @@ export async function emitIdea(
     }
 
     // Emit via WebSocket
-    webSocketService.emitToRoom(`brainstorming-room:${roomId}`, 'idea-generated', {
+    (webSocketService as any).emitToRoom(`brainstorming-room:${roomId}`, 'idea-generated', {
       idea,
       progress: currentIndex + 1,
       total: totalCount,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
-    logger.debug(`[BrainstormingStream] Emitted idea ${currentIndex + 1}/${totalCount}: ${idea.label}`);
+    logger.debug(
+      `[BrainstormingStream] Emitted idea ${currentIndex + 1}/${totalCount}: ${idea.label}`
+    );
   } catch (error: unknown) {
     logger.warn(`[BrainstormingStream] Failed to emit idea:`, error);
   }
@@ -83,10 +85,10 @@ export async function emitIdea(
  * Emit generation started event
  */
 export function emitGenerationStarted(roomId: string, framework: string, count: number): void {
-  webSocketService.emitToRoom(`brainstorming-room:${roomId}`, 'generation-started', {
+  (webSocketService as any).emitToRoom(`brainstorming-room:${roomId}`, 'generation-started', {
     framework,
     count,
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 }
 
@@ -105,10 +107,10 @@ export async function emitGenerationCompleted(
   );
 
   // Emit completion
-  webSocketService.emitToRoom(`brainstorming-room:${roomId}`, 'generation-completed', {
+  (webSocketService as any).emitToRoom(`brainstorming-room:${roomId}`, 'generation-completed', {
     framework,
     totalIdeas,
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 }
 
@@ -116,9 +118,9 @@ export async function emitGenerationCompleted(
  * Emit generation error
  */
 export function emitGenerationError(roomId: string, error: string): void {
-  webSocketService.emitToRoom(`brainstorming-room:${roomId}`, 'generation-error', {
+  (webSocketService as any).emitToRoom(`brainstorming-room:${roomId}`, 'generation-error', {
     error,
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 }
 
@@ -126,5 +128,5 @@ export const brainstormingStreamService = {
   emitIdea,
   emitGenerationStarted,
   emitGenerationCompleted,
-  emitGenerationError
+  emitGenerationError,
 };

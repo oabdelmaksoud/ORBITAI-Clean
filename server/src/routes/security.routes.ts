@@ -78,7 +78,7 @@ router.get('/events', async (req: AdminRequest, res, next) => {
  * GET /api/admin/security/events/stats
  * Get security event statistics
  */
-router.get('/events/stats', async (req: AdminRequest, res, next) => {
+router.get('/events/stats', async (_req: AdminRequest, res, next) => {
   try {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

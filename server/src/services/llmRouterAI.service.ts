@@ -4,7 +4,7 @@
  */
 
 import { LLMUsage } from '../models/LLMUsage.model.js';
-import { llmRouterSettingsService, EffectiveRouterSettings } from './llmRouterSettings.service.js';
+import { EffectiveRouterSettings } from './llmRouterSettings.service.js';
 import { logger } from '../utils/logger.js';
 import { modelRegistry } from './llm/models/ModelRegistry.js';
 

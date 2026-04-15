@@ -46,8 +46,9 @@ const MutationTestResults: React.FC<MutationTestResultsProps> = ({ projectId, ar
   const loadResults = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
+      // TODO(#44): Implement GET /api/projects/:projectId/mutation-tests when backend is ready
       setResults([]);
+      setError('Mutation test results are not yet available. The backend endpoint is pending implementation.');
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load mutation test results');
     } finally {

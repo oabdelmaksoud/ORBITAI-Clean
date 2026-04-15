@@ -1,33 +1,53 @@
 /**
  * Authentication Route Tests
- * Tests for authentication endpoints
+ * Tests for authentication endpoints using in-memory MongoDB
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import authRoutes from '../routes/auth.routes.js';
+import mongoose from 'mongoose';
 import { User } from '../models/User.model.js';
-import { setupTestEnv, teardownTestEnv, cleanupTestData, createTestUser } from './helpers/testHelpers.js';
+
+// Set JWT_SECRET before importing routes (they may import config/env which needs it)
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only';
+
+// Dynamic import to ensure env is set first
+const { default: authRoutes } = await import('../routes/auth.routes.js');
+const { createTestUser, getAuthHeaders } = await import('./helpers/testHelpers.js');
 
 const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 
+// Error handler for AppError
+app.use((err: any, _req: any, res: any, _next: any) => {
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || 'Internal server error',
+  });
+});
+
+beforeAll(async () => {
+  const uri = process.env.TEST_MONGODB_URI || process.env.MONGODB_URI;
+  if (!uri) throw new Error('TEST_MONGODB_URI not set');
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(uri);
+  }
+});
+
+beforeEach(async () => {
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
+});
+
+afterAll(async () => {
+  await mongoose.connection.close();
+});
+
 describe('Authentication Routes', () => {
-  beforeEach(async () => {
-    await setupTestEnv();
-    await cleanupTestData();
-  });
-
-  afterEach(async () => {
-    await cleanupTestData();
-  });
-
-  afterAll(async () => {
-    await teardownTestEnv();
-  });
-
   describe('POST /api/auth/register', () => {
     it('should register a new user successfully', async () => {
       const userData = {
@@ -77,7 +97,6 @@ describe('Authentication Routes', () => {
     });
 
     it('should reject duplicate email registration', async () => {
-      // Use unique email with timestamp to avoid conflicts
       const timestamp = Date.now();
       const userData = {
         email: `duplicate-${timestamp}@example.com`,
@@ -89,7 +108,7 @@ describe('Authentication Routes', () => {
       const firstResponse = await request(app)
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(firstResponse.status).toBe(201);
 
       // Duplicate registration with same email
@@ -104,9 +123,8 @@ describe('Authentication Routes', () => {
 
   describe('POST /api/auth/login', () => {
     let testUserEmail: string;
-    
+
     beforeEach(async () => {
-      // Use unique email for each test run to avoid conflicts
       testUserEmail = `login-${Date.now()}@example.com`;
       await createTestUser({
         email: testUserEmail,
@@ -163,7 +181,6 @@ describe('Authentication Routes', () => {
 
   describe('GET /api/auth/me', () => {
     it('should return user data with valid token', async () => {
-      // Use unique email to avoid conflicts
       const uniqueEmail = `me-${Date.now()}@example.com`;
       const { user, token } = await createTestUser({
         email: uniqueEmail,
@@ -197,5 +214,3 @@ describe('Authentication Routes', () => {
     });
   });
 });
-
-

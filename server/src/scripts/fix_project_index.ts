@@ -24,7 +24,7 @@ const fixIndexes = async () => {
             logger.info("Index 'id_1' not found. No action needed.");
         }
 
-    } catch (error) {
+    } catch (error: unknown) {
         logger.error('Error fixing indexes:', error);
     } finally {
         await mongoose.disconnect();

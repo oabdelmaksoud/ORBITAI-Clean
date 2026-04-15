@@ -113,7 +113,7 @@ export class CircuitBreaker {
     /**
      * Record a failed request
      */
-    recordFailure(provider: string, error?: Error): void {
+    recordFailure(provider: string, _error?: Error): void {
         const circuit = this.getCircuit(provider);
         const now = Date.now();
 
@@ -181,7 +181,7 @@ export class CircuitBreaker {
             const result = await fn();
             this.recordSuccess(provider);
             return result;
-        } catch (error) {
+        } catch (error: unknown) {
             this.recordFailure(provider, error instanceof Error ? error : undefined);
 
             if (fallback && this.getState(provider) === CircuitState.OPEN) {

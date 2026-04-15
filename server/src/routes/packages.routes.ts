@@ -19,14 +19,12 @@ router.use(requireAdmin);
  */
 router.get('/', async (req: AdminRequest, res, next) => {
   try {
-    const packages = await Package.find()
-      .sort({ sortOrder: 1, createdAt: 1 })
-      .lean();
+    const packages = await Package.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
 
     await logAudit(req, {
       action: 'packages.list',
       entityType: 'package',
-      status: 'success'
+      status: 'success',
     });
 
     res.json({
@@ -36,10 +34,10 @@ router.get('/', async (req: AdminRequest, res, next) => {
           const { _id, ...rest } = p;
           return {
             id: _id.toString(),
-            ...rest
+            ...rest,
           };
-        })
-      }
+        }),
+      },
     });
   } catch (error: unknown) {
     next(error);
@@ -52,11 +50,8 @@ router.get('/', async (req: AdminRequest, res, next) => {
  */
 router.get('/:id', async (req: AdminRequest, res, next) => {
   try {
-    const packageDoc = await Package.findOne({ 
-      $or: [
-        { _id: req.params.id },
-        { displayName: req.params.id }
-      ]
+    const packageDoc = await Package.findOne({
+      $or: [{ _id: req.params.id }, { displayName: req.params.id }],
     }).lean();
 
     if (!packageDoc) {
@@ -70,9 +65,9 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
       data: {
         package: {
           id: _id.toString(),
-          ...rest
-        }
-      }
+          ...rest,
+        },
+      },
     });
   } catch (error: unknown) {
     next(error);
@@ -94,7 +89,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
 
     // Check if package with same displayName already exists
     const existing = await Package.findOne({
-      displayName: packageData.displayName
+      displayName: packageData.displayName,
     });
 
     if (existing) {
@@ -102,7 +97,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
     }
 
     const newPackage = new Package({
-      ...packageData
+      ...packageData,
     });
 
     await newPackage.save();
@@ -111,7 +106,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       action: 'package.created',
       entityType: 'package',
       entityId: newPackage._id.toString(),
-      details: { displayName: newPackage.displayName }
+      details: { displayName: newPackage.displayName },
     });
 
     logger.info(`Admin ${req.admin?.email} created package ${newPackage.displayName}`);
@@ -123,16 +118,16 @@ router.post('/', async (req: AdminRequest, res, next) => {
       data: {
         package: {
           id: _id.toString(),
-          ...rest
-        }
-      }
+          ...rest,
+        },
+      },
     });
   } catch (error: unknown) {
     await logAudit(req, {
       action: 'package.create',
       entityType: 'package',
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
     next(error);
   }
@@ -145,10 +140,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
 router.put('/:id', async (req: AdminRequest, res, next) => {
   try {
     const packageDoc = await Package.findOne({
-      $or: [
-        { _id: req.params.id },
-        { displayName: req.params.id }
-      ]
+      $or: [{ _id: req.params.id }, { displayName: req.params.id }],
     });
 
     if (!packageDoc) {
@@ -159,7 +151,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       displayName: packageDoc.displayName,
       price: packageDoc.price,
       features: packageDoc.features,
-      limits: packageDoc.limits
+      limits: packageDoc.limits,
     };
 
     // Update fields
@@ -182,9 +174,9 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
           displayName: packageDoc.displayName,
           price: packageDoc.price,
           features: packageDoc.features,
-          limits: packageDoc.limits
-        }
-      }
+          limits: packageDoc.limits,
+        },
+      },
     });
 
     logger.info(`Admin ${req.admin?.email} updated package ${packageDoc.displayName}`);
@@ -196,9 +188,9 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       data: {
         package: {
           id: pkgId.toString(),
-          ...rest
-        }
-      }
+          ...rest,
+        },
+      },
     });
   } catch (error: unknown) {
     await logAudit(req, {
@@ -206,7 +198,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       entityType: 'package',
       entityId: req.params.id,
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
     next(error);
   }
@@ -219,10 +211,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
 router.delete('/:id', async (req: AdminRequest, res, next) => {
   try {
     const packageDoc = await Package.findOne({
-      $or: [
-        { _id: req.params.id },
-        { displayName: req.params.id }
-      ]
+      $or: [{ _id: req.params.id }, { displayName: req.params.id }],
     });
 
     if (!packageDoc) {
@@ -244,14 +233,14 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       action: 'package.deleted',
       entityType: 'package',
       entityId: packageDoc._id.toString(),
-      details: { displayName: packageDoc.displayName }
+      details: { displayName: packageDoc.displayName },
     });
 
     logger.info(`Admin ${req.admin?.email} deleted package ${packageDoc.displayName}`);
 
     res.json({
       success: true,
-      message: 'Package deleted successfully'
+      message: 'Package deleted successfully',
     });
   } catch (error: unknown) {
     await logAudit(req, {
@@ -259,7 +248,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       entityType: 'package',
       entityId: req.params.id,
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
     next(error);
   }
@@ -281,16 +270,16 @@ router.get('/public/list', async (_req, res, next) => {
       data: {
         packages: packages.map(p => ({
           id: p.id || p._id.toString(),
-          name: p.name,
+          name: (p as any).name,
           displayName: p.displayName,
           description: p.description,
           price: p.price,
           billingCycle: p.billingCycle,
           features: p.features,
           limits: p.limits,
-          metadata: p.metadata
-        }))
-      }
+          metadata: p.metadata,
+        })),
+      },
     });
   } catch (error: unknown) {
     next(error);
@@ -298,4 +287,3 @@ router.get('/public/list', async (_req, res, next) => {
 });
 
 export default router;
-

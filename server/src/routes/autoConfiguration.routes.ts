@@ -52,10 +52,11 @@ userRouter.post('/apply', async (req: AuthRequest, res, next) => {
     const { recommendations } = req.body;
     
     if (!Array.isArray(recommendations)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Recommendations must be an array'
       });
+      return;
     }
 
     const result = await autoConfigurationService.applyRecommendations(

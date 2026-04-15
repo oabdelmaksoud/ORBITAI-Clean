@@ -7,7 +7,7 @@
 import { logger } from '../utils/logger.js';
 import { Project } from '../models/Project.model.js';
 import { CodeGeneratorService, GeneratedFile } from './codeGenerator.service.js';
-import { frontendCodeGeneratorService, GeneratedFile as FrontendGeneratedFile } from './frontendCodeGenerator.service.js';
+import { frontendCodeGeneratorService } from './frontendCodeGenerator.service.js';
 import { codeValidationService } from './codeValidation.service.js';
 import JSZip from 'jszip';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,10 +68,7 @@ class ProjectExportService {
   /**
    * Export a complete project as a downloadable ZIP
    */
-  async exportProject(
-    projectId: string,
-    options: ExportOptions = {}
-  ): Promise<ExportResult> {
+  async exportProject(projectId: string, options: ExportOptions = {}): Promise<ExportResult> {
     const exportId = uuidv4();
     const startTime = Date.now();
 
@@ -90,26 +87,32 @@ class ProjectExportService {
 
       // Add backend files
       if (structure.backend) {
-        allFiles.push(...structure.backend.files.map(f => ({
-          ...f,
-          path: `backend/${f.path}`,
-        })));
+        allFiles.push(
+          ...structure.backend.files.map(f => ({
+            ...f,
+            path: `backend/${f.path}`,
+          }))
+        );
       }
 
       // Add frontend files
       if (structure.frontend) {
-        allFiles.push(...structure.frontend.files.map(f => ({
-          ...f,
-          path: `frontend/${f.path}`,
-        })));
+        allFiles.push(
+          ...structure.frontend.files.map(f => ({
+            ...f,
+            path: `frontend/${f.path}`,
+          }))
+        );
       }
 
       // Add mobile files
       if (structure.mobile) {
-        allFiles.push(...structure.mobile.files.map(f => ({
-          ...f,
-          path: `mobile/${f.path}`,
-        })));
+        allFiles.push(
+          ...structure.mobile.files.map(f => ({
+            ...f,
+            path: `mobile/${f.path}`,
+          }))
+        );
       }
 
       // Add infrastructure files
@@ -137,20 +140,21 @@ class ProjectExportService {
       if (options.validateCode) {
         const validationResult = await codeValidationService.validateProject(
           allFiles,
-          structure.backend?.language || 'typescript'
+          structure.backend?.language as any || 'typescript'
         );
         validation = {
           valid: validationResult.valid,
           score: validationResult.qualityScore,
           errors: validationResult.syntaxErrors.filter(e => e.severity === 'error').length,
-          warnings: validationResult.syntaxErrors.filter(e => e.severity === 'warning').length +
-                   validationResult.lintWarnings.length,
+          warnings:
+            validationResult.syntaxErrors.filter(e => e.severity === 'warning').length +
+            validationResult.lintWarnings.length,
         };
       }
 
       // Create ZIP
       const zip = new JSZip();
-      
+
       for (const file of allFiles) {
         zip.file(file.path, file.content);
       }
@@ -173,21 +177,19 @@ class ProjectExportService {
       const statistics = {
         totalFiles: allFiles.length + 3, // +3 for README and setup scripts
         totalSize: zipBuffer.length,
-        codeFiles: allFiles.filter(f => 
-          f.path.match(/\.(ts|tsx|js|jsx|py|go|java|kt|swift|dart)$/)
-        ).length,
-        configFiles: allFiles.filter(f => 
-          f.path.match(/\.(json|yaml|yml|toml|xml|config\.)/)
-        ).length,
-        docFiles: allFiles.filter(f => 
-          f.path.match(/\.(md|txt|rst|doc)$/)
-        ).length,
+        codeFiles: allFiles.filter(f => f.path.match(/\.(ts|tsx|js|jsx|py|go|java|kt|swift|dart)$/))
+          .length,
+        configFiles: allFiles.filter(f => f.path.match(/\.(json|yaml|yml|toml|xml|config\.)/))
+          .length,
+        docFiles: allFiles.filter(f => f.path.match(/\.(md|txt|rst|doc)$/)).length,
       };
 
       const projectName = project.name?.toLowerCase().replace(/\s+/g, '-') || 'project';
       const filename = `${projectName}-${exportId.slice(0, 8)}.zip`;
 
-      logger.info(`✅ Project exported in ${Date.now() - startTime}ms: ${statistics.totalFiles} files, ${(statistics.totalSize / 1024).toFixed(2)} KB`);
+      logger.info(
+        `✅ Project exported in ${Date.now() - startTime}ms: ${statistics.totalFiles} files, ${(statistics.totalSize / 1024).toFixed(2)} KB`
+      );
 
       return {
         exportId,
@@ -199,7 +201,7 @@ class ProjectExportService {
         generatedAt: new Date(),
       };
     } catch (error: unknown) {
-      logger.error(`❌ Project export failed: ${error.message}`);
+      logger.error(`❌ Project export failed: ${(error instanceof Error ? error.message : String(error))}`);
       throw error;
     }
   }
@@ -219,18 +221,24 @@ class ProjectExportService {
     for (const artifact of codeArtifacts) {
       try {
         const data = JSON.parse(artifact.content || '{}');
-        
+
         if (data.files) {
           // Determine if backend or frontend
-          const hasBackendFiles = data.files.some((f: any) => 
-            f.path.includes('routes') || f.path.includes('controllers') || 
-            f.path.includes('models') || f.path.includes('main.py') ||
-            f.path.includes('main.go')
+          const hasBackendFiles = data.files.some(
+            (f: any) =>
+              f.path.includes('routes') ||
+              f.path.includes('controllers') ||
+              f.path.includes('models') ||
+              f.path.includes('main.py') ||
+              f.path.includes('main.go')
           );
 
-          const hasFrontendFiles = data.files.some((f: any) => 
-            f.path.includes('components') || f.path.includes('.vue') ||
-            f.path.includes('.tsx') || f.path.includes('App.')
+          const hasFrontendFiles = data.files.some(
+            (f: any) =>
+              f.path.includes('components') ||
+              f.path.includes('.vue') ||
+              f.path.includes('.tsx') ||
+              f.path.includes('App.')
           );
 
           if (hasBackendFiles) {
@@ -248,7 +256,7 @@ class ProjectExportService {
             };
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         // Not JSON, might be raw code
       }
     }
@@ -273,7 +281,7 @@ class ProjectExportService {
 
     // Analyze project to determine what needs to be generated
     const description = project.description || '';
-    const requirements = project.requirements || [];
+    // const _requirements = project.requirements || [];
     const needsBackend = this.projectNeedsBackend(project);
     const needsFrontend = this.projectNeedsFrontend(project);
 
@@ -317,7 +325,7 @@ class ProjectExportService {
       if (frontendResult.success) {
         structure.frontend = {
           framework: 'react',
-          files: frontendResult.files,
+          files: frontendResult.files as any,
         };
       }
     }
@@ -482,10 +490,7 @@ ${structure.frontend ? '\trm -rf frontend/dist frontend/node_modules' : ''}
   /**
    * Generate documentation files
    */
-  private generateDocumentation(
-    project: any,
-    structure: ProjectStructure
-  ): GeneratedFile[] {
+  private generateDocumentation(project: any, structure: ProjectStructure): GeneratedFile[] {
     const files: GeneratedFile[] = [];
 
     // API documentation
@@ -550,17 +555,25 @@ ${project.description || 'Project description goes here.'}
 
 ## Stack
 
-${structure.backend ? `### Backend
+${
+  structure.backend
+    ? `### Backend
 - **Framework:** ${structure.backend.framework}
 - **Language:** ${structure.backend.language}
 - **Database:** MongoDB
-` : ''}
+`
+    : ''
+}
 
-${structure.frontend ? `### Frontend
+${
+  structure.frontend
+    ? `### Frontend
 - **Framework:** ${structure.frontend.framework}
 - **Build Tool:** Vite
 - **Styling:** Tailwind CSS
-` : ''}
+`
+    : ''
+}
 
 ## Project Structure
 
@@ -702,10 +715,7 @@ Copy \`.env.example\` to \`.env\` and configure all variables.
   /**
    * Generate CI/CD configuration files
    */
-  private generateCICDConfigs(
-    project: any,
-    structure: ProjectStructure
-  ): GeneratedFile[] {
+  private generateCICDConfigs(_project: any, structure: ProjectStructure): GeneratedFile[] {
     const files: GeneratedFile[] = [];
 
     // GitHub Actions CI
@@ -738,7 +748,9 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-${structure.backend ? `      - name: Install backend dependencies
+${
+  structure.backend
+    ? `      - name: Install backend dependencies
         run: cd backend && npm ci
 
       - name: Run backend tests
@@ -749,9 +761,13 @@ ${structure.backend ? `      - name: Install backend dependencies
 
       - name: Build backend
         run: cd backend && npm run build
-` : ''}
+`
+    : ''
+}
 
-${structure.frontend ? `      - name: Install frontend dependencies
+${
+  structure.frontend
+    ? `      - name: Install frontend dependencies
         run: cd frontend && npm ci
 
       - name: Run frontend tests
@@ -759,7 +775,9 @@ ${structure.frontend ? `      - name: Install frontend dependencies
 
       - name: Build frontend
         run: cd frontend && npm run build
-` : ''}
+`
+    : ''
+}
 `,
       fileType: 'yaml',
     });
@@ -786,21 +804,29 @@ jobs:
         with:
           node-version: '20'
 
-${structure.backend ? `      - name: Deploy Backend
+${
+  structure.backend
+    ? `      - name: Deploy Backend
         run: |
           cd backend
           npm ci
           npm run build
         # Add deployment commands here
-` : ''}
+`
+    : ''
+}
 
-${structure.frontend ? `      - name: Deploy Frontend
+${
+  structure.frontend
+    ? `      - name: Deploy Frontend
         run: |
           cd frontend
           npm ci
           npm run build
         # Add deployment commands here
-` : ''}
+`
+    : ''
+}
 `,
       fileType: 'yaml',
     });
@@ -811,10 +837,7 @@ ${structure.frontend ? `      - name: Deploy Frontend
   /**
    * Generate environment templates
    */
-  private generateEnvTemplates(
-    project: any,
-    structure: ProjectStructure
-  ): GeneratedFile[] {
+  private generateEnvTemplates(project: any, structure: ProjectStructure): GeneratedFile[] {
     const files: GeneratedFile[] = [];
 
     if (structure.backend) {
@@ -888,21 +911,29 @@ ${this.generateDirectoryTree(structure)}
 
 ## Development
 
-${structure.backend ? `### Backend
+${
+  structure.backend
+    ? `### Backend
 \`\`\`bash
 cd backend
 npm install
 npm run dev
 \`\`\`
-` : ''}
+`
+    : ''
+}
 
-${structure.frontend ? `### Frontend
+${
+  structure.frontend
+    ? `### Frontend
 \`\`\`bash
 cd frontend
 npm install
 npm run dev
 \`\`\`
-` : ''}
+`
+    : ''
+}
 
 ## Docker
 
@@ -947,7 +978,9 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
-${structure.backend ? `
+${
+  structure.backend
+    ? `
 # Setup backend
 echo "📦 Installing backend dependencies..."
 cd backend
@@ -955,9 +988,13 @@ npm install
 cp .env.example .env
 echo "✅ Backend setup complete"
 cd ..
-` : ''}
+`
+    : ''
+}
 
-${structure.frontend ? `
+${
+  structure.frontend
+    ? `
 # Setup frontend
 echo "📦 Installing frontend dependencies..."
 cd frontend
@@ -965,7 +1002,9 @@ npm install
 cp .env.example .env.local
 echo "✅ Frontend setup complete"
 cd ..
-` : ''}
+`
+    : ''
+}
 
 echo ""
 echo "✨ Setup complete!"
@@ -992,23 +1031,31 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-${structure.backend ? `
+${
+  structure.backend
+    ? `
 echo Installing backend dependencies...
 cd backend
 call npm install
 copy .env.example .env
 echo Backend setup complete
 cd ..
-` : ''}
+`
+    : ''
+}
 
-${structure.frontend ? `
+${
+  structure.frontend
+    ? `
 echo Installing frontend dependencies...
 cd frontend
 call npm install
 copy .env.example .env.local
 echo Frontend setup complete
 cd ..
-` : ''}
+`
+    : ''
+}
 
 echo.
 echo Setup complete!
@@ -1026,9 +1073,14 @@ ${structure.frontend ? 'echo   Frontend: cd frontend && npm run dev' : ''}
     const requirements = (project.requirements || []).join(' ').toLowerCase();
     const combined = description + ' ' + requirements;
 
-    return combined.includes('api') || combined.includes('backend') ||
-           combined.includes('server') || combined.includes('database') ||
-           combined.includes('authentication') || combined.includes('user');
+    return (
+      combined.includes('api') ||
+      combined.includes('backend') ||
+      combined.includes('server') ||
+      combined.includes('database') ||
+      combined.includes('authentication') ||
+      combined.includes('user')
+    );
   }
 
   private projectNeedsFrontend(project: any): boolean {
@@ -1036,12 +1088,17 @@ ${structure.frontend ? 'echo   Frontend: cd frontend && npm run dev' : ''}
     const requirements = (project.requirements || []).join(' ').toLowerCase();
     const combined = description + ' ' + requirements;
 
-    return combined.includes('web') || combined.includes('frontend') ||
-           combined.includes('ui') || combined.includes('interface') ||
-           combined.includes('dashboard') || combined.includes('app');
+    return (
+      combined.includes('web') ||
+      combined.includes('frontend') ||
+      combined.includes('ui') ||
+      combined.includes('interface') ||
+      combined.includes('dashboard') ||
+      combined.includes('app')
+    );
   }
 
-  private extractDataModels(project: any): any[] {
+  private extractDataModels(_project: any): any[] {
     // Default models based on common requirements
     return [
       {
@@ -1056,7 +1113,7 @@ ${structure.frontend ? 'echo   Frontend: cd frontend && npm run dev' : ''}
     ];
   }
 
-  private extractApiEndpoints(project: any): any[] {
+  private extractApiEndpoints(_project: any): any[] {
     return [
       { method: 'POST', path: '/auth/register', description: 'Register new user' },
       { method: 'POST', path: '/auth/login', description: 'Login user' },
@@ -1065,11 +1122,11 @@ ${structure.frontend ? 'echo   Frontend: cd frontend && npm run dev' : ''}
     ];
   }
 
-  private extractFeatures(project: any): string[] {
+  private extractFeatures(_project: any): string[] {
     return ['User authentication', 'JWT tokens', 'Password hashing'];
   }
 
-  private extractComponents(project: any): any[] {
+  private extractComponents(_project: any): any[] {
     return [
       { name: 'Home', type: 'page', description: 'Home page' },
       { name: 'Login', type: 'page', description: 'Login page' },
@@ -1079,7 +1136,7 @@ ${structure.frontend ? 'echo   Frontend: cd frontend && npm run dev' : ''}
     ];
   }
 
-  private extractRoutes(project: any): any[] {
+  private extractRoutes(_project: any): any[] {
     return [
       { path: '/', component: 'Home', name: 'Home' },
       { path: '/login', component: 'Login', name: 'Login' },
@@ -1116,7 +1173,9 @@ ${structure.frontend ? 'echo   Frontend: cd frontend && npm run dev' : ''}
 
   private generateApiDocs(project: any): string {
     const endpoints = this.extractApiEndpoints(project);
-    return endpoints.map(e => `### ${e.method} ${e.path}
+    return endpoints
+      .map(
+        e => `### ${e.method} ${e.path}
 
 ${e.description}
 
@@ -1135,12 +1194,14 @@ ${e.authenticated ? '🔒 **Requires authentication**\n' : ''}
   "data": {}
 }
 \`\`\`
-`).join('\n');
+`
+      )
+      .join('\n');
   }
 
   private generateDirectoryTree(structure: ProjectStructure): string {
     const lines: string[] = ['.'];
-    
+
     if (structure.backend) {
       lines.push('├── backend/');
       lines.push('│   ├── src/');
@@ -1148,7 +1209,7 @@ ${e.authenticated ? '🔒 **Requires authentication**\n' : ''}
       lines.push('│   ├── package.json');
       lines.push('│   └── Dockerfile');
     }
-    
+
     if (structure.frontend) {
       lines.push('├── frontend/');
       lines.push('│   ├── src/');
@@ -1156,13 +1217,13 @@ ${e.authenticated ? '🔒 **Requires authentication**\n' : ''}
       lines.push('│   ├── package.json');
       lines.push('│   └── Dockerfile');
     }
-    
+
     lines.push('├── docs/');
     lines.push('├── .github/');
     lines.push('├── docker-compose.yml');
     lines.push('├── Makefile');
     lines.push('└── README.md');
-    
+
     return lines.join('\n');
   }
 }

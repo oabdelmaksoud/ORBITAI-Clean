@@ -2,8 +2,6 @@ import express from 'express';
 import { ActivityEvent } from '../models/ActivityEvent.model.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
-import { AppError } from '../middleware/errorHandler.js';
-import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -64,7 +62,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
  * GET /api/admin/activity/stats
  * Get activity statistics
  */
-router.get('/stats', async (req: AdminRequest, res, next) => {
+router.get('/stats', async (_req: AdminRequest, res, next) => {
   try {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

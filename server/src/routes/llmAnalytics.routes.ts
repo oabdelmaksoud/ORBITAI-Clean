@@ -4,7 +4,6 @@ import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { logger } from '../utils/logger.js';
 import { z } from 'zod';
-import { AppError } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -117,12 +116,12 @@ router.get('/trends', async (req: AdminRequest, res, next) => {
 
       // By context
       const context = usage.context || 'other';
-      if (!grouped[key].byContext) grouped[key].byContext = {};
-      if (!grouped[key].byContext[context]) {
-        grouped[key].byContext[context] = { calls: 0, cost: 0 };
+      if (!grouped[key].byContext) grouped[key].byContext! = {};
+      if (!grouped[key].byContext![context]) {
+        grouped[key].byContext![context] = { calls: 0, cost: 0 };
       }
-      grouped[key].byContext[context].calls++;
-      grouped[key].byContext[context].cost += usage.totalCost;
+      grouped[key].byContext![context].calls++;
+      grouped[key].byContext![context].cost += usage.totalCost;
     });
 
     // Convert to array format

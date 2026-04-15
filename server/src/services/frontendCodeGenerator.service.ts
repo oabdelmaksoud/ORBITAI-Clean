@@ -119,7 +119,7 @@ class FrontendCodeGeneratorService {
         generatedAt: Date.now(),
       };
     } catch (error: unknown) {
-      logger.error(`❌ Frontend generation failed: ${error.message}`);
+      logger.error(`❌ Frontend generation failed: ${(error instanceof Error ? error.message : String(error))}`);
       return {
         projectId,
         projectName: request.projectName,
@@ -274,7 +274,7 @@ class FrontendCodeGeneratorService {
   private async generateVueCode(request: FrontendGenerationRequest): Promise<GeneratedFile[]> {
     const files: GeneratedFile[] = [];
     const isNuxt = request.framework === 'nuxt';
-    const isTs = request.language !== 'javascript';
+    // const _isTs = request.language !== 'javascript';
 
     // Main entry
     files.push({
@@ -868,7 +868,7 @@ ${c.props!.map(p => `  ${p.name}${p.required ? '' : '?'}: ${p.type};`).join('\n'
 `;
   }
 
-  private generateCSSModule(component: FrontendComponent): string {
+  private generateCSSModule(_component: FrontendComponent): string {
     return `.container {
   padding: 1rem;
   background: white;
@@ -946,7 +946,7 @@ ${c.props!.map(p => `  ${p.name}${p.required ? '' : '?'}: ${p.type};`).join('\n'
     }, null, 2);
   }
 
-  private generateTsConfig(request: FrontendGenerationRequest): string {
+  private generateTsConfig(_request: FrontendGenerationRequest): string {
     return JSON.stringify({
       compilerOptions: {
         target: 'ES2020',
@@ -1100,7 +1100,7 @@ export default router;
 `;
   }
 
-  private generatePiniaStore(request: FrontendGenerationRequest): string {
+  private generatePiniaStore(_request: FrontendGenerationRequest): string {
     return `import { defineStore } from 'pinia';
 
 export const useMainStore = defineStore('main', {
@@ -1401,7 +1401,7 @@ ${request.styling !== 'tailwind' ? `  .container {
 `;
   }
 
-  private generateSvelteStores(request: FrontendGenerationRequest): string {
+  private generateSvelteStores(_request: FrontendGenerationRequest): string {
     return `import { writable, derived } from 'svelte/store';
 
 // Loading state
@@ -1457,7 +1457,7 @@ export function setData(items: any[]) {
     }, null, 2);
   }
 
-  private generateScssStyles(component: FrontendComponent): string {
+  private generateScssStyles(_component: FrontendComponent): string {
     return `.container {
   padding: 1rem;
   background: white;

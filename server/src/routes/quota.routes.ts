@@ -3,7 +3,7 @@
  * API endpoints for managing usage quotas
  */
 
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { quotaEnforcementService } from '../services/quotaEnforcement.service.js';
@@ -20,7 +20,7 @@ router.use(requireAdmin);
  * GET /api/admin/llm-router/quotas
  * Get all quotas
  */
-router.get('/', async (req: AdminRequest, res: Response) => {
+router.get('/', async (_req: AdminRequest, res: Response) => {
   try {
     const quotas = await quotaEnforcementService.getAllQuotas();
     
@@ -33,7 +33,7 @@ router.get('/', async (req: AdminRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve quotas',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -47,10 +47,11 @@ router.get('/:quotaId', async (req: AdminRequest, res: Response) => {
     const { quotaId } = req.params;
     
     if (!mongoose.Types.ObjectId.isValid(quotaId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid quota ID'
       });
+      return;
     }
     
     const quota = await quotaEnforcementService.getQuota('user', quotaId);
@@ -59,24 +60,27 @@ router.get('/:quotaId', async (req: AdminRequest, res: Response) => {
       // Try project and global
       const projectQuota = await quotaEnforcementService.getQuota('project', quotaId);
       if (projectQuota) {
-        return res.json({
+        res.json({
           success: true,
           data: projectQuota
         });
+        return;
       }
       
       const globalQuota = await quotaEnforcementService.getQuota('global');
       if (globalQuota && globalQuota._id.toString() === quotaId) {
-        return res.json({
+        res.json({
           success: true,
           data: globalQuota
         });
+        return;
       }
       
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quota not found'
       });
+      return;
     }
     
     res.json({
@@ -88,7 +92,7 @@ router.get('/:quotaId', async (req: AdminRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve quota',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -102,17 +106,19 @@ router.post('/', async (req: AdminRequest, res: Response) => {
     const { targetType, targetId, ...quotaData } = req.body;
     
     if (!targetType || !['user', 'project', 'global'].includes(targetType)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid targetType. Must be "user", "project", or "global"'
       });
+      return;
     }
     
     if (targetType !== 'global' && !targetId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'targetId is required for user and project quotas'
       });
+      return;
     }
     
     const quota = await quotaEnforcementService.upsertQuota(
@@ -131,7 +137,7 @@ router.post('/', async (req: AdminRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create/update quota',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -146,10 +152,11 @@ router.put('/:quotaId', async (req: AdminRequest, res: Response) => {
     const updates = req.body;
     
     if (!mongoose.Types.ObjectId.isValid(quotaId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid quota ID'
       });
+      return;
     }
     
     // First, find the quota to get its targetType and targetId
@@ -157,10 +164,11 @@ router.put('/:quotaId', async (req: AdminRequest, res: Response) => {
     const quota = quotas.find(q => q._id.toString() === quotaId);
     
     if (!quota) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quota not found'
       });
+      return;
     }
     
     const updated = await quotaEnforcementService.upsertQuota(
@@ -179,7 +187,7 @@ router.put('/:quotaId', async (req: AdminRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update quota',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -193,19 +201,21 @@ router.delete('/:quotaId', async (req: AdminRequest, res: Response) => {
     const { quotaId } = req.params;
     
     if (!mongoose.Types.ObjectId.isValid(quotaId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid quota ID'
       });
+      return;
     }
     
     const deleted = await quotaEnforcementService.deleteQuota(quotaId);
     
     if (!deleted) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quota not found'
       });
+      return;
     }
     
     res.json({
@@ -217,7 +227,7 @@ router.delete('/:quotaId', async (req: AdminRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete quota',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -232,10 +242,11 @@ router.post('/:quotaId/reset', async (req: AdminRequest, res: Response) => {
     const { period } = req.body;
     
     if (!mongoose.Types.ObjectId.isValid(quotaId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid quota ID'
       });
+      return;
     }
     
     const validPeriods = ['daily', 'weekly', 'monthly', 'all'];
@@ -252,7 +263,7 @@ router.post('/:quotaId/reset', async (req: AdminRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to reset quota usage',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -266,10 +277,11 @@ router.get('/target/:targetType/:targetId', async (req: AdminRequest, res: Respo
     const { targetType, targetId } = req.params;
     
     if (!['user', 'project', 'global'].includes(targetType)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid targetType. Must be "user", "project", or "global"'
       });
+      return;
     }
     
     const quota = await quotaEnforcementService.getQuota(
@@ -278,10 +290,11 @@ router.get('/target/:targetType/:targetId', async (req: AdminRequest, res: Respo
     );
     
     if (!quota) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quota not found for this target'
       });
+      return;
     }
     
     res.json({
@@ -293,7 +306,7 @@ router.get('/target/:targetType/:targetId', async (req: AdminRequest, res: Respo
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve quota',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });

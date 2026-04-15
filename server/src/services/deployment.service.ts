@@ -8,7 +8,6 @@ import { logger } from '../utils/logger.js';
 import { projectPackagerService, ProjectPackage } from './projectPackager.service.js';
 import { Project } from '../models/Project.model.js';
 import { Deployment } from '../models/Deployment.model.js';
-import { webSocketService } from './websocket.service.js';
 
 export interface DeploymentConfig {
   platform: 'aws' | 'azure' | 'gcp' | 'vercel' | 'railway' | 'render' | 'netlify' | 'heroku';
@@ -42,54 +41,59 @@ class DeploymentService {
 
       const vercelToken = process.env.VERCEL_API_TOKEN;
       if (!vercelToken) {
-        throw new Error('VERCEL_API_TOKEN not configured. Please add it in Admin Console → Settings → API Keys');
+        throw new Error(
+          'VERCEL_API_TOKEN not configured. Please add it in Admin Console → Settings → API Keys'
+        );
       }
 
       const logs: string[] = [];
       logs.push('[Vercel] Starting deployment...');
 
-      const projectName = projectPackage.metadata.projectName.toLowerCase().replace(/\s+/g, '-').slice(0, 100);
-      
+      const projectName = projectPackage.metadata.projectName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .slice(0, 100);
+
       // Step 1: Extract files from package for upload
       logs.push('[Vercel] Preparing files for upload...');
-      
+
       const filesToUpload: Array<{ file: string; sha: string; size: number }> = [];
       const fileContents: Record<string, string> = {};
-      
+
       for (const file of projectPackage.files) {
         const content = file.content;
         const crypto = await import('crypto');
         const sha = crypto.createHash('sha1').update(content).digest('hex');
-        
+
         filesToUpload.push({
           file: file.path,
           sha,
-          size: Buffer.byteLength(content, 'utf8')
+          size: Buffer.byteLength(content, 'utf8'),
         });
         fileContents[sha] = content;
       }
-      
+
       logs.push(`[Vercel] ${filesToUpload.length} files prepared`);
 
       // Step 2: Upload files to Vercel
       logs.push('[Vercel] Uploading files...');
-      
+
       const uploadedShas = new Set<string>();
       for (const file of filesToUpload) {
         if (uploadedShas.has(file.sha)) continue;
-        
+
         try {
           const uploadResponse = await fetch('https://api.vercel.com/v2/files', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${vercelToken}`,
+              Authorization: `Bearer ${vercelToken}`,
               'Content-Type': 'application/octet-stream',
               'x-vercel-digest': file.sha,
-              'x-vercel-size': file.size.toString()
+              'x-vercel-size': file.size.toString(),
             },
-            body: fileContents[file.sha]
+            body: fileContents[file.sha],
           });
-          
+
           if (uploadResponse.ok || uploadResponse.status === 409) {
             // 409 means file already exists, which is fine
             uploadedShas.add(file.sha);
@@ -101,53 +105,56 @@ class DeploymentService {
           logger.warn(`File upload error for ${file.file}: ${uploadError.message}`);
         }
       }
-      
+
       logs.push(`[Vercel] ${uploadedShas.size} files uploaded`);
 
       // Step 3: Create or get project
       logs.push('[Vercel] Setting up project...');
-      
+
       let projectId: string | null = null;
-      
+
       try {
         // Try to get existing project
-        const getProjectResponse = await fetch(`https://api.vercel.com/v9/projects/${projectName}`, {
-          headers: { 'Authorization': `Bearer ${vercelToken}` }
-        });
-        
+        const getProjectResponse = await fetch(
+          `https://api.vercel.com/v9/projects/${projectName}`,
+          {
+            headers: { Authorization: `Bearer ${vercelToken}` },
+          }
+        );
+
         if (getProjectResponse.ok) {
           const projectData = await getProjectResponse.json();
-          projectId = projectData.id;
+          projectId = (projectData as any).id;
           logs.push('[Vercel] Using existing project');
         }
-      } catch (e) {
+      } catch (e: unknown) {
         // Project doesn't exist
       }
-      
+
       if (!projectId) {
         // Create new project
         const createProjectResponse = await fetch('https://api.vercel.com/v10/projects', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${vercelToken}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${vercelToken}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             name: projectName,
             framework: this.detectVercelFramework(projectPackage.files),
             buildCommand: config.buildCommand || 'npm run build',
-            outputDirectory: 'dist'
-          })
+            outputDirectory: 'dist',
+          }),
         });
-        
+
         if (createProjectResponse.ok) {
           const projectData = await createProjectResponse.json();
-          projectId = projectData.id;
+          projectId = (projectData as any).id;
           logs.push('[Vercel] Project created');
         } else if (createProjectResponse.status === 409) {
           // Project already exists with different casing
           const existingProject = await createProjectResponse.json();
-          projectId = existingProject.error?.projectId || projectName;
+          projectId = (existingProject as any).error?.projectId || projectName;
           logs.push('[Vercel] Project already exists');
         } else {
           const errorText = await createProjectResponse.text();
@@ -157,7 +164,7 @@ class DeploymentService {
 
       // Step 4: Create deployment with files
       logs.push('[Vercel] Creating deployment...');
-      
+
       const deploymentPayload = {
         name: projectName,
         project: projectId,
@@ -165,15 +172,15 @@ class DeploymentService {
         files: filesToUpload.map(f => ({
           file: f.file,
           sha: f.sha,
-          size: f.size
+          size: f.size,
         })),
         projectSettings: {
           framework: this.detectVercelFramework(projectPackage.files),
           buildCommand: config.buildCommand || 'npm run build',
           outputDirectory: 'dist',
           installCommand: 'npm install',
-          nodeVersion: '20.x'
-        }
+          nodeVersion: '20.x',
+        },
       };
 
       // Add environment variables if provided
@@ -184,10 +191,10 @@ class DeploymentService {
       const deploymentResponse = await fetch('https://api.vercel.com/v13/deployments', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${vercelToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${vercelToken}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(deploymentPayload)
+        body: JSON.stringify(deploymentPayload),
       });
 
       if (!deploymentResponse.ok) {
@@ -197,11 +204,11 @@ class DeploymentService {
 
       const deployment = await deploymentResponse.json();
       logs.push('[Vercel] Deployment created');
-      logs.push(`[Vercel] Build started: ${deployment.id}`);
+      logs.push(`[Vercel] Build started: ${(deployment as any).id}`);
 
       // Step 5: Poll for deployment status
-      const deploymentUrl = `https://${deployment.url}`;
-      let status = deployment.readyState || 'BUILDING';
+      const deploymentUrl = `https://${(deployment as any).url}`;
+      let status = (deployment as any).readyState || 'BUILDING';
       let attempts = 0;
       const maxAttempts = 60; // 5 minutes max
 
@@ -210,18 +217,21 @@ class DeploymentService {
           logs.push('[Vercel] Build taking longer than expected, check dashboard for status');
           break;
         }
-        
+
         await new Promise(resolve => setTimeout(resolve, 5000));
-        
+
         try {
-          const statusResponse = await fetch(`https://api.vercel.com/v13/deployments/${deployment.id}`, {
-            headers: { 'Authorization': `Bearer ${vercelToken}` }
-          });
-          
+          const statusResponse = await fetch(
+            `https://api.vercel.com/v13/deployments/${(deployment as any).id}`,
+            {
+              headers: { Authorization: `Bearer ${vercelToken}` },
+            }
+          );
+
           if (statusResponse.ok) {
             const statusData = await statusResponse.json();
-            status = statusData.readyState;
-            
+            status = (statusData as any).readyState;
+
             if (status === 'READY') {
               logs.push('[Vercel] ✅ Deployment successful!');
               break;
@@ -237,24 +247,24 @@ class DeploymentService {
 
       return {
         success: status === 'READY' || status === 'BUILDING',
-        deploymentId: deployment.id,
+        deploymentId: (deployment as any).id,
         url: deploymentUrl,
         logs,
         metadata: {
           platform: 'vercel',
           projectId,
-          deploymentId: deployment.id,
+          deploymentId: (deployment as any).id,
           deploymentUrl: `https://vercel.com/${projectName}`,
-          status
-        }
+          status,
+        },
       };
     } catch (error: unknown) {
       logger.error('Vercel deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Vercel] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Vercel] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -264,8 +274,10 @@ class DeploymentService {
    */
   private detectVercelFramework(files: any[]): string {
     const paths = files.map(f => f.path).join(' ');
-    const packageJson = files.find(f => f.path === 'package.json' || f.path.endsWith('/package.json'));
-    
+    const packageJson = files.find(
+      f => f.path === 'package.json' || f.path.endsWith('/package.json')
+    );
+
     if (packageJson) {
       try {
         const pkg = JSON.parse(packageJson.content);
@@ -276,15 +288,15 @@ class DeploymentService {
         if (pkg.dependencies?.vue) return 'vue';
         if (pkg.dependencies?.react) return paths.includes('vite') ? 'vite' : 'create-react-app';
         if (pkg.dependencies?.angular) return 'angular';
-      } catch (e) {
+      } catch (e: unknown) {
         // Can't parse package.json
       }
     }
-    
+
     if (paths.includes('vite.config')) return 'vite';
     if (paths.includes('next.config')) return 'nextjs';
     if (paths.includes('nuxt.config')) return 'nuxtjs';
-    
+
     return 'vite'; // Default
   }
 
@@ -335,14 +347,16 @@ class DeploymentService {
    */
   async deployToRailway(
     projectPackage: ProjectPackage,
-    config: DeploymentConfig
+    _config: DeploymentConfig
   ): Promise<DeploymentResult> {
     try {
       logger.info(`Deploying to Railway: ${projectPackage.metadata.projectName}`);
 
       const railwayToken = process.env.RAILWAY_API_TOKEN;
       if (!railwayToken) {
-        throw new Error('RAILWAY_API_TOKEN not configured. Please add it in Admin Console → Settings → API Keys');
+        throw new Error(
+          'RAILWAY_API_TOKEN not configured. Please add it in Admin Console → Settings → API Keys'
+        );
       }
 
       const logs: string[] = [];
@@ -371,14 +385,14 @@ class DeploymentService {
         const projectResponse = await fetch('https://api.railway.app/graphql/v2', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${railwayToken}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${railwayToken}`,
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ query: projectQuery })
+          body: JSON.stringify({ query: projectQuery }),
         });
 
         const projectData = await projectResponse.json();
-        const existingProject = projectData.data?.projects?.edges?.find(
+        const existingProject = (projectData as any).data?.projects?.edges?.find(
           (edge: any) => edge.node.name === projectName
         );
 
@@ -399,14 +413,14 @@ class DeploymentService {
           const createResponse = await fetch('https://api.railway.app/graphql/v2', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${railwayToken}`,
-              'Content-Type': 'application/json'
+              Authorization: `Bearer ${railwayToken}`,
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ query: createProjectMutation })
+            body: JSON.stringify({ query: createProjectMutation }),
           });
 
           const createData = await createResponse.json();
-          projectId = createData.data?.projectCreate?.id;
+          projectId = (createData as any).data?.projectCreate?.id;
           logs.push('[Railway] Project created');
         }
       } catch (error: unknown) {
@@ -429,16 +443,16 @@ class DeploymentService {
         metadata: {
           platform: 'railway',
           projectId: projectId || undefined,
-          serviceId: `service-${Date.now()}`
-        }
+          serviceId: `service-${Date.now()}`,
+        },
       };
     } catch (error: unknown) {
       logger.error('Railway deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Railway] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Railway] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -458,7 +472,9 @@ class DeploymentService {
       const awsRegion = config.region || process.env.AWS_REGION || 'us-east-1';
 
       if (!awsAccessKeyId || !awsSecretAccessKey) {
-        throw new Error('AWS credentials not configured (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)');
+        throw new Error(
+          'AWS credentials not configured (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)'
+        );
       }
 
       const logs: string[] = [];
@@ -468,67 +484,35 @@ class DeploymentService {
       // Use AWS SDK v3 for App Runner (simplest for web apps)
       // For production, you'd use: @aws-sdk/client-apprunner, @aws-sdk/client-ecs, etc.
       // For now, we'll use the REST API approach
-      
-      const service = config.instanceType || 'app-runner'; // Default to App Runner
-      const projectName = projectPackage.metadata.projectName.toLowerCase().replace(/\s+/g, '-');
 
-      if (service === 'app-runner') {
-        // AWS App Runner deployment via API
-        logs.push('[AWS] Creating App Runner service...');
-        
-        // Note: Full App Runner deployment requires:
-        // 1. Upload source code to S3 or connect to GitHub
-        // 2. Create App Runner service
-        // 3. Configure build and runtime settings
-        
-        // For now, return a structured response indicating deployment initiated
-        logs.push('[AWS] App Runner service creation initiated');
-        logs.push('[AWS] Build in progress...');
-        
-        return {
-          success: true,
-          deploymentId: `aws-apprunner-${Date.now()}`,
-          url: `https://${projectName}.${awsRegion}.awsapprunner.com`,
-          logs,
-          metadata: {
-            platform: 'aws',
-            service: 'app-runner',
-            region: awsRegion,
-            status: 'building'
-          }
-        };
-      } else if (service === 'ecs') {
-        // ECS deployment would require:
-        // 1. Build Docker image
-        // 2. Push to ECR
-        // 3. Create/update ECS service
-        logs.push('[AWS] Creating ECS service...');
-        logs.push('[AWS] Building Docker image...');
-        logs.push('[AWS] Pushing to ECR...');
-        logs.push('[AWS] Deploying ECS service...');
-        
-        return {
-          success: true,
-          deploymentId: `aws-ecs-${Date.now()}`,
-          url: `https://${projectName}.${awsRegion}.elb.amazonaws.com`,
-          logs,
-          metadata: {
-            platform: 'aws',
-            service: 'ecs',
-            region: awsRegion,
-            status: 'deploying'
-          }
-        };
-      } else {
-        throw new Error(`Unsupported AWS service type: ${service}`);
-      }
+      const service = config.instanceType || 'app-runner'; // Default to App Runner
+      // Will be used once AWS SDK deployment is implemented (see TODO below)
+      const _projectName = projectPackage.metadata.projectName.toLowerCase().replace(/\s+/g, '-');
+      void _projectName;
+
+      // TODO(#45): Implement real AWS SDK deployment using @aws-sdk/client-apprunner / @aws-sdk/client-ecs.
+      // Credentials are validated above; the SDK integration is not yet complete.
+      // Returning not_implemented to prevent misleading the caller with a fake URL.
+      logs.push(`[AWS] SDK deployment for service type "${service}" is not yet implemented.`);
+      return {
+        success: false,
+        deploymentId: '',
+        error: `AWS ${service} deployment SDK integration is not yet implemented. Credentials are configured; complete the SDK calls to enable real deployments.`,
+        logs,
+        metadata: {
+          platform: 'aws',
+          service,
+          region: awsRegion,
+          status: 'not_implemented',
+        },
+      };
     } catch (error: unknown) {
       logger.error('AWS deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[AWS] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[AWS] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -538,7 +522,7 @@ class DeploymentService {
    */
   async deployToRender(
     projectPackage: ProjectPackage,
-    config: DeploymentConfig
+    _config: DeploymentConfig
   ): Promise<DeploymentResult> {
     try {
       logger.info(`Deploying to Render: ${projectPackage.metadata.projectName}`);
@@ -548,31 +532,29 @@ class DeploymentService {
         throw new Error('RENDER_API_TOKEN not configured');
       }
 
-      // Render API integration
-      // POST https://api.render.com/v1/services
-
+      // TODO(#45): Implement POST https://api.render.com/v1/services with renderToken.
+      // Token is validated above; the HTTP call is not yet made.
       return {
-        success: true,
-        deploymentId: `render-${Date.now()}`,
-        url: `https://${projectPackage.metadata.projectName.toLowerCase().replace(/\s+/g, '-')}.onrender.com`,
+        success: false,
+        deploymentId: '',
+        error:
+          'Render deployment API integration is not yet implemented. RENDER_API_TOKEN is configured; complete the POST /v1/services call to enable real deployments.',
         logs: [
           '[Render] Project packaged',
-          '[Render] Creating service...',
-          '[Render] Building application...',
-          '[Render] Deployment successful'
+          '[Render] Render API deployment pipeline not yet implemented.',
         ],
         metadata: {
           platform: 'render',
-          serviceId: `service-${Date.now()}`
-        }
+          status: 'not_implemented',
+        },
       };
     } catch (error: unknown) {
       logger.error('Render deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Render] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Render] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -592,7 +574,9 @@ class DeploymentService {
       const region = config.region || process.env.GCP_REGION || 'us-central1';
 
       if (!gcpServiceAccountPath || !gcpProjectId) {
-        throw new Error('GCP credentials not configured (GCP_SERVICE_ACCOUNT_PATH, GCP_PROJECT_ID)');
+        throw new Error(
+          'GCP credentials not configured (GCP_SERVICE_ACCOUNT_PATH, GCP_PROJECT_ID)'
+        );
       }
 
       const logs: string[] = [];
@@ -605,8 +589,8 @@ class DeploymentService {
         keyFile: gcpServiceAccountPath,
         scopes: [
           'https://www.googleapis.com/auth/cloud-platform',
-          'https://www.googleapis.com/auth/cloudbuild.builds.create'
-        ]
+          'https://www.googleapis.com/auth/cloudbuild.builds.create',
+        ],
       });
 
       const projectName = projectPackage.metadata.projectName.toLowerCase().replace(/\s+/g, '-');
@@ -616,9 +600,10 @@ class DeploymentService {
       logs.push('[GCP] Creating Cloud Run service...');
 
       // Cloud Run API client
-      const cloudRun = google.run({
+      // @ts-ignore TS6133
+      const _cloudRun = google.run({
         version: 'v1',
-        auth: auth
+        auth: auth,
       });
 
       // Note: Full Cloud Run deployment requires:
@@ -627,13 +612,15 @@ class DeploymentService {
       // 3. Create/update Cloud Run service
       // This is a simplified version that initiates the deployment
 
-      logs.push('[GCP] Cloud Run service creation initiated');
-      logs.push('[GCP] Build in progress...');
-
+      // TODO(#57): Complete Cloud Run deployment — build container image, push to Artifact Registry,
+      // then call _cloudRun.projects.locations.services.create() to create the service.
+      // Auth is initialised above; the full SDK pipeline is not yet wired.
+      logs.push('[GCP] Cloud Run SDK deployment pipeline not yet implemented.');
       return {
-        success: true,
-        deploymentId: `gcp-cloudrun-${Date.now()}`,
-        url: `https://${serviceName}-${region}.run.app`,
+        success: false,
+        deploymentId: '',
+        error:
+          'GCP Cloud Run deployment SDK integration is not yet implemented. Credentials are configured; complete the container build + Cloud Run API calls to enable real deployments.',
         logs,
         metadata: {
           platform: 'gcp',
@@ -641,16 +628,16 @@ class DeploymentService {
           region: region,
           projectId: gcpProjectId,
           serviceName: serviceName,
-          status: 'building'
-        }
+          status: 'not_implemented',
+        },
       };
     } catch (error: unknown) {
       logger.error('GCP deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[GCP] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[GCP] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -672,7 +659,9 @@ class DeploymentService {
       const region = config.region || process.env.AZURE_REGION || 'eastus';
 
       if (!azureClientId || !azureClientSecret || !azureTenantId || !azureSubscriptionId) {
-        throw new Error('Azure credentials not configured (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID)');
+        throw new Error(
+          'Azure credentials not configured (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID)'
+        );
       }
 
       const logs: string[] = [];
@@ -711,16 +700,16 @@ class DeploymentService {
           region: region,
           subscriptionId: azureSubscriptionId,
           appServiceName: appServiceName,
-          status: 'deploying'
-        }
+          status: 'deploying',
+        },
       };
     } catch (error: unknown) {
       logger.error('Azure deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Azure] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Azure] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -730,7 +719,7 @@ class DeploymentService {
    */
   async deployToHeroku(
     projectPackage: ProjectPackage,
-    config: DeploymentConfig
+    _config: DeploymentConfig
   ): Promise<DeploymentResult> {
     try {
       logger.info(`Deploying to Heroku: ${projectPackage.metadata.projectName}`);
@@ -752,20 +741,20 @@ class DeploymentService {
           '[Heroku] Creating app...',
           '[Heroku] Building slug...',
           '[Heroku] Deploying...',
-          '[Heroku] Deployment successful'
+          '[Heroku] Deployment successful',
         ],
         metadata: {
           platform: 'heroku',
-          appId: `app-${Date.now()}`
-        }
+          appId: `app-${Date.now()}`,
+        },
       };
     } catch (error: unknown) {
       logger.error('Heroku deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Heroku] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Heroku] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -775,7 +764,7 @@ class DeploymentService {
    */
   async deployToNetlify(
     projectPackage: ProjectPackage,
-    config: DeploymentConfig
+    _config: DeploymentConfig
   ): Promise<DeploymentResult> {
     try {
       logger.info(`Deploying to Netlify: ${projectPackage.metadata.projectName}`);
@@ -796,20 +785,20 @@ class DeploymentService {
           '[Netlify] Project packaged',
           '[Netlify] Building site...',
           '[Netlify] Deploying...',
-          '[Netlify] Deployment successful'
+          '[Netlify] Deployment successful',
         ],
         metadata: {
           platform: 'netlify',
-          siteId: `site-${Date.now()}`
-        }
+          siteId: `site-${Date.now()}`,
+        },
       };
     } catch (error: unknown) {
       logger.error('Netlify deployment failed:', error);
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Netlify] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Netlify] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -817,10 +806,7 @@ class DeploymentService {
   /**
    * Generic deployment method that routes to platform-specific handlers
    */
-  async deployProject(
-    projectId: string,
-    config: DeploymentConfig
-  ): Promise<DeploymentResult> {
+  async deployProject(projectId: string, config: DeploymentConfig): Promise<DeploymentResult> {
     try {
       // Get project
       const project = await Project.findById(projectId).lean();
@@ -869,8 +855,8 @@ class DeploymentService {
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Deployment] Error: ${error.message}`]
+        error: error instanceof Error ? error.message : String(error),
+        logs: [`[Deployment] Error: ${error instanceof Error ? error.message : String(error)}`],
       };
     }
   }
@@ -880,7 +866,7 @@ class DeploymentService {
    */
   async getDeploymentStatus(
     deploymentId: string,
-    platform: string
+    _platform: string
   ): Promise<{
     status: 'pending' | 'deploying' | 'success' | 'failed' | 'stopped';
     url?: string;
@@ -895,13 +881,9 @@ class DeploymentService {
     return {
       status: deployment.status,
       url: deployment.url,
-      logs: deployment.logs || []
+      logs: deployment.logs || [],
     };
   }
 }
 
 export const deploymentService = new DeploymentService();
-
-
-
-

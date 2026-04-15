@@ -35,17 +35,18 @@ router.get('/:projectId/coverage', authenticateToken, async (req: AuthRequest, r
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Getting requirements coverage for project: ${projectId}`);
 
     // Get all artifacts
-    const artifacts = await Artifact.find({ projectId }).lean();
+    const artifacts = (await Artifact.find({ projectId }).lean()) as any[];
     const reqArtifacts = artifacts.filter(a => a.type === 'requirement');
 
     if (reqArtifacts.length === 0) {
-      return res.json({
+      res.json({
         success: true,
         data: {
           projectId,
@@ -55,9 +56,10 @@ router.get('/:projectId/coverage', authenticateToken, async (req: AuthRequest, r
           missing: 0,
           coverage: 0,
           requirements: [],
-          issues: []
-        }
+          issues: [],
+        },
       });
+      return;
     }
 
     // Extract requirements
@@ -72,14 +74,14 @@ router.get('/:projectId/coverage', authenticateToken, async (req: AuthRequest, r
 
     res.json({
       success: true,
-      data: validationReport
+      data: validationReport,
     });
   } catch (error: unknown) {
     logger.error('Failed to get requirements coverage:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get requirements coverage',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -94,7 +96,8 @@ router.get('/:projectId/compliance', authenticateToken, async (req: AuthRequest,
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Getting requirements compliance for project: ${projectId}`);
@@ -103,14 +106,14 @@ router.get('/:projectId/compliance', authenticateToken, async (req: AuthRequest,
 
     res.json({
       success: true,
-      data: score
+      data: score,
     });
   } catch (error: unknown) {
     logger.error('Failed to get requirements compliance:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get requirements compliance',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -125,24 +128,26 @@ router.get('/:projectId/missing', authenticateToken, async (req: AuthRequest, re
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Getting missing requirements for project: ${projectId}`);
 
     // Get all artifacts
-    const artifacts = await Artifact.find({ projectId }).lean();
+    const artifacts = (await Artifact.find({ projectId }).lean()) as any[];
     const reqArtifacts = artifacts.filter(a => a.type === 'requirement');
 
     if (reqArtifacts.length === 0) {
-      return res.json({
+      res.json({
         success: true,
         data: {
           missing: [],
           partial: [],
-          total: 0
-        }
+          total: 0,
+        },
       });
+      return;
     }
 
     // Extract requirements
@@ -165,7 +170,7 @@ router.get('/:projectId/missing', authenticateToken, async (req: AuthRequest, re
           id: r.id,
           description: r.description,
           priority: r.priority,
-          sourceArtifactTitle: r.sourceArtifactTitle
+          sourceArtifactTitle: r.sourceArtifactTitle,
         })),
         partial: partial.map(r => ({
           id: r.id,
@@ -173,17 +178,17 @@ router.get('/:projectId/missing', authenticateToken, async (req: AuthRequest, re
           priority: r.priority,
           hasCode: r.linkedCode.length > 0,
           hasTests: r.linkedTests.length > 0,
-          hasDesign: r.linkedDesigns.length > 0
+          hasDesign: r.linkedDesigns.length > 0,
         })),
-        total: missing.length + partial.length
-      }
+        total: missing.length + partial.length,
+      },
     });
   } catch (error: unknown) {
     logger.error('Failed to get missing requirements:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get missing requirements',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -198,17 +203,18 @@ router.post('/:projectId/validate', authenticateToken, async (req: AuthRequest, 
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Running requirements validation for project: ${projectId}`);
 
     // Get all artifacts
-    const artifacts = await Artifact.find({ projectId }).lean();
+    const artifacts = (await Artifact.find({ projectId }).lean()) as any[];
     const reqArtifacts = artifacts.filter(a => a.type === 'requirement');
 
     if (reqArtifacts.length === 0) {
-      return res.json({
+      res.json({
         success: true,
         data: {
           validationReport: {
@@ -220,7 +226,7 @@ router.post('/:projectId/validate', authenticateToken, async (req: AuthRequest, 
             coverage: 0,
             requirements: [],
             issues: [],
-            generatedAt: new Date()
+            generatedAt: new Date(),
           },
           traceabilityReport: {
             projectId,
@@ -228,11 +234,12 @@ router.post('/:projectId/validate', authenticateToken, async (req: AuthRequest, 
             requirementsWithTraceRefs: 0,
             requirementsWithoutTraceRefs: 0,
             traceabilityScore: 0,
-            missingLinks: []
+            missingLinks: [],
           },
-          complianceReport: null
-        }
+          complianceReport: null,
+        },
       });
+      return;
     }
 
     // Extract requirements
@@ -253,22 +260,23 @@ router.post('/:projectId/validate', authenticateToken, async (req: AuthRequest, 
     traceabilityReport.projectId = projectId;
 
     // Get compliance report (full)
-    const complianceReport = await requirementsComplianceService.generateComplianceReport(projectId);
+    const complianceReport =
+      await requirementsComplianceService.generateComplianceReport(projectId);
 
     res.json({
       success: true,
       data: {
         validationReport,
         traceabilityReport,
-        complianceReport
-      }
+        complianceReport,
+      },
     });
   } catch (error: unknown) {
     logger.error('Failed to validate requirements:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to validate requirements',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -283,7 +291,8 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Getting compliance report for project: ${projectId}`);
@@ -292,14 +301,14 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
 
     res.json({
       success: true,
-      data: report
+      data: report,
     });
   } catch (error: unknown) {
     logger.error('Failed to get compliance report:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get compliance report',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -308,49 +317,57 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
  * POST /api/v1/requirements/:projectId/:requirementId/impact
  * Analyze impact of requirement changes
  */
-router.post('/:projectId/:requirementId/impact', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, requirementId } = req.params;
-    const { changes } = req.body;
-    const userId = req.user?.id;
+router.post(
+  '/:projectId/:requirementId/impact',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId, requirementId } = req.params;
+      const { changes } = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
 
-    if (!changes || !Array.isArray(changes) || changes.length === 0) {
-      return res.status(400).json({
+      if (!changes || !Array.isArray(changes) || changes.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Changes array is required',
+        });
+        return;
+      }
+
+      logger.info(
+        `Analyzing impact of changes to requirement ${requirementId} in project ${projectId}`
+      );
+
+      const impactReport = await requirementsImpactAnalysisService.analyzeRequirementChange(
+        projectId,
+        requirementId,
+        changes
+      );
+
+      const impactScore = requirementsImpactAnalysisService.calculateImpactScore(impactReport);
+
+      res.json({
+        success: true,
+        data: {
+          ...impactReport,
+          impactScore,
+        },
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to analyze requirement impact:', error);
+      res.status(500).json({
         success: false,
-        message: 'Changes array is required'
+        message: 'Failed to analyze requirement impact',
+        error: error instanceof Error ? error.message : String(error),
       });
     }
-
-    logger.info(`Analyzing impact of changes to requirement ${requirementId} in project ${projectId}`);
-
-    const impactReport = await requirementsImpactAnalysisService.analyzeRequirementChange(
-      projectId,
-      requirementId,
-      changes
-    );
-
-    const impactScore = requirementsImpactAnalysisService.calculateImpactScore(impactReport);
-
-    res.json({
-      success: true,
-      data: {
-        ...impactReport,
-        impactScore
-      }
-    });
-  } catch (error: unknown) {
-    logger.error('Failed to analyze requirement impact:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to analyze requirement impact',
-      error: error.message
-    });
   }
-});
+);
 
 /**
  * GET /api/v1/requirements/:projectId/aspice
@@ -363,15 +380,17 @@ router.get('/:projectId/aspice', authenticateToken, async (req: AuthRequest, res
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     const targetLevel = level ? parseInt(level as string, 10) : 3;
     if (targetLevel < 1 || targetLevel > 5) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        message: 'ASPICE level must be between 1 and 5'
+        message: 'ASPICE level must be between 1 and 5',
       });
+      return;
     }
 
     logger.info(`Getting ASPICE Level ${targetLevel} compliance report for project: ${projectId}`);
@@ -380,14 +399,14 @@ router.get('/:projectId/aspice', authenticateToken, async (req: AuthRequest, res
 
     res.json({
       success: true,
-      data: report
+      data: report,
     });
   } catch (error: unknown) {
     logger.error('Failed to get ASPICE compliance report:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get ASPICE compliance report',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -396,167 +415,193 @@ router.get('/:projectId/aspice', authenticateToken, async (req: AuthRequest, res
  * POST /api/v1/requirements/:projectId/aspice/map
  * Map requirements to ASPICE process areas
  */
-router.post('/:projectId/aspice/map', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { level } = req.body;
-    const userId = req.user?.id;
+router.post(
+  '/:projectId/aspice/map',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { level } = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
 
-    const targetLevel = level || 3;
-    if (targetLevel < 1 || targetLevel > 5) {
-      return res.status(400).json({
+      const targetLevel = level || 3;
+      if (targetLevel < 1 || targetLevel > 5) {
+        res.status(400).json({
+          success: false,
+          message: 'ASPICE level must be between 1 and 5',
+        });
+        return;
+      }
+
+      logger.info(`Mapping requirements to ASPICE Level ${targetLevel} for project: ${projectId}`);
+
+      const complianceRecords = await aspiceComplianceService.mapRequirementsToASPICE(
+        projectId,
+        targetLevel
+      );
+
+      res.json({
+        success: true,
+        data: {
+          mapped: complianceRecords.length,
+          processAreas: complianceRecords.map(cr => ({
+            processArea: cr.processArea,
+            processAreaName: cr.processAreaName,
+            complianceScore: cr.complianceScore,
+            requirementsCount: cr.requirements.length,
+          })),
+        },
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to map requirements to ASPICE:', error);
+      res.status(500).json({
         success: false,
-        message: 'ASPICE level must be between 1 and 5'
+        message: 'Failed to map requirements to ASPICE',
+        error: error instanceof Error ? error.message : String(error),
       });
     }
-
-    logger.info(`Mapping requirements to ASPICE Level ${targetLevel} for project: ${projectId}`);
-
-    const complianceRecords = await aspiceComplianceService.mapRequirementsToASPICE(projectId, targetLevel);
-
-    res.json({
-      success: true,
-      data: {
-        mapped: complianceRecords.length,
-        processAreas: complianceRecords.map(cr => ({
-          processArea: cr.processArea,
-          processAreaName: cr.processAreaName,
-          complianceScore: cr.complianceScore,
-          requirementsCount: cr.requirements.length
-        }))
-      }
-    });
-  } catch (error: unknown) {
-    logger.error('Failed to map requirements to ASPICE:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to map requirements to ASPICE',
-      error: error.message
-    });
   }
-});
+);
 
 /**
  * GET /api/v1/requirements/:projectId/dependencies
  * Get requirement dependency analysis
  */
-router.get('/:projectId/dependencies', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const userId = req.user?.id;
+router.get(
+  '/:projectId/dependencies',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      logger.info(`Getting requirement dependencies for project: ${projectId}`);
+
+      const analysis = await requirementsDependencyService.analyzeDependencies(projectId);
+
+      res.json({
+        success: true,
+        data: analysis,
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to get requirement dependencies:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get requirement dependencies',
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-
-    logger.info(`Getting requirement dependencies for project: ${projectId}`);
-
-    const analysis = await requirementsDependencyService.analyzeDependencies(projectId);
-
-    res.json({
-      success: true,
-      data: analysis
-    });
-  } catch (error: unknown) {
-    logger.error('Failed to get requirement dependencies:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get requirement dependencies',
-      error: error.message
-    });
   }
-});
+);
 
 /**
  * POST /api/v1/requirements/:projectId/dependencies
  * Add a dependency relationship
  */
-router.post('/:projectId/dependencies', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { requirementId, targetRequirementId, dependencyType } = req.body;
-    const userId = req.user?.id;
+router.post(
+  '/:projectId/dependencies',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { requirementId, targetRequirementId, dependencyType } = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
 
-    if (!requirementId || !targetRequirementId || !dependencyType) {
-      return res.status(400).json({
+      if (!requirementId || !targetRequirementId || !dependencyType) {
+        res.status(400).json({
+          success: false,
+          message: 'requirementId, targetRequirementId, and dependencyType are required',
+        });
+        return;
+      }
+
+      logger.info(`Adding dependency: ${requirementId} ${dependencyType} ${targetRequirementId}`);
+
+      await requirementsDependencyService.addDependency(
+        projectId,
+        requirementId,
+        targetRequirementId,
+        dependencyType
+      );
+
+      res.json({
+        success: true,
+        message: 'Dependency added successfully',
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to add dependency:', error);
+      res.status(500).json({
         success: false,
-        message: 'requirementId, targetRequirementId, and dependencyType are required'
+        message: 'Failed to add dependency',
+        error: error instanceof Error ? error.message : String(error),
       });
     }
-
-    logger.info(`Adding dependency: ${requirementId} ${dependencyType} ${targetRequirementId}`);
-
-    await requirementsDependencyService.addDependency(
-      projectId,
-      requirementId,
-      targetRequirementId,
-      dependencyType
-    );
-
-    res.json({
-      success: true,
-      message: 'Dependency added successfully'
-    });
-  } catch (error: unknown) {
-    logger.error('Failed to add dependency:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add dependency',
-      error: error.message
-    });
   }
-});
+);
 
 /**
  * DELETE /api/v1/requirements/:projectId/dependencies
  * Remove a dependency relationship
  */
-router.delete('/:projectId/dependencies', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { requirementId, targetRequirementId } = req.body;
-    const userId = req.user?.id;
+router.delete(
+  '/:projectId/dependencies',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { requirementId, targetRequirementId } = req.body;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
 
-    if (!requirementId || !targetRequirementId) {
-      return res.status(400).json({
+      if (!requirementId || !targetRequirementId) {
+        res.status(400).json({
+          success: false,
+          message: 'requirementId and targetRequirementId are required',
+        });
+        return;
+      }
+
+      logger.info(`Removing dependency: ${requirementId} -> ${targetRequirementId}`);
+
+      await requirementsDependencyService.removeDependency(
+        projectId,
+        requirementId,
+        targetRequirementId
+      );
+
+      res.json({
+        success: true,
+        message: 'Dependency removed successfully',
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to remove dependency:', error);
+      res.status(500).json({
         success: false,
-        message: 'requirementId and targetRequirementId are required'
+        message: 'Failed to remove dependency',
+        error: error instanceof Error ? error.message : String(error),
       });
     }
-
-    logger.info(`Removing dependency: ${requirementId} -> ${targetRequirementId}`);
-
-    await requirementsDependencyService.removeDependency(
-      projectId,
-      requirementId,
-      targetRequirementId
-    );
-
-    res.json({
-      success: true,
-      message: 'Dependency removed successfully'
-    });
-  } catch (error: unknown) {
-    logger.error('Failed to remove dependency:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to remove dependency',
-      error: error.message
-    });
   }
-});
+);
 
 /**
  * GET /api/v1/requirements/:projectId/nfr
@@ -568,7 +613,8 @@ router.get('/:projectId/nfr', authenticateToken, async (req: AuthRequest, res: R
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Getting NFR trace report for project: ${projectId}`);
@@ -577,14 +623,14 @@ router.get('/:projectId/nfr', authenticateToken, async (req: AuthRequest, res: R
 
     res.json({
       success: true,
-      data: report
+      data: report,
     });
   } catch (error: unknown) {
     logger.error('Failed to get NFR trace report:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get NFR trace report',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -593,94 +639,105 @@ router.get('/:projectId/nfr', authenticateToken, async (req: AuthRequest, res: R
  * GET /api/v1/requirements/:projectId/traceability-matrix
  * Get traceability matrix
  */
-router.get('/:projectId/traceability-matrix', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const userId = req.user?.id;
+router.get(
+  '/:projectId/traceability-matrix',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      logger.info(`Getting traceability matrix for project: ${projectId}`);
+
+      const matrix = await traceabilityMatrixService.generateMatrix(projectId);
+
+      res.json({
+        success: true,
+        data: matrix,
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to get traceability matrix:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get traceability matrix',
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-
-    logger.info(`Getting traceability matrix for project: ${projectId}`);
-
-    const matrix = await traceabilityMatrixService.generateMatrix(projectId);
-
-    res.json({
-      success: true,
-      data: matrix
-    });
-  } catch (error: unknown) {
-    logger.error('Failed to get traceability matrix:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get traceability matrix',
-      error: error.message
-    });
   }
-});
+);
 
 /**
  * GET /api/v1/requirements/:projectId/traceability-matrix/export
  * Export traceability matrix
  */
-router.get('/:projectId/traceability-matrix/export', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { format, includeUnlinked, filterByType } = req.query;
-    const userId = req.user?.id;
+router.get(
+  '/:projectId/traceability-matrix/export',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { format, includeUnlinked, filterByType } = req.query;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
 
-    const exportFormat = (format as string) || 'csv';
-    if (!['csv', 'excel', 'json'].includes(exportFormat)) {
-      return res.status(400).json({
+      const exportFormat = (format as string) || 'csv';
+      if (!['csv', 'excel', 'json'].includes(exportFormat)) {
+        res.status(400).json({
+          success: false,
+          message: 'Format must be csv, excel, or json',
+        });
+        return;
+      }
+
+      logger.info(`Exporting traceability matrix for project: ${projectId} as ${exportFormat}`);
+
+      const matrix = await traceabilityMatrixService.generateMatrix(projectId);
+
+      const options = {
+        format: exportFormat as 'csv' | 'excel' | 'json',
+        includeUnlinked: includeUnlinked === 'true',
+        filterByType: filterByType ? (filterByType as string).split(',') : undefined,
+      };
+
+      let content: string;
+      let contentType: string;
+      let filename: string;
+
+      if (exportFormat === 'json') {
+        content = traceabilityMatrixService.exportToJSON(matrix, options);
+        contentType = 'application/json';
+        filename = `traceability-matrix-${projectId}.json`;
+      } else if (exportFormat === 'excel') {
+        content = traceabilityMatrixService.exportToExcel(matrix, options);
+        contentType = 'text/csv';
+        filename = `traceability-matrix-${projectId}.csv`;
+      } else {
+        content = traceabilityMatrixService.exportToCSV(matrix, options);
+        contentType = 'text/csv';
+        filename = `traceability-matrix-${projectId}.csv`;
+      }
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(content);
+    } catch (error: unknown) {
+      logger.error('Failed to export traceability matrix:', error);
+      res.status(500).json({
         success: false,
-        message: 'Format must be csv, excel, or json'
+        message: 'Failed to export traceability matrix',
+        error: error instanceof Error ? error.message : String(error),
       });
     }
-
-    logger.info(`Exporting traceability matrix for project: ${projectId} as ${exportFormat}`);
-
-    const matrix = await traceabilityMatrixService.generateMatrix(projectId);
-
-    const options = {
-      format: exportFormat as 'csv' | 'excel' | 'json',
-      includeUnlinked: includeUnlinked === 'true',
-      filterByType: filterByType ? (filterByType as string).split(',') : undefined
-    };
-
-    let content: string;
-    let contentType: string;
-    let filename: string;
-
-    if (exportFormat === 'json') {
-      content = traceabilityMatrixService.exportToJSON(matrix, options);
-      contentType = 'application/json';
-      filename = `traceability-matrix-${projectId}.json`;
-    } else if (exportFormat === 'excel') {
-      content = traceabilityMatrixService.exportToExcel(matrix, options);
-      contentType = 'text/csv';
-      filename = `traceability-matrix-${projectId}.csv`;
-    } else {
-      content = traceabilityMatrixService.exportToCSV(matrix, options);
-      contentType = 'text/csv';
-      filename = `traceability-matrix-${projectId}.csv`;
-    }
-
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(content);
-  } catch (error: unknown) {
-    logger.error('Failed to export traceability matrix:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to export traceability matrix',
-      error: error.message
-    });
   }
-});
+);
 
 export default router;

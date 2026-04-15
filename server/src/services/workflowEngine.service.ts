@@ -138,7 +138,7 @@ class WorkflowEngineService {
       return execution;
     } catch (error: unknown) {
       execution.status = 'failed';
-      execution.error = error.message;
+      execution.error = (error instanceof Error ? error.message : String(error));
       execution.endTime = new Date();
       execution.duration = execution.endTime.getTime() - execution.startTime.getTime();
       

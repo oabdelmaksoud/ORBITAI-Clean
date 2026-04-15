@@ -98,7 +98,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       // Filter for chat/completion models
       const relevantModels = models.filter((m: any) =>
@@ -143,10 +143,10 @@ class ModelSyncService {
         };
       });
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch OpenAI models:', error);
     }
 
@@ -186,13 +186,13 @@ class ModelSyncService {
       if (!response.ok) {
         // Anthropic may not have a models endpoint, use known models
         result.models = this.getKnownAnthropicModels();
-        result.modelsFound = result.models.length;
+        result.modelsFound = result.models!.length;
         result.success = true;
         return result;
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       result.models = models.map((m: any) => ({
         id: `anthropic-${m.id}`,
@@ -212,14 +212,14 @@ class ModelSyncService {
         }
       }));
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
       // Use known models as fallback
       result.models = this.getKnownAnthropicModels();
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
-      logger.warn('Using known Anthropic models (API unavailable):', error.message);
+      logger.warn('Using known Anthropic models (API unavailable):', (error instanceof Error ? error.message : String(error)));
     }
 
     return result;
@@ -326,7 +326,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.models || [];
+      const models = (data as any).models || [];
 
       // Filter for generative models
       const generativeModels = models.filter((m: any) =>
@@ -371,9 +371,9 @@ class ModelSyncService {
     } catch (error: unknown) {
       // Use known models as fallback
       result.models = this.getKnownGeminiModels();
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
-      logger.warn('Using known Gemini models (API unavailable):', error.message);
+      logger.warn('Using known Gemini models (API unavailable):', (error instanceof Error ? error.message : String(error)));
     }
 
     return result;
@@ -503,7 +503,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       result.models = models.map((m: any) => ({
         id: `groq-${m.id}`,
@@ -524,10 +524,10 @@ class ModelSyncService {
         createdAt: new Date(m.created * 1000).toISOString()
       }));
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch Groq models:', error);
     }
 
@@ -577,7 +577,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       result.models = models.map((m: any) => ({
         id: `mistral-${m.id}`,
@@ -599,10 +599,10 @@ class ModelSyncService {
         createdAt: new Date(m.created * 1000).toISOString()
       }));
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch Mistral models:', error);
     }
 
@@ -652,7 +652,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       // Filter for chat/completion models
       const relevantModels = models.filter((m: any) =>
@@ -691,10 +691,10 @@ class ModelSyncService {
         };
       });
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch DeepSeek models:', error);
     }
 
@@ -748,10 +748,10 @@ class ModelSyncService {
         }
       }));
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch Cohere models:', error);
     }
 
@@ -793,7 +793,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       // Filter for chat/completion models
       const relevantModels = models.filter((m: any) =>
@@ -816,10 +816,10 @@ class ModelSyncService {
         }
       }));
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch Together AI models:', error);
     }
 
@@ -850,7 +850,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       // Extract unique providers from model IDs
       const discoveredProviders = new Set<string>();
@@ -890,7 +890,7 @@ class ModelSyncService {
       });
 
       return Array.from(discoveredProviders);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Failed to discover providers from OpenRouter:', error);
       return [];
     }
@@ -992,7 +992,7 @@ class ModelSyncService {
       }
 
       const data = await response.json();
-      const models = data.data || [];
+      const models = (data as any).data || [];
 
       // Filter for relevant models (exclude embedding/rerank models, focus on chat/completion)
       const relevantModels = models.filter((m: any) =>
@@ -1024,10 +1024,10 @@ class ModelSyncService {
         createdAt: m.created ? new Date(m.created).toISOString() : undefined
       }));
 
-      result.modelsFound = result.models.length;
+      result.modelsFound = result.models!.length;
       result.success = true;
     } catch (error: unknown) {
-      result.error = error.message;
+      result.error = (error instanceof Error ? error.message : String(error));
       logger.error('Failed to fetch OpenRouter models:', error);
     }
 
@@ -1133,7 +1133,7 @@ class ModelSyncService {
         lastSyncTime: this.lastSyncTime?.toISOString() || null,
         isSyncing: this.isSyncing
       }, 'Last model sync status');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to persist sync status:', error);
     }
   }
@@ -1145,7 +1145,7 @@ class ModelSyncService {
     try {
       await systemConfigHelpers.set(SYNC_RESULTS_KEY, results, 'Last full model sync results');
       logger.info('Sync results persisted to database');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to persist sync results:', error);
     }
   }
@@ -1157,7 +1157,7 @@ class ModelSyncService {
     try {
       const results = await systemConfigHelpers.get(SYNC_RESULTS_KEY);
       return results as FullSyncResult | null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load sync results:', error);
       return null;
     }
@@ -1173,7 +1173,7 @@ class ModelSyncService {
         this.lastSyncTime = new Date(status.lastSyncTime);
         logger.info(`Loaded last sync time: ${this.lastSyncTime.toISOString()}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load sync status:', error);
     }
   }
@@ -1224,7 +1224,7 @@ class ModelSyncService {
           try {
             logger.info('Running scheduled monthly model sync...');
             await this.syncAllProviders();
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error('Scheduled model sync failed:', error);
           }
         }
@@ -1341,7 +1341,7 @@ class ModelSyncService {
 
         discoveredProviders.push(...Array.from(providerSet));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Failed to discover providers from OpenRouter:', error);
     }
 
@@ -1381,7 +1381,7 @@ class ModelSyncService {
             hasApiKey: true
           };
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to get live models for ${providerId}, falling back to registry:`, error);
       }
     }

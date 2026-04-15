@@ -12,7 +12,7 @@ import {
   publishPage,
   rollbackToRevision,
   createAutoSaveRevision,
-  getDefaultTheme
+  getDefaultTheme,
 } from '../services/pageBuilder.service.js';
 
 const router = express.Router();
@@ -37,12 +37,12 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
           icon: 'Layout',
           defaultProps: {
             padding: 'medium',
-            backgroundColor: 'transparent'
+            backgroundColor: 'transparent',
           },
           schema: {
             padding: { type: 'select', options: ['none', 'small', 'medium', 'large'] },
-            backgroundColor: { type: 'color' }
-          }
+            backgroundColor: { type: 'color' },
+          },
         },
         {
           type: 'Text',
@@ -52,14 +52,14 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
             content: 'Enter text here',
             fontSize: 'medium',
             fontWeight: 'normal',
-            textAlign: 'left'
+            textAlign: 'left',
           },
           schema: {
             content: { type: 'richText' },
             fontSize: { type: 'select', options: ['small', 'medium', 'large', 'xl'] },
             fontWeight: { type: 'select', options: ['normal', 'medium', 'bold'] },
-            textAlign: { type: 'select', options: ['left', 'center', 'right', 'justify'] }
-          }
+            textAlign: { type: 'select', options: ['left', 'center', 'right', 'justify'] },
+          },
         },
         {
           type: 'Heading',
@@ -68,13 +68,13 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
           defaultProps: {
             level: 1,
             content: 'Heading',
-            textAlign: 'left'
+            textAlign: 'left',
           },
           schema: {
             level: { type: 'number', min: 1, max: 6 },
             content: { type: 'text' },
-            textAlign: { type: 'select', options: ['left', 'center', 'right'] }
-          }
+            textAlign: { type: 'select', options: ['left', 'center', 'right'] },
+          },
         },
         {
           type: 'Image',
@@ -84,14 +84,14 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
             src: '',
             alt: '',
             width: '100%',
-            height: 'auto'
+            height: 'auto',
           },
           schema: {
             src: { type: 'image' },
             alt: { type: 'text' },
             width: { type: 'text' },
-            height: { type: 'text' }
-          }
+            height: { type: 'text' },
+          },
         },
         {
           type: 'Button',
@@ -101,14 +101,14 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
             text: 'Click me',
             link: '#',
             variant: 'primary',
-            size: 'medium'
+            size: 'medium',
           },
           schema: {
             text: { type: 'text' },
             link: { type: 'url' },
             variant: { type: 'select', options: ['primary', 'secondary', 'outline'] },
-            size: { type: 'select', options: ['small', 'medium', 'large'] }
-          }
+            size: { type: 'select', options: ['small', 'medium', 'large'] },
+          },
         },
         {
           type: 'Hero',
@@ -120,7 +120,7 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
             description: 'Hero description',
             backgroundImage: '',
             ctaText: 'Get Started',
-            ctaLink: '#'
+            ctaLink: '#',
           },
           schema: {
             title: { type: 'text' },
@@ -128,15 +128,15 @@ router.get('/blocks/registry', async (_req: AdminRequest, res, next) => {
             description: { type: 'richText' },
             backgroundImage: { type: 'image' },
             ctaText: { type: 'text' },
-            ctaLink: { type: 'url' }
-          }
-        }
-      ]
+            ctaLink: { type: 'url' },
+          },
+        },
+      ],
     };
 
     res.json({
       success: true,
-      data: registry
+      data: registry,
     });
   } catch (error: unknown) {
     logger.error('Failed to get block registry:', error);
@@ -158,20 +158,19 @@ router.get('/pages', async (req: AdminRequest, res, next) => {
     }
 
     if (search) {
+      const safeSearch = (search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { pageKey: { $regex: search, $options: 'i' } },
-        { slug: { $regex: search, $options: 'i' } }
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { pageKey: { $regex: safeSearch, $options: 'i' } },
+        { slug: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
-    const pages = await Page.find(query)
-      .sort({ updatedAt: -1 })
-      .lean();
+    const pages = await Page.find(query).sort({ updatedAt: -1 }).lean();
 
     res.json({
       success: true,
-      data: { pages }
+      data: { pages },
     });
   } catch (error: unknown) {
     logger.error('Failed to list pages:', error);
@@ -194,7 +193,7 @@ router.get('/pages/:pageKey', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: { page }
+      data: { page },
     });
   } catch (error: unknown) {
     logger.error('Failed to get page:', error);
@@ -236,20 +235,20 @@ router.post('/pages', async (req: AdminRequest, res, next) => {
         createdBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedAt: new Date(),
-        version: 1
-      }
+        version: 1,
+      },
     });
 
     await logAudit(req, {
       action: 'page.created',
       entityType: 'page',
       entityId: page._id.toString(),
-      details: { pageKey, title }
+      details: { pageKey, title },
     });
 
     res.json({
       success: true,
-      data: { page: page.toObject() }
+      data: { page: page.toObject() },
     });
   } catch (error: unknown) {
     logger.error('Failed to create page:', error);
@@ -273,7 +272,7 @@ router.put('/pages/:pageKey', async (req: AdminRequest, res, next) => {
 
     const updates: any = {
       'metadata.lastEditedBy': req.admin?.email || req.user?.email || 'unknown',
-      'metadata.lastEditedAt': new Date()
+      'metadata.lastEditedAt': new Date(),
     };
 
     if (title !== undefined) updates.title = title;
@@ -284,11 +283,7 @@ router.put('/pages/:pageKey', async (req: AdminRequest, res, next) => {
     if (seo !== undefined) updates.seo = seo;
     if (settings !== undefined) updates.settings = settings;
 
-    const updatedPage = await Page.findOneAndUpdate(
-      { pageKey },
-      { $set: updates },
-      { new: true }
-    );
+    const updatedPage = await Page.findOneAndUpdate({ pageKey }, { $set: updates }, { new: true });
 
     // Create auto-save revision if requested
     if (autoSave && blocks) {
@@ -303,12 +298,12 @@ router.put('/pages/:pageKey', async (req: AdminRequest, res, next) => {
       action: 'page.updated',
       entityType: 'page',
       entityId: page._id.toString(),
-      details: { pageKey, autoSave }
+      details: { pageKey, autoSave },
     });
 
     res.json({
       success: true,
-      data: { page: updatedPage?.toObject() }
+      data: { page: updatedPage?.toObject() },
     });
   } catch (error: unknown) {
     logger.error('Failed to update page:', error);
@@ -333,19 +328,19 @@ router.post('/pages/:pageKey/publish', async (req: AdminRequest, res, next) => {
     const result = await publishPage({
       pageId: page._id.toString(),
       publishedBy: req.admin?.email || req.user?.email || 'unknown',
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
     });
 
     await logAudit(req, {
       action: 'page.published',
       entityType: 'page',
       entityId: page._id.toString(),
-      details: { pageKey, scheduledAt }
+      details: { pageKey, scheduledAt },
     });
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error: unknown) {
     logger.error('Failed to publish page:', error);
@@ -374,7 +369,7 @@ router.get('/pages/:pageKey/revisions', async (req: AdminRequest, res, next) => 
 
     res.json({
       success: true,
-      data: { revisions }
+      data: { revisions },
     });
   } catch (error: unknown) {
     logger.error('Failed to get revisions:', error);
@@ -398,19 +393,19 @@ router.post('/pages/:pageKey/rollback/:revisionId', async (req: AdminRequest, re
     const result = await rollbackToRevision({
       pageId: page._id.toString(),
       revisionId,
-      rolledBackBy: req.admin?.email || req.user?.email || 'unknown'
+      rolledBackBy: req.admin?.email || req.user?.email || 'unknown',
     });
 
     await logAudit(req, {
       action: 'page.rollback',
       entityType: 'page',
       entityId: page._id.toString(),
-      details: { pageKey, revisionId }
+      details: { pageKey, revisionId },
     });
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error: unknown) {
     logger.error('Failed to rollback page:', error);
@@ -424,13 +419,11 @@ router.post('/pages/:pageKey/rollback/:revisionId', async (req: AdminRequest, re
  */
 router.get('/themes', async (_req: AdminRequest, res, next) => {
   try {
-    const themes = await PageTheme.find()
-      .sort({ isDefault: -1, createdAt: -1 })
-      .lean();
+    const themes = await PageTheme.find().sort({ isDefault: -1, createdAt: -1 }).lean();
 
     res.json({
       success: true,
-      data: { themes }
+      data: { themes },
     });
   } catch (error: unknown) {
     logger.error('Failed to list themes:', error);
@@ -466,20 +459,20 @@ router.post('/themes', async (req: AdminRequest, res, next) => {
       metadata: {
         createdBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedBy: req.admin?.email || req.user?.email || 'unknown',
-        lastEditedAt: new Date()
-      }
+        lastEditedAt: new Date(),
+      },
     });
 
     await logAudit(req, {
       action: 'theme.created',
       entityType: 'theme',
       entityId: theme._id.toString(),
-      details: { name, slug }
+      details: { name, slug },
     });
 
     res.json({
       success: true,
-      data: { theme: theme.toObject() }
+      data: { theme: theme.toObject() },
     });
   } catch (error: unknown) {
     logger.error('Failed to create theme:', error);
@@ -494,7 +487,7 @@ router.post('/themes', async (req: AdminRequest, res, next) => {
 router.put('/themes/:themeId', async (req: AdminRequest, res, next) => {
   try {
     const { themeId } = req.params;
-    const { name, description, designTokens, customCss, isDefault } = req.body;
+    const { name, slug, description, designTokens, customCss, isDefault } = req.body;
 
     const theme = await PageTheme.findById(themeId);
     if (!theme) {
@@ -507,7 +500,7 @@ router.put('/themes/:themeId', async (req: AdminRequest, res, next) => {
 
     const updates: any = {
       'metadata.lastEditedBy': req.admin?.email || req.user?.email || 'unknown',
-      'metadata.lastEditedAt': new Date()
+      'metadata.lastEditedAt': new Date(),
     };
 
     if (name !== undefined) updates.name = name;
@@ -523,18 +516,22 @@ router.put('/themes/:themeId', async (req: AdminRequest, res, next) => {
       updates.isDefault = isDefault;
     }
 
-    const updatedTheme = await PageTheme.findByIdAndUpdate(themeId, { $set: updates }, { new: true });
+    const updatedTheme = await PageTheme.findByIdAndUpdate(
+      themeId,
+      { $set: updates },
+      { new: true }
+    );
 
     await logAudit(req, {
       action: 'theme.updated',
       entityType: 'theme',
       entityId: themeId,
-      details: { name: theme.name }
+      details: { name: theme.name },
     });
 
     res.json({
       success: true,
-      data: { theme: updatedTheme?.toObject() }
+      data: { theme: updatedTheme?.toObject() },
     });
   } catch (error: unknown) {
     logger.error('Failed to update theme:', error);
@@ -565,12 +562,12 @@ router.delete('/themes/:themeId', async (req: AdminRequest, res, next) => {
       action: 'theme.deleted',
       entityType: 'theme',
       entityId: themeId,
-      details: { name: theme.name }
+      details: { name: theme.name },
     });
 
     res.json({
       success: true,
-      message: 'Theme deleted successfully'
+      message: 'Theme deleted successfully',
     });
   } catch (error: unknown) {
     logger.error('Failed to delete theme:', error);
@@ -592,10 +589,11 @@ router.get('/templates', async (req: AdminRequest, res, next) => {
     }
 
     if (search) {
+      const safeSearch = (search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
+        { tags: { $in: [new RegExp(safeSearch, 'i')] } as any },
       ];
     }
 
@@ -605,7 +603,7 @@ router.get('/templates', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: { templates }
+      data: { templates },
     });
   } catch (error: unknown) {
     logger.error('Failed to list templates:', error);
@@ -619,7 +617,8 @@ router.get('/templates', async (req: AdminRequest, res, next) => {
  */
 router.post('/templates', async (req: AdminRequest, res, next) => {
   try {
-    const { name, slug, description, category, thumbnail, blocks, themeId, tags, isPublic } = req.body;
+    const { name, slug, description, category, thumbnail, blocks, themeId, tags, isPublic } =
+      req.body;
 
     if (!name || !slug || !blocks) {
       throw new AppError('Name, slug, and blocks are required', 400);
@@ -640,20 +639,20 @@ router.post('/templates', async (req: AdminRequest, res, next) => {
         createdBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedAt: new Date(),
-        usageCount: 0
-      }
+        usageCount: 0,
+      },
     });
 
     await logAudit(req, {
       action: 'template.created',
       entityType: 'template',
       entityId: template._id.toString(),
-      details: { name, slug }
+      details: { name, slug },
     });
 
     res.json({
       success: true,
-      data: { template: template.toObject() }
+      data: { template: template.toObject() },
     });
   } catch (error: unknown) {
     logger.error('Failed to create template:', error);
@@ -699,25 +698,25 @@ router.post('/templates/:templateId/use', async (req: AdminRequest, res, next) =
         createdBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedAt: new Date(),
-        version: 1
-      }
+        version: 1,
+      },
     });
 
     // Increment usage count
     await PageTemplate.findByIdAndUpdate(templateId, {
-      $inc: { 'metadata.usageCount': 1 }
+      $inc: { 'metadata.usageCount': 1 },
     });
 
     await logAudit(req, {
       action: 'template.used',
       entityType: 'template',
       entityId: templateId,
-      details: { pageKey, title }
+      details: { pageKey, title },
     });
 
     res.json({
       success: true,
-      data: { page: page.toObject() }
+      data: { page: page.toObject() },
     });
   } catch (error: unknown) {
     logger.error('Failed to use template:', error);
@@ -726,7 +725,3 @@ router.post('/templates/:templateId/use', async (req: AdminRequest, res, next) =
 });
 
 export default router;
-
-
-
-

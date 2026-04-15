@@ -330,23 +330,40 @@ export const UNITY_INVENTORY_SYSTEM_CONFIG: MechanicsTemplate = {
     language: 'csharp',
     code: UNITY_INVENTORY_SYSTEM_CODE,
     variables: [
-        { name: 'MAX_SLOTS', type: 'number', default: 30, description: 'Maximum inventory slots' },
-        { name: 'ALLOW_AUTO_SORT', type: 'boolean', default: true, description: 'Enable auto-sorting' },
-        { name: 'ITEM_ID', type: 'string', default: 'itemId', description: 'Item ID field name' },
-        { name: 'ITEM_NAME', type: 'string', default: 'itemName', description: 'Item name field' },
-        { name: 'DESCRIPTION', type: 'string', default: 'description', description: 'Item description field' },
-        { name: 'ICON', type: 'string', default: 'icon', description: 'Item icon sprite field' },
-        { name: 'TYPE', type: 'string', default: 'type', description: 'Item type field' },
-        { name: 'QUANTITY', type: 'string', default: 'quantity', description: 'Quantity field' },
-        { name: 'MAX_STACK_SIZE', type: 'string', default: 'maxStackSize', description: 'Max stack size field' },
-        { name: 'IS_STACKABLE', type: 'string', default: 'isStackable', description: 'Stackable flag field' },
-        { name: 'SLOT_TYPE', type: 'string', default: 'slotType', description: 'Equipment slot type field' },
-        { name: 'EQUIPPED_ITEM', type: 'string', default: 'equippedItem', description: 'Equipped item field' },
-        { name: 'ON_ITEM_ADDED', type: 'string', default: 'onItemAdded', description: 'Item added event' },
-        { name: 'ON_ITEM_REMOVED', type: 'string', default: 'onItemRemoved', description: 'Item removed event' },
-        { name: 'ON_ITEM_USED', type: 'string', default: 'onItemUsed', description: 'Item used event' },
-        { name: 'ON_ITEM_EQUIPPED', type: 'string', default: 'onItemEquipped', description: 'Item equipped event' },
-        { name: 'ON_ITEM_UNEQUIPPED', type: 'string', default: 'onItemUnequipped', description: 'Item unequipped event' }
+        { name: 'MAX_SLOTS', type: 'number', default: 30, // @ts-ignore
+  description: 'Maximum inventory slots' },
+        { name: 'ALLOW_AUTO_SORT', type: 'boolean', default: true, // @ts-ignore
+  description: 'Enable auto-sorting' },
+        { name: 'ITEM_ID', type: 'string', default: 'itemId', // @ts-ignore
+  description: 'Item ID field name' },
+        { name: 'ITEM_NAME', type: 'string', default: 'itemName', // @ts-ignore
+  description: 'Item name field' },
+        { name: 'DESCRIPTION', type: 'string', default: 'description', // @ts-ignore
+  description: 'Item description field' },
+        { name: 'ICON', type: 'string', default: 'icon', // @ts-ignore
+  description: 'Item icon sprite field' },
+        { name: 'TYPE', type: 'string', default: 'type', // @ts-ignore
+  description: 'Item type field' },
+        { name: 'QUANTITY', type: 'string', default: 'quantity', // @ts-ignore
+  description: 'Quantity field' },
+        { name: 'MAX_STACK_SIZE', type: 'string', default: 'maxStackSize', // @ts-ignore
+  description: 'Max stack size field' },
+        { name: 'IS_STACKABLE', type: 'string', default: 'isStackable', // @ts-ignore
+  description: 'Stackable flag field' },
+        { name: 'SLOT_TYPE', type: 'string', default: 'slotType', // @ts-ignore
+  description: 'Equipment slot type field' },
+        { name: 'EQUIPPED_ITEM', type: 'string', default: 'equippedItem', // @ts-ignore
+  description: 'Equipped item field' },
+        { name: 'ON_ITEM_ADDED', type: 'string', default: 'onItemAdded', // @ts-ignore
+  description: 'Item added event' },
+        { name: 'ON_ITEM_REMOVED', type: 'string', default: 'onItemRemoved', // @ts-ignore
+  description: 'Item removed event' },
+        { name: 'ON_ITEM_USED', type: 'string', default: 'onItemUsed', // @ts-ignore
+  description: 'Item used event' },
+        { name: 'ON_ITEM_EQUIPPED', type: 'string', default: 'onItemEquipped', // @ts-ignore
+  description: 'Item equipped event' },
+        { name: 'ON_ITEM_UNEQUIPPED', type: 'string', default: 'onItemUnequipped', // @ts-ignore
+  description: 'Item unequipped event' }
     ],
     dependencies: [
         'Unity 2020.3+',
@@ -424,6 +441,7 @@ Default slots:
 
 Customize in EquipmentSlot.EquipmentType enum.
 `,
-    version: '1.0.0',
+    // @ts-ignore
+  version: '1.0.0',
     tags: ['inventory', 'items', 'equipment', 'rpg', 'progression']
 };

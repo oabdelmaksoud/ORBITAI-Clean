@@ -20,10 +20,11 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
         const { gameDescription, targetEngine, complexity, customization }: MechanicsRequest = req.body;
 
         if (!gameDescription || !targetEngine) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'gameDescription and targetEngine are required'
             });
+            return;
         }
 
         logger.info(`[GameMechanics API] Generation request from user ${req.user?.id}`);
@@ -45,7 +46,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
         logger.error('[GameMechanics API] Generation failed:', error);
         res.status(500).json({
             success: false,
-            error: error.message || 'Failed to generate game mechanics'
+            error: (error instanceof Error ? error.message : String(error)) || 'Failed to generate game mechanics'
         });
     }
 });
@@ -54,7 +55,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
  * GET /api/game-mechanics/templates
  * List all available mechanics templates
  */
-router.get('/templates', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/templates', authenticateToken, async (_req: AuthRequest, res: Response) => {
     try {
         const templates = gameMechanicsService.getAvailableTemplates();
 
@@ -95,10 +96,11 @@ router.get('/templates/:templateId', authenticateToken, async (req: AuthRequest,
         const template = gameMechanicsService.getTemplate(templateId);
 
         if (!template) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Template not found'
             });
+            return;
         }
 
         // Return template with code preview

@@ -28,7 +28,7 @@ export function performanceMonitor(req: Request, res: Response, next: NextFuncti
 
   // Override res.end to capture response time
   const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function(chunk?: any, encoding?: any): any {
     const duration = Date.now() - startTime;
     const statusCode = res.statusCode;
 

@@ -154,8 +154,8 @@ class ApiKeyManagementService {
       return decrypted;
     } catch (error: unknown) {
       // Handle MongoDB timeout errors specifically
-      if (error.name === 'MongoServerError' || error.name === 'MongooseError' || error.message?.includes('buffering timed out')) {
-        logger.error(`MongoDB connection issue while retrieving API key for ${provider}:`, error.message);
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.name : 'Error') : 'Error') : 'Error') === 'MongoServerError' || (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.name : 'Error') : 'Error') : 'Error') === 'MongooseError' || (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))?.includes('buffering timed out')) {
+        logger.error(`MongoDB connection issue while retrieving API key for ${provider}:`, (error instanceof Error ? error.message : String(error)));
       } else {
         logger.error(`Failed to decrypt API key for provider ${provider}:`, error);
       }
@@ -311,7 +311,7 @@ class ApiKeyManagementService {
             config[envVar] = decrypted;
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`Failed to sync key for ${key.provider}:`, error);
       }
     }
@@ -360,11 +360,11 @@ class ApiKeyManagementService {
               logger.info(`Auto-enabled model ${model.id} since the ${provider} API key was migrated.`);
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`Failed to migrate ${provider} API key:`, error);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to run environment API key migration:', error);
     }
   }

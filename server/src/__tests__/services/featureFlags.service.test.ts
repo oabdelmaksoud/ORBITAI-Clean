@@ -9,6 +9,9 @@ import { logger } from '../../utils/logger.js';
 
 // Mock the FeatureFlag model
 vi.mock('../../models/FeatureFlag.model.js');
+vi.mock('../../config/env.js', () => ({
+  default: { nodeEnv: 'test' },
+}));
 vi.mock('../../utils/logger.js', () => ({
   logger: {
     debug: vi.fn(),
@@ -26,9 +29,12 @@ describe('FeatureFlags Service', () => {
       const mockFlag = {
         featureKey: 'test_feature',
         isActive: true,
+        enabledRoles: ['public'],
       };
 
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(mockFlag as any);
+      vi.mocked(FeatureFlag.findOne).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockFlag),
+      } as any);
 
       const result = await isFeatureEnabled('test_feature');
       expect(result).toBe(true);
@@ -40,14 +46,18 @@ describe('FeatureFlags Service', () => {
         isActive: false,
       };
 
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(mockFlag as any);
+      vi.mocked(FeatureFlag.findOne).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockFlag),
+      } as any);
 
       const result = await isFeatureEnabled('test_feature');
       expect(result).toBe(false);
     });
 
     it('should return true when feature flag does not exist (default behavior)', async () => {
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(null);
+      vi.mocked(FeatureFlag.findOne).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(null),
+      } as any);
 
       const result = await isFeatureEnabled('non_existent_feature');
       expect(result).toBe(true);
@@ -55,7 +65,9 @@ describe('FeatureFlags Service', () => {
     });
 
     it('should handle errors gracefully and return true', async () => {
-      vi.mocked(FeatureFlag.findOne).mockRejectedValue(new Error('Database error'));
+      vi.mocked(FeatureFlag.findOne).mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('Database error')),
+      } as any);
 
       const result = await isFeatureEnabled('test_feature');
       expect(result).toBe(true);
@@ -66,9 +78,12 @@ describe('FeatureFlags Service', () => {
       const mockFlag = {
         featureKey: 'test_feature',
         isActive: true,
+        enabledRoles: ['public'],
       };
 
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(mockFlag as any);
+      vi.mocked(FeatureFlag.findOne).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(mockFlag),
+      } as any);
 
       await isFeatureEnabled('TEST_FEATURE');
       expect(FeatureFlag.findOne).toHaveBeenCalledWith({
@@ -77,5 +92,3 @@ describe('FeatureFlags Service', () => {
     });
   });
 });
-
-

@@ -1,8 +1,7 @@
 import express from 'express';
-import { geminiService } from '../services/gemini.service.js';
 import { logger } from '../utils/logger.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
-import { checkFeatureAccess, requireFeatureAccess, FeatureRequest } from '../middleware/featureCheck.js';
+import { requireFeatureAccess, FeatureRequest } from '../middleware/featureCheck.js';
 
 const router = express.Router();
 
@@ -51,7 +50,7 @@ router.post('/search', async (req: AuthRequest & FeatureRequest, res, _next) => 
             const lines = artifact.content.split('\n');
             const matchingLines: number[] = [];
             
-            lines.forEach((line, index) => {
+            lines.forEach((line: any, index: number) => {
               if (line.toLowerCase().includes(queryLower)) {
                 matchingLines.push(index + 1);
               }
@@ -89,7 +88,7 @@ router.post('/search', async (req: AuthRequest & FeatureRequest, res, _next) => 
     res.status(500).json({
       success: false,
       message: 'Failed to search codebase',
-      error: { message: error.message || 'Unknown error' }
+      error: { message: (error instanceof Error ? error.message : String(error)) || 'Unknown error' }
     });
   }
 });

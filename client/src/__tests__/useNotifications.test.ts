@@ -1,8 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import { useNotifications } from '../useNotifications';
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn() as unknown as typeof fetch;
 
 describe('useNotifications', () => {
   const mockNotifications = [
@@ -31,13 +32,13 @@ describe('useNotifications', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockClear();
+    vi.clearAllMocks();
+    (global.fetch as ReturnType<typeof vi.fn>).mockClear();
   });
 
   describe('fetchNotifications', () => {
     it('should fetch notifications successfully', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockNotifications
       });
@@ -53,7 +54,7 @@ describe('useNotifications', () => {
     });
 
     it('should handle fetch error', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch'));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Failed to fetch'));
 
       const { result } = renderHook(() => useNotifications());
 
@@ -66,7 +67,7 @@ describe('useNotifications', () => {
     });
 
     it('should fetch with pagination params', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockNotifications
       });
@@ -84,7 +85,7 @@ describe('useNotifications', () => {
     });
 
     it('should filter unread notifications', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockNotifications
       });
@@ -104,7 +105,7 @@ describe('useNotifications', () => {
 
   describe('markAsRead', () => {
     it('should mark notification as read', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockNotifications
@@ -129,7 +130,7 @@ describe('useNotifications', () => {
     });
 
     it('should update unread count after marking as read', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockNotifications
@@ -157,7 +158,7 @@ describe('useNotifications', () => {
 
   describe('markAllAsRead', () => {
     it('should mark all notifications as read', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockNotifications
@@ -184,7 +185,7 @@ describe('useNotifications', () => {
 
   describe('deleteNotification', () => {
     it('should delete notification', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockNotifications
@@ -209,7 +210,7 @@ describe('useNotifications', () => {
     });
 
     it('should update unread count if deleted notification was unread', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockNotifications
@@ -237,7 +238,7 @@ describe('useNotifications', () => {
 
   describe('deleteAllRead', () => {
     it('should delete all read notifications', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockNotifications
@@ -263,7 +264,7 @@ describe('useNotifications', () => {
 
   describe('getUnreadCount', () => {
     it('should fetch unread count', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ count: 5 })
       });
@@ -280,7 +281,7 @@ describe('useNotifications', () => {
 
   describe('filterByType', () => {
     it('should filter notifications by type', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockNotifications
       });
@@ -313,7 +314,7 @@ describe('useNotifications', () => {
         createdAt: new Date().toISOString()
       };
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockNotifications
       });
@@ -336,7 +337,7 @@ describe('useNotifications', () => {
 
   describe('error handling', () => {
     it('should handle unauthorized error', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: false,
         status: 401,
         json: async () => ({ message: 'Unauthorized' })
@@ -352,7 +353,7 @@ describe('useNotifications', () => {
     });
 
     it('should handle network error gracefully', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
 
       const { result } = renderHook(() => useNotifications());
 
