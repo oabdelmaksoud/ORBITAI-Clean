@@ -148,7 +148,7 @@ class LLMHealthMonitoringService {
    */
   private calculateTrends(
     records: any[],
-    _hours: number
+    hours: number
   ): ProviderHealthMetrics['trends'] {
     // Group by hour
     const hourlyData = new Map<string, {

@@ -5,7 +5,7 @@
 
 import mongoose from 'mongoose';
 import { LLMUsage } from '../../models/LLMUsage.model.js';
-import { modelRegistry } from './models/ModelRegistry.js';
+import { ModelRegistry, modelRegistry } from './models/ModelRegistry.js';
 import { logger } from '../../utils/logger.js';
 
 export interface UsageTrackingData {

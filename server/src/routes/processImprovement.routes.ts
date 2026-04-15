@@ -33,7 +33,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
       methodology,
       tags,
       limit = 20,
-      offset = 0,
+      offset = 0
     } = req.query;
 
     const result = await processImprovementService.searchImprovements({
@@ -43,9 +43,9 @@ router.get('/', async (req: AdminRequest, res, next) => {
       status: status as string,
       agentRole: agentRole as string,
       methodology: methodology as string,
-      tags: tags ? (Array.isArray(tags) ? (tags as string[]) : [tags as string]) : undefined,
+      tags: tags ? (Array.isArray(tags) ? tags as string[] : [tags as string]) : undefined,
       limit: parseInt(limit as string),
-      offset: parseInt(offset as string),
+      offset: parseInt(offset as string)
     });
 
     res.json({
@@ -54,8 +54,8 @@ router.get('/', async (req: AdminRequest, res, next) => {
         improvements: result.improvements,
         total: result.total,
         limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-      },
+        offset: parseInt(offset as string)
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -68,11 +68,14 @@ router.get('/', async (req: AdminRequest, res, next) => {
  */
 router.post('/', async (req: AdminRequest, res, next) => {
   try {
-    const improvement = await processImprovementService.createImprovement(req.body, req.user!.id);
+    const improvement = await processImprovementService.createImprovement(
+      req.body,
+      req.user!.id
+    );
 
     res.status(201).json({
       success: true,
-      data: improvement,
+      data: improvement
     });
   } catch (error: unknown) {
     next(error);
@@ -88,7 +91,15 @@ router.post('/', async (req: AdminRequest, res, next) => {
  */
 router.get('/knowledge-base', async (req: AdminRequest, res, next) => {
   try {
-    const { search, category, status, agentRole, parentId, limit = 20, offset = 0 } = req.query;
+    const {
+      search,
+      category,
+      status,
+      agentRole,
+      parentId,
+      limit = 20,
+      offset = 0
+    } = req.query;
 
     const filter: any = {};
 
@@ -119,7 +130,7 @@ router.get('/knowledge-base', async (req: AdminRequest, res, next) => {
         .limit(limitNum)
         .skip(offsetNum)
         .lean(),
-      KnowledgeBase.countDocuments(filter),
+      KnowledgeBase.countDocuments(filter)
     ]);
 
     res.json({
@@ -128,8 +139,8 @@ router.get('/knowledge-base', async (req: AdminRequest, res, next) => {
         entries,
         total,
         limit: limitNum,
-        offset: offsetNum,
-      },
+        offset: offsetNum
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -155,7 +166,7 @@ router.get('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: entry,
+      data: entry
     });
   } catch (error: unknown) {
     next(error);
@@ -168,11 +179,14 @@ router.get('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
  */
 router.post('/knowledge-base', async (req: AdminRequest, res, next) => {
   try {
-    const entry = await processImprovementService.createKnowledgeBase(req.body, req.user!.id);
+    const entry = await processImprovementService.createKnowledgeBase(
+      req.body,
+      req.user!.id
+    );
 
     res.status(201).json({
       success: true,
-      data: entry,
+      data: entry
     });
   } catch (error: unknown) {
     next(error);
@@ -211,7 +225,7 @@ router.put('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
         changedBy: req.user!.id,
         changeDate: new Date(),
         changeReason: req.body.changeReason || 'Updated by admin',
-        changes: changes.join('; '),
+        changes: changes.join('; ')
       });
     }
 
@@ -219,7 +233,7 @@ router.put('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: entry,
+      data: entry
     });
   } catch (error: unknown) {
     next(error);
@@ -244,7 +258,7 @@ router.delete('/knowledge-base/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'Knowledge base entry archived',
+      message: 'Knowledge base entry archived'
     });
   } catch (error: unknown) {
     next(error);
@@ -263,7 +277,7 @@ router.get('/agent/:agentRole', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: improvements,
+      data: improvements
     });
   } catch (error: unknown) {
     next(error);
@@ -287,7 +301,7 @@ router.get('/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: improvement,
+      data: improvement
     });
   } catch (error: unknown) {
     next(error);
@@ -310,7 +324,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: improvement,
+      data: improvement
     });
   } catch (error: unknown) {
     next(error);
@@ -335,7 +349,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'Process improvement archived',
+      message: 'Process improvement archived'
     });
   } catch (error: unknown) {
     next(error);
@@ -358,8 +372,8 @@ router.post('/:id/approve', async (req: AdminRequest, res, next) => {
       ...improvement.approval,
       status: 'approved',
       approvedBy: req.user!.id,
-      approvedAt: new Date(),
-    } as any;
+      approvedAt: new Date()
+    };
 
     if (improvement.status === 'draft') {
       improvement.status = 'active';
@@ -369,7 +383,7 @@ router.post('/:id/approve', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      data: improvement,
+      data: improvement
     });
   } catch (error: unknown) {
     next(error);
@@ -392,14 +406,14 @@ router.post('/:id/reject', async (req: AdminRequest, res, next) => {
     improvement.approval = {
       ...improvement.approval,
       status: 'rejected',
-      rejectedReason: reason || 'Rejected by admin',
-    } as any;
+      rejectedReason: reason || 'Rejected by admin'
+    };
 
     await improvement.save();
 
     res.json({
       success: true,
-      data: improvement,
+      data: improvement
     });
   } catch (error: unknown) {
     next(error);
@@ -417,7 +431,7 @@ router.post('/:id/usage', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'Usage recorded',
+      message: 'Usage recorded'
     });
   } catch (error: unknown) {
     next(error);
@@ -428,7 +442,7 @@ router.post('/:id/usage', async (req: AdminRequest, res, next) => {
  * POST /api/admin/process-improvements/assess-pending
  * Trigger agent assessment for all pending process improvements
  */
-router.post('/assess-pending', async (_req: AdminRequest, res, next) => {
+router.post('/assess-pending', async (req: AdminRequest, res, next) => {
   try {
     // Trigger assessment in background (don't wait for completion)
     processImprovementService.assessAllPendingImprovements().catch((error: unknown) => {
@@ -437,8 +451,7 @@ router.post('/assess-pending', async (_req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message:
-        'Agent assessment initiated for all pending improvements. This will run in the background.',
+      message: 'Agent assessment initiated for all pending improvements. This will run in the background.'
     });
   } catch (error: unknown) {
     next(error);
@@ -458,16 +471,14 @@ router.post('/:id/assess', async (req: AdminRequest, res, next) => {
     }
 
     // Trigger assessment in background (don't wait for completion)
-    processImprovementService
-      .triggerAgentAssessmentForImprovement(req.params.id)
-      .catch((error: unknown) => {
-        logger.error(`Failed to assess improvement ${req.params.id}:`, error);
-      });
+    processImprovementService.triggerAgentAssessmentForImprovement(req.params.id).catch((error: unknown) => {
+      logger.error(`Failed to assess improvement ${req.params.id}:`, error);
+    });
 
     res.json({
       success: true,
       message: 'Agent assessment initiated. This will run in the background.',
-      data: improvement,
+      data: improvement
     });
   } catch (error: unknown) {
     next(error);
@@ -482,16 +493,14 @@ router.post('/cleanup-stuck', async (req: AdminRequest, res, next) => {
   try {
     const { timeoutMinutes = 5 } = req.body;
 
-    logger.info(
-      `Admin ${req.admin?.email} triggered stuck improvements cleanup (timeout: ${timeoutMinutes} minutes)`
-    );
+    logger.info(`Admin ${req.admin?.email} triggered stuck improvements cleanup (timeout: ${timeoutMinutes} minutes)`);
 
     const result = await processImprovementService.cleanupStuckImprovements(timeoutMinutes);
 
     res.json({
       success: true,
       message: `Cleaned up ${result.cleaned} stuck improvements`,
-      data: result,
+      data: result
     });
   } catch (error: unknown) {
     next(error);
@@ -509,7 +518,7 @@ router.get('/stuck', async (req: AdminRequest, res, next) => {
 
     const stuckImprovements = await ProcessImprovement.find({
       'approval.status': { $in: ['agent-assessing', 'agent-refining'] },
-      updatedAt: { $lt: cutoffTime },
+      updatedAt: { $lt: cutoffTime }
     }).select('_id title approval.status updatedAt createdAt');
 
     res.json({
@@ -517,8 +526,8 @@ router.get('/stuck', async (req: AdminRequest, res, next) => {
       data: {
         count: stuckImprovements.length,
         improvements: stuckImprovements,
-        cutoffTime: cutoffTime.toISOString(),
-      },
+        cutoffTime: cutoffTime.toISOString()
+      }
     });
   } catch (error: unknown) {
     next(error);

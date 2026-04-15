@@ -73,10 +73,7 @@ class SecurityScanningService {
         result.scanDuration = Date.now() - startTime;
         results.push(result);
       } catch (error: unknown) {
-        logger.warn(
-          `Security scan with ${tool} failed:`,
-          error instanceof Error ? error.message : String(error)
-        );
+        logger.warn(`Security scan with ${tool} failed:`, error.message);
         // Continue with other tools
       }
     }
@@ -87,7 +84,7 @@ class SecurityScanningService {
   /**
    * Scan with SonarQube (SAST)
    */
-  private async scanWithSonarQube(_code: string, _language: string): Promise<SecurityScanResult> {
+  private async scanWithSonarQube(code: string, language: string): Promise<SecurityScanResult> {
     // Note: This is a placeholder. Full SonarQube integration requires:
     // 1. SonarQube server running
     // 2. SonarScanner CLI installed
@@ -101,7 +98,7 @@ class SecurityScanningService {
       issues: [],
       summary: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
       scanDuration: 0,
-      timestamp: new Date(),
+      timestamp: new Date()
     };
   }
 
@@ -127,7 +124,7 @@ class SecurityScanningService {
         // Run Snyk test
         const { stdout, stderr } = await execAsync(`snyk test --file=${tempFile}`, {
           cwd: tempDir,
-          timeout: 30000,
+          timeout: 30000
         });
 
         // Parse Snyk output
@@ -138,17 +135,14 @@ class SecurityScanningService {
           issues,
           summary: this.calculateSummary(issues),
           scanDuration: 0,
-          timestamp: new Date(),
+          timestamp: new Date()
         };
       } finally {
         // Cleanup
         await fs.rm(tempDir, { recursive: true, force: true });
       }
     } catch (error: unknown) {
-      logger.warn(
-        'Snyk scan failed, using LLM fallback:',
-        error instanceof Error ? error.message : String(error)
-      );
+      logger.warn('Snyk scan failed, using LLM fallback:', error.message);
       return this.scanWithLLM(code, language);
     }
   }
@@ -174,7 +168,7 @@ class SecurityScanningService {
       try {
         // Run Trivy filesystem scan
         const { stdout } = await execAsync(`trivy fs --format json ${tempDir}`, {
-          timeout: 30000,
+          timeout: 30000
         });
 
         const trivyResult = JSON.parse(stdout);
@@ -185,16 +179,13 @@ class SecurityScanningService {
           issues,
           summary: this.calculateSummary(issues),
           scanDuration: 0,
-          timestamp: new Date(),
+          timestamp: new Date()
         };
       } finally {
         await fs.rm(tempDir, { recursive: true, force: true });
       }
     } catch (error: unknown) {
-      logger.warn(
-        'Trivy scan failed, using LLM fallback:',
-        error instanceof Error ? error.message : String(error)
-      );
+      logger.warn('Trivy scan failed, using LLM fallback:', error.message);
       return this.scanWithLLM(code, language);
     }
   }
@@ -204,8 +195,7 @@ class SecurityScanningService {
    */
   private async scanWithLLM(code: string, language: string): Promise<SecurityScanResult> {
     const { llmRouter } = await import('./llm/LLMRouter.js');
-    // @ts-ignore TS6133
-    const { Type, _Schema } = await import('@google/genai');
+    const { Type, Schema } = await import('@google/genai');
 
     const prompt = `Analyze the following ${language} code for security vulnerabilities:
 
@@ -227,41 +217,41 @@ Identify security issues including:
 
 Return a JSON object with security issues array.`;
 
-    const schema: any = {
-      type: 'object',
+    const schema: Schema = {
+      type: Type.OBJECT,
       properties: {
         issues: {
-          type: 'array',
+          type: Type.ARRAY,
           items: {
-            type: 'object',
+            type: Type.OBJECT,
             properties: {
-              severity: { type: 'string' },
-              type: { type: 'string' },
-              title: { type: 'string' },
-              description: { type: 'string' },
-              file: { type: 'string' },
-              line: { type: 'number' },
-              recommendation: { type: 'string' },
-              cwe: { type: 'string' },
+              severity: { type: Type.STRING },
+              type: { type: Type.STRING },
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              file: { type: Type.STRING },
+              line: { type: Type.NUMBER },
+              recommendation: { type: Type.STRING },
+              cwe: { type: Type.STRING }
             },
-            required: ['severity', 'type', 'title', 'description', 'recommendation'],
-          },
-        },
+            required: ['severity', 'type', 'title', 'description', 'recommendation']
+          }
+        }
       },
-      required: ['issues'],
+      required: ['issues']
     };
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'security_audit',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
+          tools: []
         },
         requiredOutputFormat: 'json',
-        schema,
+        schema
       });
 
       const parsed = JSON.parse(response.content);
@@ -273,7 +263,7 @@ Return a JSON object with security issues array.`;
         file: issue.file,
         line: issue.line,
         recommendation: issue.recommendation,
-        cwe: issue.cwe,
+        cwe: issue.cwe
       }));
 
       return {
@@ -281,7 +271,7 @@ Return a JSON object with security issues array.`;
         issues,
         summary: this.calculateSummary(issues),
         scanDuration: 0,
-        timestamp: new Date(),
+        timestamp: new Date()
       };
     } catch (error: unknown) {
       logger.error('LLM security scan failed:', error);
@@ -290,7 +280,7 @@ Return a JSON object with security issues array.`;
         issues: [],
         summary: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
         scanDuration: 0,
-        timestamp: new Date(),
+        timestamp: new Date()
       };
     }
   }
@@ -298,7 +288,7 @@ Return a JSON object with security issues array.`;
   /**
    * Parse Snyk output
    */
-  private parseSnykOutput(stdout: string, _stderr: string): SecurityIssue[] {
+  private parseSnykOutput(stdout: string, stderr: string): SecurityIssue[] {
     const issues: SecurityIssue[] = [];
 
     // Simple parsing (Snyk output format can vary)
@@ -312,7 +302,7 @@ Return a JSON object with security issues array.`;
         title: match[1],
         description: `Vulnerability in dependency: ${match[1]}`,
         recommendation: `Update dependency to a secure version`,
-        cve: match[2],
+        cve: match[2]
       });
     }
 
@@ -334,11 +324,9 @@ Return a JSON object with security issues array.`;
               type: vuln.Type || 'vulnerability',
               title: vuln.Title || vuln.VulnerabilityID,
               description: vuln.Description || '',
-              recommendation: vuln.FixedVersion
-                ? `Update to version ${vuln.FixedVersion}`
-                : 'Review and update',
+              recommendation: vuln.FixedVersion ? `Update to version ${vuln.FixedVersion}` : 'Review and update',
               cve: vuln.VulnerabilityID,
-              cwe: vuln.CweIDs?.[0],
+              cwe: vuln.CweIDs?.[0]
             });
           }
         }
@@ -379,7 +367,7 @@ Return a JSON object with security issues array.`;
       high: issues.filter(i => i.severity === 'high').length,
       medium: issues.filter(i => i.severity === 'medium').length,
       low: issues.filter(i => i.severity === 'low').length,
-      total: issues.length,
+      total: issues.length
     };
   }
 
@@ -388,14 +376,14 @@ Return a JSON object with security issues array.`;
    */
   private getFileExtension(language: string): string {
     const extensions: Record<string, string> = {
-      typescript: 'ts',
-      javascript: 'js',
-      python: 'py',
-      java: 'java',
-      go: 'go',
-      rust: 'rs',
-      cpp: 'cpp',
-      c: 'c',
+      'typescript': 'ts',
+      'javascript': 'js',
+      'python': 'py',
+      'java': 'java',
+      'go': 'go',
+      'rust': 'rs',
+      'cpp': 'cpp',
+      'c': 'c'
     };
     return extensions[language.toLowerCase()] || 'txt';
   }
@@ -418,11 +406,11 @@ Return a JSON object with security issues array.`;
     }
 
     return {
-      tool: 'aggregated' as any,
+      tool: 'aggregated',
       issues: allIssues,
       summary: this.calculateSummary(allIssues),
       scanDuration: results.reduce((sum, r) => sum + r.scanDuration, 0),
-      timestamp: new Date(),
+      timestamp: new Date()
     };
   }
 }

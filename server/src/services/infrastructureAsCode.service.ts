@@ -5,7 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { llmRouter } from './llm/LLMRouter.js';
-// import { Type, Schema } from '@google/genai';
+import { Type, Schema } from '@google/genai';
 
 export type IaCTool = 'terraform' | 'cloudformation' | 'pulumi';
 
@@ -81,7 +81,7 @@ class InfrastructureAsCodeService {
     const prompt = this.getIaCPrompt(request, tool);
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'code_generation',
         agentRole: 'Integration Agent',
@@ -100,7 +100,7 @@ class InfrastructureAsCodeService {
         resources
       };
     } catch (error: unknown) {
-      logger.warn(`Failed to generate ${tool} template:`, (error instanceof Error ? error.message : String(error)));
+      logger.warn(`Failed to generate ${tool} template:`, error.message);
       return null;
     }
   }
@@ -229,7 +229,7 @@ Use ${request.platform} provider.`;
   /**
    * Get filename for tool
    */
-  private getFilename(tool: IaCTool, _platform: string): string {
+  private getFilename(tool: IaCTool, platform: string): string {
     switch (tool) {
       case 'terraform':
         return 'main.tf';

@@ -25,11 +25,10 @@ router.post('/start', async (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '') || req.body.token;
     
     if (!token) {
-      res.status(401).json({
+      return res.status(401).json({
         success: false,
         message: 'Authentication token required'
       });
-      return;
     }
 
     // Verify token manually (since sendBeacon can't send headers)
@@ -37,12 +36,11 @@ router.post('/start', async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; email: string; plan: string };
       userId = decoded.userId;
-    } catch (error: unknown) {
-      res.status(401).json({
+    } catch (error) {
+      return res.status(401).json({
         success: false,
         message: 'Invalid or expired token'
       });
-      return;
     }
 
     const {
@@ -104,7 +102,7 @@ router.post('/start', async (req, res, next) => {
         maxDuration: 15 * 60 * 1000 // 15 minutes in milliseconds
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -131,7 +129,7 @@ router.post('/stop/:backgroundTaskId', authenticateToken, async (req: AuthReques
       success: true,
       message: 'Background task stopped'
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -160,7 +158,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res, next) => {
         maxDuration: 15 * 60 * 1000
       }))
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -195,7 +193,7 @@ router.get('/:backgroundTaskId/status', authenticateToken, async (req: AuthReque
         isActive: true
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

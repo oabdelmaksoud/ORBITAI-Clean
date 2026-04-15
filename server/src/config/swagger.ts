@@ -6,7 +6,7 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { config } from './env.js';
 
-const options: any = {
+const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {

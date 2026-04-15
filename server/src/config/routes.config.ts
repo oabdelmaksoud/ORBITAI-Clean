@@ -1,4 +1,5 @@
-import { adminRateLimiter, featureFlagsCheckRateLimiter } from '../middleware/rateLimiter.js';
+import { Express } from 'express';
+import { rateLimiter, adminRateLimiter, featureFlagsCheckRateLimiter } from '../middleware/rateLimiter.js';
 
 import route_0 from '../routes/adminAuth.routes.js';
 import route_1 from '../routes/audit.routes.js';
@@ -862,6 +863,11 @@ export const routes: RouteConfig[] = [
     filename: 'codeGenerator.routes',
   },
   {
+    path: '/api/code-generation',
+    router: codeGeneratorRoutes,
+    filename: 'codeGenerator.routes',
+  },
+  {
     path: '/api/frontend-generation',
     router: frontendCodeGeneratorRoutes,
     filename: 'frontendCodeGenerator.routes',
@@ -887,7 +893,17 @@ export const routes: RouteConfig[] = [
     filename: 'deploymentOrchestrator.routes',
   },
   {
+    path: '/api/deployments',
+    router: deploymentRoutes,
+    filename: 'deploymentOrchestrator.routes',
+  },
+  {
     path: '/api/v1/llm-usage',
+    router: llmUsageUserRoutes,
+    filename: 'llmUsage.routes',
+  },
+  {
+    path: '/api/llm-usage',
     router: llmUsageUserRoutes,
     filename: 'llmUsage.routes',
   },

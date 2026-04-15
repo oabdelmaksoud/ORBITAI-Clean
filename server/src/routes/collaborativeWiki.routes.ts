@@ -8,6 +8,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { collaborativeWikiService } from '../services/collaborativeWiki.service.js';
 import { CollaborativeDocument } from '../models/CollaborativeDocument.model.js';
+import { logger } from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 const router = express.Router();

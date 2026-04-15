@@ -8,8 +8,7 @@ import { z } from 'zod';
 /**
  * Agent role validation schema
  */
-// @ts-ignore TS6133
-const _agentRoleSchema = z.enum([
+const agentRoleSchema = z.enum([
   'Orchestrator',
   'Requirements Agent',
   'UI/UX Designer',

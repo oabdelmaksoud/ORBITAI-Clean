@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import healthRoutes from '../../routes/health.routes.js';
+import mongoose from 'mongoose';
 
 const app = express();
 app.use(express.json());
@@ -15,29 +16,32 @@ describe('Health Routes', () => {
 
     expect(response.body).toHaveProperty('status', 'ok');
     expect(response.body).toHaveProperty('timestamp');
+    expect(response.body).toHaveProperty('database');
     expect(response.body).toHaveProperty('uptime');
+    expect(response.body).toHaveProperty('environment');
   });
 
   it('should return detailed health check', async () => {
     const response = await request(app)
-      .get('/api/health/detailed');
+      .get('/api/health/detailed')
+      .expect(200);
 
-    // May return 200 or 503 depending on database connection state
-    expect([200, 503]).toContain(response.status);
-    expect(response.body).toHaveProperty('status');
+    expect(response.body).toHaveProperty('status', 'ok');
     expect(response.body).toHaveProperty('timestamp');
-    expect(response.body).toHaveProperty('uptime');
-    expect(response.body).toHaveProperty('dependencies');
-    expect(response.body.dependencies).toHaveProperty('database');
+    expect(response.body).toHaveProperty('services');
+    expect(response.body.services).toHaveProperty('database');
+    expect(response.body.services).toHaveProperty('api');
+    expect(response.body).toHaveProperty('system');
+    expect(response.body.system).toHaveProperty('memory');
+    expect(response.body.system).toHaveProperty('uptime');
   });
 
-  it('should return basic health status fields', async () => {
+  it('should show database connection status', async () => {
     const response = await request(app)
       .get('/api/health')
       .expect(200);
 
-    expect(response.body.status).toBe('ok');
-    expect(typeof response.body.timestamp).toBe('string');
-    expect(typeof response.body.uptime).toBe('number');
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    expect(response.body.database).toBe(dbStatus);
   });
 });

@@ -34,9 +34,7 @@ export class E2BService {
     // Get API key from database only
     const apiKey = await this.getApiKey();
     if (!apiKey) {
-      throw new Error(
-        'E2B API key is not configured. Please add it via Admin Console → Settings → API Keys'
-      );
+      throw new Error('E2B API key is not configured. Please add it via Admin Console → Settings → API Keys');
     }
 
     // If sandbox exists but API key changed, recreate it
@@ -46,7 +44,7 @@ export class E2BService {
 
     if (!this.sandbox) {
       this.sandbox = await Sandbox.create({
-        apiKey: apiKey,
+        apiKey: apiKey
       });
     }
 
@@ -59,12 +57,10 @@ export class E2BService {
   async writeFile(path: string, content: string): Promise<string> {
     try {
       const sandbox = await this.getSandbox();
-      await (sandbox as any).filesystem.write(path, content);
+      await sandbox.filesystem.write(path, content);
       return `File written successfully: ${path}`;
-    } catch (error: unknown) {
-      throw new Error(
-        `Failed to write file: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error) {
+      throw new Error(`Failed to write file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -74,12 +70,10 @@ export class E2BService {
   async readFile(path: string): Promise<string> {
     try {
       const sandbox = await this.getSandbox();
-      const content = await (sandbox as any).filesystem.read(path);
+      const content = await sandbox.filesystem.read(path);
       return content;
-    } catch (error: unknown) {
-      throw new Error(
-        `Failed to read file: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error) {
+      throw new Error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -89,12 +83,10 @@ export class E2BService {
   async listDir(path: string = '/'): Promise<string[]> {
     try {
       const sandbox = await this.getSandbox();
-      const entries = await (sandbox as any).filesystem.list(path);
-      return entries.map((entry: any) => entry.name);
-    } catch (error: unknown) {
-      throw new Error(
-        `Failed to list directory: ${error instanceof Error ? error.message : String(error)}`
-      );
+      const entries = await sandbox.filesystem.list(path);
+      return entries.map(entry => entry.name);
+    } catch (error) {
+      throw new Error(`Failed to list directory: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -115,10 +107,7 @@ export class E2BService {
 
       // Use Python subprocess to execute shell commands
       // Escape command properly for Python
-      const escapedCommand = command
-        .replace(/\\/g, '\\\\')
-        .replace(/"/g, '\\"')
-        .replace(/\$/g, '\\$');
+      const escapedCommand = command.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$');
       const pythonCode = `import subprocess
 import sys
 
@@ -163,31 +152,25 @@ except Exception as e:
         } else if (typeof result.logs === 'string') {
           output = result.logs;
         }
-      } else if ((result as any).output) {
-        output = String((result as any).output);
+      } else if (result.output) {
+        output = String(result.output);
       }
 
       // Try to get error
-      if ((result as any).error) {
-        error = String((result as any).error);
-      } else if (
-        result.results &&
-        Array.isArray(result.results) &&
-        (result.results[0] as any)?.error
-      ) {
-        error = String((result.results[0] as any).error);
-      } else if ((result as any).exitCode !== 0 && (result as any).exitCode !== undefined) {
-        error = `Command exited with code ${(result as any).exitCode}`;
+      if (result.error) {
+        error = String(result.error);
+      } else if (result.results && Array.isArray(result.results) && result.results[0]?.error) {
+        error = String(result.results[0].error);
+      } else if (result.exitCode !== 0 && result.exitCode !== undefined) {
+        error = `Command exited with code ${result.exitCode}`;
       }
 
       return {
         output: output.trim(),
-        error: error?.trim(),
+        error: error?.trim()
       };
-    } catch (error: unknown) {
-      throw new Error(
-        `Failed to execute command: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } catch (error) {
+      throw new Error(`Failed to execute command: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -268,18 +251,18 @@ except Exception as e:
           images.push(...imageArray);
           // Remove the marker from output
           output = output.replace(/__NOTEBOOK_IMAGES__:\[.*?\]\n?/, '');
-        } catch (e: unknown) {
+        } catch (e) {
           // Failed to parse images
         }
       }
 
       // Extract error
-      if ((result as any).error) {
-        error = String((result as any).error);
+      if (result.error) {
+        error = String(result.error);
       } else if (result.results && Array.isArray(result.results)) {
         const errorResult = result.results.find((r: any) => r.error);
         if (errorResult) {
-          error = String((errorResult as any).error);
+          error = String(errorResult.error);
         }
       }
 
@@ -290,7 +273,7 @@ except Exception as e:
           if (jsonMatch) {
             data = JSON.parse(jsonMatch[0]);
           }
-        } catch (e: unknown) {
+        } catch (e) {
           // Not JSON
         }
       }
@@ -299,7 +282,7 @@ except Exception as e:
         output: output.trim(),
         error: error?.trim(),
         images: images.length > 0 ? images : undefined,
-        data: data,
+        data: data
       };
     } catch (err: any) {
       throw new Error(`Failed to execute notebook cell: ${err.message || String(err)}`);

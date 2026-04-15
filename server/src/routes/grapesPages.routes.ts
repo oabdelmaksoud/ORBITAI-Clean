@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
-import { GrapesPage} from '../models/GrapesPage.model.js';
+import { GrapesPage, IGrapesPage } from '../models/GrapesPage.model.js';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
@@ -43,7 +43,7 @@ router.get('/', async (req: Request, res: Response) => {
     logger.error('Failed to fetch pages:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to fetch pages' },
+      error: { message: error.message || 'Failed to fetch pages' },
     });
   }
 });
@@ -59,11 +59,10 @@ router.get('/:slug', async (req: Request, res: Response) => {
     const page = await GrapesPage.findOne({ slug });
     
     if (!page) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: { message: 'Page not found' },
       });
-      return;
     }
 
     res.json({
@@ -74,7 +73,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
     logger.error('Failed to fetch page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to fetch page' },
+      error: { message: error.message || 'Failed to fetch page' },
     });
   }
 });
@@ -88,11 +87,10 @@ router.post('/', requireAdmin, async (req: AdminRequest, res: Response) => {
     const { name, slug, html, css, components, styles, metadata, status } = req.body;
 
     if (!name) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: { message: 'Page name is required' },
       });
-      return;
     }
 
     // Generate slug from name if not provided
@@ -104,11 +102,10 @@ router.post('/', requireAdmin, async (req: AdminRequest, res: Response) => {
     // Check if slug already exists
     const existingPage = await GrapesPage.findOne({ slug: pageSlug });
     if (existingPage) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: { message: 'A page with this slug already exists' },
       });
-      return;
     }
 
     const page = new GrapesPage({
@@ -120,12 +117,12 @@ router.post('/', requireAdmin, async (req: AdminRequest, res: Response) => {
       styles: styles || '[]',
       metadata: metadata || {},
       status: status || 'draft',
-      createdBy: req.admin?.id,
+      createdBy: req.admin?.userId,
     });
 
     await page.save();
 
-    logger.info(`Page created: ${page.slug} by admin ${req.admin?.id}`);
+    logger.info(`Page created: ${page.slug} by admin ${req.admin?.userId}`);
 
     res.status(201).json({
       success: true,
@@ -135,7 +132,7 @@ router.post('/', requireAdmin, async (req: AdminRequest, res: Response) => {
     logger.error('Failed to create page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to create page' },
+      error: { message: error.message || 'Failed to create page' },
     });
   }
 });
@@ -152,11 +149,10 @@ router.put('/:slug', requireAdmin, async (req: AdminRequest, res: Response) => {
     const page = await GrapesPage.findOne({ slug });
     
     if (!page) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: { message: 'Page not found' },
       });
-      return;
     }
 
     // Update fields
@@ -173,11 +169,11 @@ router.put('/:slug', requireAdmin, async (req: AdminRequest, res: Response) => {
       }
     }
     
-    page.updatedBy = req.admin?.id as any;
+    page.updatedBy = req.admin?.userId as any;
 
     await page.save();
 
-    logger.info(`Page updated: ${page.slug} by admin ${req.admin?.id}`);
+    logger.info(`Page updated: ${page.slug} by admin ${req.admin?.userId}`);
 
     res.json({
       success: true,
@@ -187,7 +183,7 @@ router.put('/:slug', requireAdmin, async (req: AdminRequest, res: Response) => {
     logger.error('Failed to update page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to update page' },
+      error: { message: error.message || 'Failed to update page' },
     });
   }
 });
@@ -202,24 +198,22 @@ router.delete('/:slug', requireAdmin, async (req: AdminRequest, res: Response) =
 
     // Prevent deleting the home page
     if (slug === 'home') {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: { message: 'Cannot delete the home page' },
       });
-      return;
     }
 
     const page = await GrapesPage.findOneAndDelete({ slug });
     
     if (!page) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: { message: 'Page not found' },
       });
-      return;
     }
 
-    logger.info(`Page deleted: ${slug} by admin ${req.admin?.id}`);
+    logger.info(`Page deleted: ${slug} by admin ${req.admin?.userId}`);
 
     res.json({
       success: true,
@@ -229,7 +223,7 @@ router.delete('/:slug', requireAdmin, async (req: AdminRequest, res: Response) =
     logger.error('Failed to delete page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to delete page' },
+      error: { message: error.message || 'Failed to delete page' },
     });
   }
 });
@@ -245,20 +239,19 @@ router.post('/:slug/publish', requireAdmin, async (req: AdminRequest, res: Respo
     const page = await GrapesPage.findOne({ slug });
     
     if (!page) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: { message: 'Page not found' },
       });
-      return;
     }
 
     page.status = 'published';
     page.publishedAt = new Date();
-    page.updatedBy = req.admin?.id as any;
+    page.updatedBy = req.admin?.userId as any;
 
     await page.save();
 
-    logger.info(`Page published: ${slug} by admin ${req.admin?.id}`);
+    logger.info(`Page published: ${slug} by admin ${req.admin?.userId}`);
 
     res.json({
       success: true,
@@ -268,7 +261,7 @@ router.post('/:slug/publish', requireAdmin, async (req: AdminRequest, res: Respo
     logger.error('Failed to publish page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to publish page' },
+      error: { message: error.message || 'Failed to publish page' },
     });
   }
 });
@@ -284,19 +277,18 @@ router.post('/:slug/unpublish', requireAdmin, async (req: AdminRequest, res: Res
     const page = await GrapesPage.findOne({ slug });
     
     if (!page) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: { message: 'Page not found' },
       });
-      return;
     }
 
     page.status = 'draft';
-    page.updatedBy = req.admin?.id as any;
+    page.updatedBy = req.admin?.userId as any;
 
     await page.save();
 
-    logger.info(`Page unpublished: ${slug} by admin ${req.admin?.id}`);
+    logger.info(`Page unpublished: ${slug} by admin ${req.admin?.userId}`);
 
     res.json({
       success: true,
@@ -306,7 +298,7 @@ router.post('/:slug/unpublish', requireAdmin, async (req: AdminRequest, res: Res
     logger.error('Failed to unpublish page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to unpublish page' },
+      error: { message: error.message || 'Failed to unpublish page' },
     });
   }
 });
@@ -323,11 +315,10 @@ router.post('/:slug/duplicate', requireAdmin, async (req: AdminRequest, res: Res
     const originalPage = await GrapesPage.findOne({ slug });
     
     if (!originalPage) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: { message: 'Page not found' },
       });
-      return;
     }
 
     // Generate new slug
@@ -336,11 +327,10 @@ router.post('/:slug/duplicate', requireAdmin, async (req: AdminRequest, res: Res
     // Check if new slug exists
     const existingPage = await GrapesPage.findOne({ slug: duplicateSlug });
     if (existingPage) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: { message: 'A page with this slug already exists' },
       });
-      return;
     }
 
     const duplicatePage = new GrapesPage({
@@ -352,12 +342,12 @@ router.post('/:slug/duplicate', requireAdmin, async (req: AdminRequest, res: Res
       styles: originalPage.styles,
       metadata: { ...originalPage.metadata },
       status: 'draft',
-      createdBy: req.admin?.id,
+      createdBy: req.admin?.userId,
     });
 
     await duplicatePage.save();
 
-    logger.info(`Page duplicated: ${slug} -> ${duplicateSlug} by admin ${req.admin?.id}`);
+    logger.info(`Page duplicated: ${slug} -> ${duplicateSlug} by admin ${req.admin?.userId}`);
 
     res.status(201).json({
       success: true,
@@ -367,7 +357,7 @@ router.post('/:slug/duplicate', requireAdmin, async (req: AdminRequest, res: Res
     logger.error('Failed to duplicate page:', error);
     res.status(500).json({
       success: false,
-      error: { message: (error instanceof Error ? error.message : String(error)) || 'Failed to duplicate page' },
+      error: { message: error.message || 'Failed to duplicate page' },
     });
   }
 });

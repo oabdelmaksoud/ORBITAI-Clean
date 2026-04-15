@@ -3,6 +3,7 @@
  * Extracted prompt construction utilities from enhancedPreviewGenerator.service.ts
  */
 
+import { ExtractedRequirements } from './previewTypes.js';
 
 /**
  * Detect project domain/subtype for better prompt customization
@@ -54,7 +55,7 @@ export function detectProjectDomain(userGoal: string, projectType: string): stri
 /**
  * Get domain-specific prompt additions
  */
-export function getDomainSpecificPrompt(_projectType: string, domain: string): string {
+export function getDomainSpecificPrompt(projectType: string, domain: string): string {
     const prompts: Record<string, string> = {
         'puzzle-game': `
 GAME MECHANICS:
@@ -189,7 +190,7 @@ export function shouldAutoGenerateAdmin(userGoal: string, features: string[]): b
 /**
  * Infer admin features based on user goal and existing features
  */
-export function inferAdminFeatures(userGoal: string, _features: string[]): string[] {
+export function inferAdminFeatures(userGoal: string, features: string[]): string[] {
     const goal = userGoal.toLowerCase();
     const inferred: string[] = [];
 

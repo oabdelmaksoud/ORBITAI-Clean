@@ -28,7 +28,7 @@ const syncIndexes = async () => {
 
         await mongoose.disconnect();
         console.log('Disconnected.');
-    } catch (error: unknown) {
+    } catch (error) {
         console.error('Error syncing indexes:', error);
         process.exit(1);
     }

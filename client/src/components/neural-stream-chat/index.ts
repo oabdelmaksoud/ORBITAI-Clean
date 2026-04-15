@@ -3,7 +3,6 @@
 
 // Types
 export * from '@orbitai/shared';
-export type { NeuralStreamChatProps, BrainstormingData } from './types';
 
 // Utilities
 export * from './utils';

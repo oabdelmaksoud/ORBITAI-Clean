@@ -62,7 +62,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
     logger.error('Get tools error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get tools'
+      error: error.message || 'Failed to get tools'
     });
   }
 });
@@ -92,7 +92,7 @@ router.post('/discover', authenticateToken, async (_req: Request, res: Response)
     logger.error('Discover tools error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to discover tools'
+      error: error.message || 'Failed to discover tools'
     });
   }
 });
@@ -123,11 +123,10 @@ router.get('/:toolId', authenticateToken, async (req: Request, res: Response) =>
     const tool = dynamicToolingService.getTool(toolId);
 
     if (!tool) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         error: 'Tool not found'
       });
-      return;
     }
 
     res.json({
@@ -138,7 +137,7 @@ router.get('/:toolId', authenticateToken, async (req: Request, res: Response) =>
     logger.error('Get tool error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get tool'
+      error: error.message || 'Failed to get tool'
     });
   }
 });
@@ -177,7 +176,7 @@ router.get('/category/:category', authenticateToken, async (req: Request, res: R
     logger.error('Get tools by category error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get tools'
+      error: error.message || 'Failed to get tools'
     });
   }
 });
@@ -206,7 +205,7 @@ router.get('/stats/overview', authenticateToken, async (_req: Request, res: Resp
     logger.error('Get tool statistics error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get statistics'
+      error: error.message || 'Failed to get statistics'
     });
   }
 });
@@ -256,7 +255,7 @@ router.post('/search', authenticateToken, async (req: Request, res: Response) =>
     logger.error('Search tools error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to search tools'
+      error: error.message || 'Failed to search tools'
     });
   }
 });

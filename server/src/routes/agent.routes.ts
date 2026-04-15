@@ -71,7 +71,7 @@ router.post('/execute', checkFeatureAccess('agent_creation'), validate(executeAg
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -128,7 +128,7 @@ router.get('/status/:agentId', async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

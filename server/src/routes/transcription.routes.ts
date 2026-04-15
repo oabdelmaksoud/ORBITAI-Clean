@@ -3,7 +3,7 @@
  * Endpoints for managing voice conversation transcriptions
  */
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { ChatConversation } from '../models/ChatConversation.model.js';
 import { BrainstormingRoom } from '../models/BrainstormingRoom.model.js';
@@ -22,14 +22,12 @@ router.get('/conversations/:conversationId', authenticateToken, async (req: Auth
 
     const conversation = await ChatConversation.findOne({ _id: conversationId });
     if (!conversation) {
-      res.status(404).json({ error: 'Conversation not found' });
-      return;
+      return res.status(404).json({ error: 'Conversation not found' });
     }
 
     // Check access
     if (conversation.userId && conversation.userId !== userId) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const transcripts = conversation.metadata?.voiceTranscripts || [];
@@ -41,7 +39,7 @@ router.get('/conversations/:conversationId', authenticateToken, async (req: Auth
     });
   } catch (error: unknown) {
     logger.error('Error fetching transcriptions:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -56,20 +54,17 @@ router.post('/conversations/:conversationId', authenticateToken, async (req: Aut
     const userId = req.user?.id;
 
     if (!userText && !aiText) {
-      res.status(400).json({ error: 'At least userText or aiText is required' });
-      return;
+      return res.status(400).json({ error: 'At least userText or aiText is required' });
     }
 
     const conversation = await ChatConversation.findOne({ _id: conversationId });
     if (!conversation) {
-      res.status(404).json({ error: 'Conversation not found' });
-      return;
+      return res.status(404).json({ error: 'Conversation not found' });
     }
 
     // Check access
     if (conversation.userId && conversation.userId !== userId) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     // Initialize metadata if needed
@@ -98,7 +93,7 @@ router.post('/conversations/:conversationId', authenticateToken, async (req: Aut
     });
   } catch (error: unknown) {
     logger.error('Error adding transcription:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -112,8 +107,7 @@ router.get('/search', authenticateToken, async (req: AuthRequest, res: Response)
     const userId = req.user?.id;
 
     if (!query || typeof query !== 'string') {
-      res.status(400).json({ error: 'Search query is required' });
-      return;
+      return res.status(400).json({ error: 'Search query is required' });
     }
 
     const searchRegex = new RegExp(query as string, 'i');
@@ -163,8 +157,7 @@ router.get('/search', authenticateToken, async (req: AuthRequest, res: Response)
 
     // Search in brainstorming rooms
     if (roomId) {
-      // @ts-ignore TS6133
-      const _room = await BrainstormingRoom.findOne({
+      const room = await BrainstormingRoom.findOne({
         id: roomId,
         $or: [
           { createdBy: userId },
@@ -183,7 +176,7 @@ router.get('/search', authenticateToken, async (req: AuthRequest, res: Response)
     });
   } catch (error: unknown) {
     logger.error('Error searching transcriptions:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -199,14 +192,12 @@ router.get('/conversations/:conversationId/export', authenticateToken, async (re
 
     const conversation = await ChatConversation.findOne({ _id: conversationId });
     if (!conversation) {
-      res.status(404).json({ error: 'Conversation not found' });
-      return;
+      return res.status(404).json({ error: 'Conversation not found' });
     }
 
     // Check access
     if (conversation.userId && conversation.userId !== userId) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const transcripts = conversation.metadata?.voiceTranscripts || [];
@@ -215,7 +206,7 @@ router.get('/conversations/:conversationId/export', authenticateToken, async (re
       res.json({ transcripts });
     } else {
       // Export as plain text
-      const textContent = transcripts.map((t: any, _index: number) => {
+      const textContent = transcripts.map((t: any, index: number) => {
         const date = new Date(t.timestamp).toLocaleString();
         return `[${date}] User: ${t.userText}\n[${date}] AI: ${t.aiText}\n`;
       }).join('\n');
@@ -226,7 +217,7 @@ router.get('/conversations/:conversationId/export', authenticateToken, async (re
     }
   } catch (error: unknown) {
     logger.error('Error exporting transcriptions:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: error.message });
   }
 });
 

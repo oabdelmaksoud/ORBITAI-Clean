@@ -3,7 +3,7 @@
  * Uses AI agents to assess and approve process improvements automatically
  */
 
-import { IProcessImprovement } from '../models/ProcessImprovement.model.js';
+import { ProcessImprovement, IProcessImprovement } from '../models/ProcessImprovement.model.js';
 import { llmRouter } from './llm/LLMRouter.js';
 import { logger } from '../utils/logger.js';
 
@@ -81,7 +81,7 @@ class ProcessImprovementAgentAssessmentService {
       // Default to approval if assessment fails (fail-safe)
       return {
         decision: 'approve',
-        reasoning: `Assessment service unavailable (${(error instanceof Error ? error.message : String(error))}), defaulting to approval`,
+        reasoning: `Assessment service unavailable (${error.message}), defaulting to approval`,
         confidence: 50
       };
     }
@@ -154,7 +154,7 @@ class ProcessImprovementAgentAssessmentService {
       }
       
       // Re-throw the error so calling code knows refinement failed
-      throw new Error(`Refinement failed: ${(error instanceof Error ? error.message : String(error))}`);
+      throw new Error(`Refinement failed: ${error.message}`);
     }
   }
 

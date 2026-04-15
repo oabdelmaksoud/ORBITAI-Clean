@@ -3,10 +3,9 @@
  * Tests routing signals, weighted scoring, and context-aware cost filtering
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { taskAnalyzer, buildRoutingSignals, TaskAnalysis } from '../TaskAnalyzer.js';
 import { routingEngine } from '../RoutingEngine.js';
-// @ts-ignore TS6192
 import { modelRegistry, ModelCapabilities } from '../models/ModelRegistry.js';
 
 describe('LLM Router Enhancements', () => {
@@ -36,7 +35,7 @@ describe('LLM Router Enhancements', () => {
     });
 
     it('should detect long-context requirement from prompt', () => {
-      const prompt = 'Analyze this large document with long context and comprehensive review';
+      const prompt = 'Analyze this entire codebase and the full document';
       const analysis = taskAnalyzer.analyzeTask(prompt);
       expect(analysis.requiredCapabilities).toContain('longContext');
     });
@@ -59,18 +58,18 @@ describe('LLM Router Enhancements', () => {
         costSensitivity: 'high',
         estimatedTokens: 1000,
         requiredCapabilities: [],
-        priority: 2,
+        priority: 2
       };
 
       const context = {
         packageLimits: {
-          maxMonthlyBudget: 100,
+          maxMonthlyBudget: 100
         },
         projectState: {
           currentPhase: 'development',
           budgetUsed: 85, // 85% used
-          tokensUsed: 100000,
-        },
+          tokensUsed: 100000
+        }
       };
 
       const signals = buildRoutingSignals(task, context);
@@ -88,7 +87,7 @@ describe('LLM Router Enhancements', () => {
         costSensitivity: 'medium',
         estimatedTokens: 5000,
         requiredCapabilities: ['codeGeneration'],
-        priority: 4,
+        priority: 4
       };
 
       const signals = buildRoutingSignals(task);
@@ -105,7 +104,7 @@ describe('LLM Router Enhancements', () => {
         costSensitivity: 'medium',
         estimatedTokens: 500,
         requiredCapabilities: [],
-        priority: 1,
+        priority: 1
       };
 
       const signals = buildRoutingSignals(task);
@@ -123,7 +122,7 @@ describe('LLM Router Enhancements', () => {
         costSensitivity: 'medium',
         estimatedTokens: 1000,
         requiredCapabilities: [],
-        priority: 3,
+        priority: 3
       };
 
       const signals = buildRoutingSignals(task);

@@ -22,20 +22,18 @@ router.post('/benchmark/run', async (req: Request, res: Response) => {
     const { modelId, taskType, timeoutMs, iterations } = req.body;
 
     if (!modelId || !taskType) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'modelId and taskType are required'
       });
-      return;
     }
 
     // Check if benchmark is already running
     if (modelBenchmarkService.isBenchmarkRunning(modelId, taskType)) {
-      res.status(409).json({
+      return res.status(409).json({
         success: false,
         message: 'Benchmark already running for this model/task combination'
       });
-      return;
     }
 
     const result = await modelBenchmarkService.runBenchmark({
@@ -55,7 +53,7 @@ router.post('/benchmark/run', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to run benchmark',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -81,7 +79,7 @@ router.get('/benchmark/results', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve benchmark results',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -106,7 +104,7 @@ router.get('/benchmark/summary/:modelId', async (req: Request, res: Response) =>
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve benchmark summary',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -130,7 +128,7 @@ router.get('/benchmark/compare/:taskType', async (req: Request, res: Response) =
     res.status(500).json({
       success: false,
       message: 'Failed to compare models',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -155,7 +153,7 @@ router.get('/benchmark/trends/:modelId/:taskType', async (req: Request, res: Res
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve benchmark trends',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -164,7 +162,7 @@ router.get('/benchmark/trends/:modelId/:taskType', async (req: Request, res: Res
  * GET /api/admin/llm-router/benchmark/task-types
  * Get available task types for benchmarking
  */
-router.get('/benchmark/task-types', async (_req: Request, res: Response) => {
+router.get('/benchmark/task-types', async (req: Request, res: Response) => {
   try {
     const taskTypes = modelBenchmarkService.getAvailableTaskTypes();
 
@@ -177,7 +175,7 @@ router.get('/benchmark/task-types', async (_req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve task types',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });

@@ -70,7 +70,7 @@ async function fetchLatestGameWireframe() {
             console.log(`Size: ${adminWireframe.length} characters`);
         }
 
-    } catch (error: unknown) {
+    } catch (error) {
         console.error('Error fetching wireframe:', error);
     } finally {
         await prisma.$disconnect();

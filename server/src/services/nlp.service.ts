@@ -56,7 +56,7 @@ class NLPService {
       const wordFreq = this.calculateWordFrequency(content);
       const sentenceScores = sentences.map(sentence => ({
         sentence,
-        score: this.scoreSentence(sentence, wordFreq),
+        score: this.scoreSentence(sentence, wordFreq)
       }));
 
       // Select top sentences
@@ -84,54 +84,11 @@ class NLPService {
       // Remove stop words and extract meaningful terms
       const words = this.tokenize(content);
       const stopWords = new Set([
-        'the',
-        'a',
-        'an',
-        'and',
-        'or',
-        'but',
-        'in',
-        'on',
-        'at',
-        'to',
-        'for',
-        'of',
-        'with',
-        'by',
-        'from',
-        'as',
-        'is',
-        'was',
-        'are',
-        'were',
-        'be',
-        'been',
-        'being',
-        'have',
-        'has',
-        'had',
-        'do',
-        'does',
-        'did',
-        'will',
-        'would',
-        'should',
-        'could',
-        'may',
-        'might',
-        'must',
-        'can',
-        'this',
-        'that',
-        'these',
-        'those',
-        'i',
-        'you',
-        'he',
-        'she',
-        'it',
-        'we',
-        'they',
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+        'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be',
+        'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+        'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this',
+        'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'
       ]);
 
       // Filter and count
@@ -166,11 +123,11 @@ class NLPService {
 
       // Extract potential entities (capitalized words/phrases)
       const words = this.tokenize(content);
-      // const _capitalized = words.filter(w => /^[A-Z]/.test(w) && w.length > 2);
+      const capitalized = words.filter(w => /^[A-Z]/.test(w) && w.length > 2);
 
       // Group consecutive capitalized words (likely entities)
       let currentEntity = '';
-      // let const _startIndex = 0;
+      let startIndex = 0;
 
       for (let i = 0; i < words.length; i++) {
         if (/^[A-Z]/.test(words[i]) && words[i].length > 2) {
@@ -178,14 +135,14 @@ class NLPService {
             currentEntity += ' ' + words[i];
           } else {
             currentEntity = words[i];
-            void i; // startIndex tracking
+            startIndex = i;
           }
         } else {
           if (currentEntity && currentEntity.split(' ').length >= 1) {
             entities.push({
               text: currentEntity,
               label: this.inferEntityType(currentEntity),
-              confidence: 0.7,
+              confidence: 0.7
             });
           }
           currentEntity = '';
@@ -197,12 +154,14 @@ class NLPService {
         entities.push({
           text: currentEntity,
           label: this.inferEntityType(currentEntity),
-          confidence: 0.7,
+          confidence: 0.7
         });
       }
 
       // Remove duplicates
-      const unique = Array.from(new Map(entities.map(e => [e.text.toLowerCase(), e])).values());
+      const unique = Array.from(
+        new Map(entities.map(e => [e.text.toLowerCase(), e])).values()
+      );
 
       return unique;
     } catch (error: unknown) {
@@ -218,46 +177,15 @@ class NLPService {
     try {
       // Simple sentiment analysis (can be enhanced with ML models)
       const positiveWords = new Set([
-        'good',
-        'great',
-        'excellent',
-        'amazing',
-        'wonderful',
-        'fantastic',
-        'perfect',
-        'best',
-        'love',
-        'like',
-        'happy',
-        'pleased',
-        'satisfied',
-        'success',
-        'successful',
-        'improve',
-        'improved',
-        'better',
-        'best',
+        'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic',
+        'perfect', 'best', 'love', 'like', 'happy', 'pleased', 'satisfied',
+        'success', 'successful', 'improve', 'improved', 'better', 'best'
       ]);
 
       const negativeWords = new Set([
-        'bad',
-        'terrible',
-        'awful',
-        'horrible',
-        'worst',
-        'hate',
-        'dislike',
-        'unhappy',
-        'disappointed',
-        'failed',
-        'failure',
-        'problem',
-        'issue',
-        'error',
-        'bug',
-        'broken',
-        'worse',
-        'poor',
+        'bad', 'terrible', 'awful', 'horrible', 'worst', 'hate', 'dislike',
+        'unhappy', 'disappointed', 'failed', 'failure', 'problem', 'issue',
+        'error', 'bug', 'broken', 'worse', 'poor'
       ]);
 
       const words = this.tokenize(content.toLowerCase());
@@ -282,14 +210,14 @@ class NLPService {
       return {
         score,
         label,
-        confidence: Math.abs(score),
+        confidence: Math.abs(score)
       };
     } catch (error: unknown) {
       logger.error('Failed to analyze sentiment:', error);
       return {
         score: 0,
         label: 'neutral',
-        confidence: 0,
+        confidence: 0
       };
     }
   }
@@ -305,7 +233,7 @@ class NLPService {
         this.extractEntities(content),
         this.analyzeSentiment(content),
         this.extractTopics(content),
-        this.calculateReadability(content),
+        this.calculateReadability(content)
       ]);
 
       return {
@@ -314,7 +242,7 @@ class NLPService {
         entities,
         sentiment,
         topics,
-        readability,
+        readability
       };
     } catch (error: unknown) {
       logger.error('Failed to analyze content:', error);
@@ -330,12 +258,10 @@ class NLPService {
     const keywords = await this.extractKeywords(content, 20);
     const wordFreq = this.calculateWordFrequency(content);
 
-    return keywords
-      .map(keyword => ({
-        topic: keyword,
-        relevance: (wordFreq.get(keyword.toLowerCase()) || 0) / 10,
-      }))
-      .slice(0, 5);
+    return keywords.map(keyword => ({
+      topic: keyword,
+      relevance: (wordFreq.get(keyword.toLowerCase()) || 0) / 10
+    })).slice(0, 5);
   }
 
   /**
@@ -346,8 +272,9 @@ class NLPService {
     const words = this.tokenize(content);
 
     const averageSentenceLength = sentences.length > 0 ? words.length / sentences.length : 0;
-    const averageWordLength =
-      words.length > 0 ? words.reduce((sum, w) => sum + w.length, 0) / words.length : 0;
+    const averageWordLength = words.length > 0
+      ? words.reduce((sum, w) => sum + w.length, 0) / words.length
+      : 0;
 
     // Simple Flesch-like score (simplified)
     let score = 100;
@@ -366,7 +293,7 @@ class NLPService {
       score,
       level,
       averageSentenceLength,
-      averageWordLength,
+      averageWordLength
     };
   }
 
@@ -404,8 +331,7 @@ class NLPService {
     // Simple heuristics (can be enhanced with NER)
     if (/^[A-Z][a-z]+ [A-Z][a-z]+$/.test(text)) return 'PERSON';
     if (text.includes('Inc') || text.includes('Corp') || text.includes('Ltd')) return 'ORG';
-    if (text.includes('API') || text.includes('System') || text.includes('Service'))
-      return 'PRODUCT';
+    if (text.includes('API') || text.includes('System') || text.includes('Service')) return 'PRODUCT';
     return 'MISC';
   }
 }

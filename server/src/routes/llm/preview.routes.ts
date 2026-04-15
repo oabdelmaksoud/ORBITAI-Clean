@@ -546,7 +546,7 @@ router.get('/prototype-generation/:jobId/status', authenticateToken, async (req:
                 completedAt: job.completedAt
             }
         });
-    } catch (error: unknown) {
+    } catch (error) {
         next(error);
     }
 });
@@ -601,7 +601,7 @@ router.get('/prototype-generation/conversation/:conversationId', authenticateTok
             }
         });
 
-    } catch (error: unknown) {
+    } catch (error) {
         next(error);
     }
 });

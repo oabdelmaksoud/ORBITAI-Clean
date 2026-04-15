@@ -121,7 +121,7 @@ async function fetchColormindPalette(mood?: string, projectType?: string): Promi
         }
 
         const data = await response.json();
-        const colors = (data as any).result.map((rgb: [number, number, number]) => rgbToHex(rgb));
+        const colors = data.result.map((rgb: [number, number, number]) => rgbToHex(rgb));
 
         logger.info(`[DesignInspiration] Generated palette from Colormind: ${colors.join(', ')}`);
 
@@ -130,7 +130,7 @@ async function fetchColormindPalette(mood?: string, projectType?: string): Promi
             model,
             mood: mood || 'default'
         };
-    } catch (error: unknown) {
+    } catch (error) {
         logger.warn('[DesignInspiration] Colormind API failed, using fallback palette:', error);
         return getFallbackPalette(mood);
     }

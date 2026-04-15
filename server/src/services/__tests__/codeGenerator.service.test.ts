@@ -3,20 +3,21 @@
  * Comprehensive test suite for backend code generation functionality
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { codeGeneratorService, CodeGenerationRequest } from '../codeGenerator.service.js';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { codeGeneratorService, CodeGenerationRequest, CodeGenerationResult } from '../services/codeGenerator.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('Code Generator Service', () => {
-  // const _testProjectId = uuidv4();
+  const testProjectId = uuidv4();
   const outputDir = path.join(__dirname, '../generated-test-code');
 
   beforeAll(async () => {
     // Create output directory for generated code
     try {
       await fs.mkdir(outputDir, { recursive: true });
-    } catch (error: unknown) {
+    } catch (error) {
       // Directory already exists
     }
   });
@@ -25,7 +26,7 @@ describe('Code Generator Service', () => {
     // Cleanup
     try {
       await fs.rm(outputDir, { recursive: true, force: true });
-    } catch (error: unknown) {
+    } catch (error) {
       // Ignore cleanup errors
     }
   });
@@ -56,31 +57,11 @@ describe('Code Generator Service', () => {
           },
         ],
         apiEndpoints: [
-          {
-            method: 'POST',
-            path: '/api/auth/register',
-            description: 'Register new user',
-            authenticated: false,
-          },
-          {
-            method: 'POST',
-            path: '/api/auth/login',
-            description: 'User login',
-            authenticated: false,
-          },
+          { method: 'POST', path: '/api/auth/register', description: 'Register new user', authenticated: false },
+          { method: 'POST', path: '/api/auth/login', description: 'User login', authenticated: false },
           { method: 'GET', path: '/api/posts', description: 'Get all posts', authenticated: false },
-          {
-            method: 'POST',
-            path: '/api/posts',
-            description: 'Create new post',
-            authenticated: true,
-          },
-          {
-            method: 'GET',
-            path: '/api/posts/:id',
-            description: 'Get single post',
-            authenticated: false,
-          },
+          { method: 'POST', path: '/api/posts', description: 'Create new post', authenticated: true },
+          { method: 'GET', path: '/api/posts/:id', description: 'Get single post', authenticated: false },
         ],
         features: ['User authentication', 'CRUD posts'],
         methodology: 'Agile',
@@ -95,10 +76,10 @@ describe('Code Generator Service', () => {
       expect(result.statistics.totalLines).toBeGreaterThan(100);
 
       // Verify specific files exist
-      const filePaths = result.files.map((f: any) => f.path);
+      const filePaths = result.files.map(f => f.path);
       expect(filePaths).toContain('src/index.ts');
-      expect(filePaths.some((p: any) => p.includes('package.json'))).toBe(true);
-      expect(filePaths.some((p: any) => p.includes('Dockerfile'))).toBe(true);
+      expect(filePaths.some(p => p.includes('package.json'))).toBe(true);
+      expect(filePaths.some(p => p.includes('Dockerfile'))).toBe(true);
 
       // Verify models are generated
       expect(filePaths).toContain('src/models/User.model.ts');
@@ -126,7 +107,7 @@ describe('Code Generator Service', () => {
       expect(result.success).toBe(true);
 
       // Check TypeScript files for basic syntax validity
-      const tsFiles = result.files.filter((f: any) => f.fileType === 'typescript');
+      const tsFiles = result.files.filter(f => f.fileType === 'typescript');
       for (const file of tsFiles) {
         // Check for matching braces and parentheses
         const openBraces = (file.content.match(/\{/g) || []).length;
@@ -142,12 +123,7 @@ describe('Code Generator Service', () => {
         framework: 'express',
         dataModels: [{ name: 'User', fields: [{ name: 'email', type: 'email' }] }],
         apiEndpoints: [
-          {
-            method: 'POST',
-            path: '/api/secure',
-            description: 'Secure endpoint',
-            authenticated: true,
-          },
+          { method: 'POST', path: '/api/secure', description: 'Secure endpoint', authenticated: true },
         ],
         features: ['User authentication'],
         methodology: 'Agile',
@@ -155,10 +131,10 @@ describe('Code Generator Service', () => {
 
       const result = await codeGeneratorService.generateBackendCode(request);
 
-      const files = result.files.map((f: any) => f.path);
+      const files = result.files.map(f => f.path);
       expect(files).toContain('src/middleware/auth.ts');
 
-      const authFile = result.files.find((f: any) => f.path === 'src/middleware/auth.ts');
+      const authFile = result.files.find(f => f.path === 'src/middleware/auth.ts');
       expect(authFile?.content).toContain('jwt');
     });
 
@@ -175,7 +151,7 @@ describe('Code Generator Service', () => {
 
       const result = await codeGeneratorService.generateBackendCode(request);
 
-      const filePaths = result.files.map((f: any) => f.path);
+      const filePaths = result.files.map(f => f.path);
       expect(filePaths).toContain('.env.example');
       expect(filePaths).toContain('package.json');
       expect(filePaths).toContain('tsconfig.json');
@@ -194,11 +170,11 @@ describe('Code Generator Service', () => {
 
       const result = await codeGeneratorService.generateBackendCode(request);
 
-      const filePaths = result.files.map((f: any) => f.path);
+      const filePaths = result.files.map(f => f.path);
       expect(filePaths).toContain('Dockerfile');
       expect(filePaths).toContain('docker-compose.yml');
 
-      const dockerfile = result.files.find((f: any) => f.path === 'Dockerfile');
+      const dockerfile = result.files.find(f => f.path === 'Dockerfile');
       expect(dockerfile?.content).toContain('node:18');
     });
 
@@ -215,10 +191,10 @@ describe('Code Generator Service', () => {
 
       const result = await codeGeneratorService.generateBackendCode(request);
 
-      const filePaths = result.files.map((f: any) => f.path);
+      const filePaths = result.files.map(f => f.path);
       expect(filePaths).toContain('.github/workflows/ci.yml');
 
-      const ciFile = result.files.find((f: any) => f.path === '.github/workflows/ci.yml');
+      const ciFile = result.files.find(f => f.path === '.github/workflows/ci.yml');
       expect(ciFile?.content).toContain('npm test');
     });
   });
@@ -252,7 +228,7 @@ describe('Code Generator Service', () => {
       expect(result.success).toBe(true);
       expect(result.files.length).toBeGreaterThan(0);
 
-      const filePaths = result.files.map((f: any) => f.path);
+      const filePaths = result.files.map(f => f.path);
       expect(filePaths).toContain('main.py');
       expect(filePaths).toContain('requirements.txt');
     });
@@ -271,7 +247,9 @@ describe('Code Generator Service', () => {
             fields: [{ name: 'name', type: 'string' }],
           },
         ],
-        apiEndpoints: [{ method: 'GET', path: '/api/users', description: 'Get users' }],
+        apiEndpoints: [
+          { method: 'GET', path: '/api/users', description: 'Get users' },
+        ],
         features: [],
         methodology: 'Agile',
       };
@@ -280,7 +258,7 @@ describe('Code Generator Service', () => {
 
       expect(result.success).toBe(true);
 
-      const filePaths = result.files.map((f: any) => f.path);
+      const filePaths = result.files.map(f => f.path);
       expect(filePaths).toContain('main.go');
       expect(filePaths).toContain('go.mod');
     });
@@ -360,10 +338,10 @@ describe('Code Generator Service', () => {
     });
 
     it('should fail with unsupported framework', async () => {
-      const request: any = {
+      const request = {
         projectName: 'Test',
         description: 'Test',
-        framework: 'unsupported',
+        framework: 'unsupported' as any,
         dataModels: [{ name: 'Test', fields: [{ name: 'id', type: 'string' }] }],
         apiEndpoints: [{ method: 'GET', path: '/api/test', description: 'Test' }],
         features: [],
@@ -376,7 +354,7 @@ describe('Code Generator Service', () => {
     });
 
     it('should fail with empty data models', async () => {
-      const request: any = {
+      const request = {
         projectName: 'Test',
         description: 'Test',
         framework: 'express',
@@ -451,45 +429,16 @@ describe('Code Generator Service', () => {
           { method: 'POST', path: '/api/auth/register', description: 'Register user' },
           { method: 'POST', path: '/api/auth/login', description: 'Login user' },
           { method: 'GET', path: '/api/articles', description: 'Get all articles' },
-          {
-            method: 'POST',
-            path: '/api/articles',
-            description: 'Create article',
-            authenticated: true,
-          },
+          { method: 'POST', path: '/api/articles', description: 'Create article', authenticated: true },
           { method: 'GET', path: '/api/articles/:id', description: 'Get article' },
-          {
-            method: 'PUT',
-            path: '/api/articles/:id',
-            description: 'Update article',
-            authenticated: true,
-          },
-          {
-            method: 'DELETE',
-            path: '/api/articles/:id',
-            description: 'Delete article',
-            authenticated: true,
-          },
-          {
-            method: 'POST',
-            path: '/api/articles/:id/comments',
-            description: 'Add comment',
-            authenticated: true,
-          },
+          { method: 'PUT', path: '/api/articles/:id', description: 'Update article', authenticated: true },
+          { method: 'DELETE', path: '/api/articles/:id', description: 'Delete article', authenticated: true },
+          { method: 'POST', path: '/api/articles/:id/comments', description: 'Add comment', authenticated: true },
           { method: 'GET', path: '/api/users/:id', description: 'Get user profile' },
-          {
-            method: 'POST',
-            path: '/api/users/:id/follow',
-            description: 'Follow user',
-            authenticated: true,
-          },
+          { method: 'POST', path: '/api/users/:id/follow', description: 'Follow user', authenticated: true },
         ],
         features: ['User authentication', 'Article CRUD', 'Comments', 'Follow system', 'Tagging'],
-        requirements: [
-          'Support up to 10,000 concurrent users',
-          'Articles must load in <500ms',
-          'Real-time comments',
-        ],
+        requirements: ['Support up to 10,000 concurrent users', 'Articles must load in <500ms', 'Real-time comments'],
         methodology: 'Agile',
       };
 
@@ -497,7 +446,7 @@ describe('Code Generator Service', () => {
 
       expect(result.success).toBe(true);
       expect(result.files.length).toBeGreaterThan(15);
-      expect(result.statistics.totalLines).toBeGreaterThan(500);
+      expect(result.statistics.totalLines).toBeGreaterThan(1000);
     });
 
     it('should generate code for E-Commerce Microservices scenario', async () => {
@@ -521,11 +470,7 @@ describe('Code Generator Service', () => {
               { name: 'customerId', type: 'string', required: true },
               { name: 'items', type: 'array' },
               { name: 'total', type: 'number', required: true },
-              {
-                name: 'status',
-                type: 'string',
-                enum: ['pending', 'processing', 'shipped', 'delivered'],
-              } as any,
+              { name: 'status', type: 'string', enum: ['pending', 'processing', 'shipped', 'delivered'] },
             ],
           },
           {
@@ -533,12 +478,8 @@ describe('Code Generator Service', () => {
             fields: [
               { name: 'orderId', type: 'string', required: true },
               { name: 'amount', type: 'number', required: true },
-              {
-                name: 'method',
-                type: 'string',
-                enum: ['credit_card', 'paypal', 'bank_transfer'],
-              } as any,
-              { name: 'status', type: 'string', enum: ['pending', 'completed', 'failed'] } as any,
+              { name: 'method', type: 'string', enum: ['credit_card', 'paypal', 'bank_transfer'] },
+              { name: 'status', type: 'string', enum: ['pending', 'completed', 'failed'] },
             ],
           },
         ],
@@ -547,12 +488,7 @@ describe('Code Generator Service', () => {
           { method: 'GET', path: '/api/products/:id', description: 'Get product details' },
           { method: 'POST', path: '/api/orders', description: 'Create order', authenticated: true },
           { method: 'GET', path: '/api/orders/:id', description: 'Get order status' },
-          {
-            method: 'POST',
-            path: '/api/payments',
-            description: 'Process payment',
-            authenticated: true,
-          },
+          { method: 'POST', path: '/api/payments', description: 'Process payment', authenticated: true },
           { method: 'GET', path: '/api/inventory/:productId', description: 'Check inventory' },
         ],
         features: [

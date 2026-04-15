@@ -41,7 +41,7 @@ export async function embedAllArtifacts(limit: number = 100): Promise<number> {
   try {
     const artifacts = await Artifact.find({ embedding: { $exists: false } })
       .limit(limit)
-      .lean() as any;
+      .lean();
 
     let embedded = 0;
     for (const artifact of artifacts) {
@@ -96,16 +96,16 @@ export async function searchArtifacts(
     // Find similar artifacts using cosine similarity
     const artifacts = await Artifact.find(filter)
       .limit(options.limit || 10)
-      .lean() as any;
+      .lean();
 
     // Calculate similarity scores
-    const scored = artifacts.map((artifact: any) => ({
+    const scored = artifacts.map(artifact => ({
       artifact,
       score: cosineSimilarity(queryEmbedding, artifact.embedding || [])
     }));
 
     // Sort by score descending
-    scored.sort((a: any, b: any) => b.score - a.score);
+    scored.sort((a, b) => b.score - a.score);
 
     return scored;
   } catch (error: unknown) {

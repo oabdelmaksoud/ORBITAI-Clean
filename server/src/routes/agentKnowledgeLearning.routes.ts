@@ -31,11 +31,10 @@ router.post('/learn/task', async (req: AdminRequest, res, next) => {
     } = req.body;
 
     if (!agentRole) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'agentRole is required'
       });
-      return;
     }
 
     await agentKnowledgeLearning.learnFromTaskExecution({
@@ -78,11 +77,10 @@ router.post('/learn/audit', async (req: AdminRequest, res, next) => {
     } = req.body;
 
     if (!agentRole || !auditType) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'agentRole and auditType are required'
       });
-      return;
     }
 
     await agentKnowledgeLearning.learnFromAudit({
@@ -108,7 +106,7 @@ router.post('/learn/audit', async (req: AdminRequest, res, next) => {
  * POST /api/admin/agent-knowledge/aggregate
  * Trigger platform-wide knowledge aggregation
  */
-router.post('/aggregate', async (_req: AdminRequest, res, next) => {
+router.post('/aggregate', async (req: AdminRequest, res, next) => {
   try {
     await agentKnowledgeLearning.aggregatePlatformLearning();
 

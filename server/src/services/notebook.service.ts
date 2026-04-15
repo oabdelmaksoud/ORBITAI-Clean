@@ -42,16 +42,14 @@ export class NotebookService {
       // Check if E2B is configured
       const isConfigured = await e2bService.isConfigured();
       if (!isConfigured) {
-        throw new Error(
-          'E2B sandbox is not configured. Please configure E2B API key in Admin Console.'
-        );
+        throw new Error('E2B sandbox is not configured. Please configure E2B API key in Admin Console.');
       }
 
       // Prepare Python code with data science library imports
       const enhancedCode = this.preparePythonCode(code);
 
       // Execute code in E2B sandbox
-      const result = await e2bService.getSandbox().then(async sandbox => {
+      const result = await e2bService.getSandbox().then(async (sandbox) => {
         return await sandbox.runCode(enhancedCode);
       });
 
@@ -74,20 +72,20 @@ export class NotebookService {
       }
 
       // Extract error
-      if ((result as any).error) {
-        error = String((result as any).error);
+      if (result.error) {
+        error = String(result.error);
       } else if (result.results && Array.isArray(result.results)) {
         const errorResult = result.results.find((r: any) => r.error);
         if (errorResult) {
-          error = String((errorResult as any).error);
+          error = String(errorResult.error);
         }
       }
 
       // Check for image outputs (matplotlib/plotly)
       if (result.results && Array.isArray(result.results)) {
         for (const r of result.results) {
-          if ((r as any).images && Array.isArray((r as any).images)) {
-            images.push(...(r as any).images);
+          if (r.images && Array.isArray(r.images)) {
+            images.push(...r.images);
           }
           // Check for base64 encoded images in output
           if (r.text && typeof r.text === 'string') {
@@ -107,7 +105,7 @@ export class NotebookService {
           if (jsonMatch) {
             data = JSON.parse(jsonMatch[0]);
           }
-        } catch (e: unknown) {
+        } catch (e) {
           // Not JSON, that's okay
         }
       }
@@ -118,14 +116,14 @@ export class NotebookService {
         error: error || undefined,
         images: images.length > 0 ? images : undefined,
         data: data,
-        executionTime,
+        executionTime
       };
     } catch (err: any) {
       logger.error('Notebook cell execution failed:', err);
       return {
         success: false,
         error: err.message || 'Failed to execute notebook cell',
-        executionTime: Date.now() - startTime,
+        executionTime: Date.now() - startTime
       };
     }
   }
@@ -166,12 +164,12 @@ from io import StringIO
    * Convert notebook cells to Jupyter notebook format (.ipynb)
    */
   convertToJupyterNotebook(cells: NotebookCell[]): any {
-    const jupyterCells = cells.map(cell => {
+    const jupyterCells = cells.map((cell) => {
       if (cell.type === 'markdown') {
         return {
           cell_type: 'markdown',
           metadata: {},
-          source: cell.content.split('\n'),
+          source: cell.content.split('\n')
         };
       } else if (cell.type === 'code') {
         const outputs: any[] = [];
@@ -182,31 +180,31 @@ from io import StringIO
               outputs.push({
                 output_type: 'stream',
                 name: 'stdout',
-                text: String(output.data).split('\n'),
+                text: String(output.data).split('\n')
               });
             } else if (output.type === 'error') {
               outputs.push({
                 output_type: 'error',
                 ename: 'Error',
                 evalue: String(output.data),
-                traceback: String(output.data).split('\n'),
+                traceback: String(output.data).split('\n')
               });
             } else if (output.type === 'image') {
               outputs.push({
                 output_type: 'display_data',
                 data: {
-                  'image/png': output.data.replace(/^data:image\/[^;]+;base64,/, ''),
+                  'image/png': output.data.replace(/^data:image\/[^;]+;base64,/, '')
                 },
-                metadata: {},
+                metadata: {}
               });
             } else if (output.type === 'data') {
               outputs.push({
                 output_type: 'execute_result',
                 data: {
-                  'text/plain': [JSON.stringify(output.data, null, 2)],
+                  'text/plain': [JSON.stringify(output.data, null, 2)]
                 },
                 metadata: {},
-                execution_count: cell.executionCount || null,
+                execution_count: cell.executionCount || null
               });
             }
           }
@@ -217,7 +215,7 @@ from io import StringIO
           execution_count: cell.executionCount || null,
           metadata: {},
           source: cell.content.split('\n'),
-          outputs: outputs,
+          outputs: outputs
         };
       } else {
         // Output cell - convert to code cell with outputs
@@ -226,15 +224,13 @@ from io import StringIO
           execution_count: cell.executionCount || null,
           metadata: {},
           source: [],
-          outputs:
-            cell.outputs?.map(out => ({
-              output_type: out.type === 'error' ? 'error' : 'display_data',
-              data:
-                out.type === 'image'
-                  ? { 'image/png': out.data.replace(/^data:image\/[^;]+;base64,/, '') }
-                  : { 'text/plain': [String(out.data)] },
-              metadata: {},
-            })) || [],
+          outputs: cell.outputs?.map((out) => ({
+            output_type: out.type === 'error' ? 'error' : 'display_data',
+            data: out.type === 'image'
+              ? { 'image/png': out.data.replace(/^data:image\/[^;]+;base64,/, '') }
+              : { 'text/plain': [String(out.data)] },
+            metadata: {}
+          })) || []
         };
       }
     });
@@ -245,15 +241,15 @@ from io import StringIO
         kernelspec: {
           display_name: 'Python 3',
           language: 'python',
-          name: 'python3',
+          name: 'python3'
         },
         language_info: {
           name: 'python',
-          version: '3.10',
-        },
+          version: '3.10'
+        }
       },
       nbformat: 4,
-      nbformat_minor: 4,
+      nbformat_minor: 4
     };
   }
 
@@ -270,7 +266,7 @@ from io import StringIO
           type: 'markdown',
           content: Array.isArray(jupyterCell.source)
             ? jupyterCell.source.join('\n')
-            : String(jupyterCell.source || ''),
+            : String(jupyterCell.source || '')
         });
       } else if (jupyterCell.cell_type === 'code') {
         const outputs: NotebookCell['outputs'] = [];
@@ -279,28 +275,27 @@ from io import StringIO
           if (output.output_type === 'stream') {
             outputs.push({
               type: 'text',
-              data: Array.isArray(output.text) ? output.text.join('\n') : String(output.text || ''),
+              data: Array.isArray(output.text)
+                ? output.text.join('\n')
+                : String(output.text || '')
             });
           } else if (output.output_type === 'error') {
             outputs.push({
               type: 'error',
-              data: output.evalue || String(output),
+              data: output.evalue || String(output)
             });
-          } else if (
-            output.output_type === 'display_data' ||
-            output.output_type === 'execute_result'
-          ) {
+          } else if (output.output_type === 'display_data' || output.output_type === 'execute_result') {
             if (output.data && output.data['image/png']) {
               outputs.push({
                 type: 'image',
-                data: `data:image/png;base64,${output.data['image/png']}`,
+                data: `data:image/png;base64,${output.data['image/png']}`
               });
             } else if (output.data && output.data['text/plain']) {
               outputs.push({
                 type: 'text',
                 data: Array.isArray(output.data['text/plain'])
                   ? output.data['text/plain'].join('\n')
-                  : String(output.data['text/plain'] || ''),
+                  : String(output.data['text/plain'] || '')
               });
             }
           }
@@ -314,7 +309,7 @@ from io import StringIO
             : String(jupyterCell.source || ''),
           language: 'python',
           executionCount: jupyterCell.execution_count || undefined,
-          outputs: outputs.length > 0 ? outputs : undefined,
+          outputs: outputs.length > 0 ? outputs : undefined
         });
       }
     }
@@ -334,7 +329,7 @@ from io import StringIO
       id: `cell-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       type,
       content,
-      language: type === 'code' ? language || 'python' : undefined,
+      language: type === 'code' ? (language || 'python') : undefined
     };
   }
 
@@ -352,25 +347,25 @@ from io import StringIO
 
         const outputs: NotebookCell['outputs'] = [];
 
-        if ((result as any).error) {
+        if (result.error) {
           outputs.push({
             type: 'error',
-            data: (result as any).error,
+            data: result.error
           });
         }
 
         if (result.output) {
           outputs.push({
             type: 'text',
-            data: result.output,
+            data: result.output
           });
         }
 
-        if ((result as any).images && (result as any).images.length > 0) {
-          for (const image of (result as any).images) {
+        if (result.images && result.images.length > 0) {
+          for (const image of result.images) {
             outputs.push({
               type: 'image',
-              data: image,
+              data: image
             });
           }
         }
@@ -378,14 +373,14 @@ from io import StringIO
         if (result.data) {
           outputs.push({
             type: 'data',
-            data: result.data,
+            data: result.data
           });
         }
 
         updatedCells.push({
           ...cell,
           executionCount: executionCount++,
-          outputs: outputs.length > 0 ? outputs : undefined,
+          outputs: outputs.length > 0 ? outputs : undefined
         });
       } else {
         // Markdown or other cells - just copy

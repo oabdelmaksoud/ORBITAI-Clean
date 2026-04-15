@@ -1,9 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import { useWorkspaces } from '../useWorkspaces';
+import { WorkspaceContext } from '../../contexts/WorkspaceContext';
 
 // Mock fetch
-global.fetch = vi.fn() as unknown as typeof fetch;
+global.fetch = jest.fn();
 
 describe('useWorkspaces', () => {
   const mockWorkspaces = [
@@ -28,13 +28,13 @@ describe('useWorkspaces', () => {
   ];
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    (global.fetch as ReturnType<typeof vi.fn>).mockClear();
+    jest.clearAllMocks();
+    (global.fetch as jest.Mock).mockClear();
   });
 
   describe('fetchWorkspaces', () => {
     it('should fetch workspaces successfully', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkspaces
       });
@@ -51,7 +51,7 @@ describe('useWorkspaces', () => {
     });
 
     it('should handle fetch error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       const { result } = renderHook(() => useWorkspaces());
 
@@ -64,7 +64,7 @@ describe('useWorkspaces', () => {
     });
 
     it('should set loading state during fetch', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() => 
+      (global.fetch as jest.Mock).mockImplementationOnce(() =>
         new Promise(resolve => setTimeout(() => resolve({
           ok: true,
           json: async () => mockWorkspaces
@@ -92,7 +92,7 @@ describe('useWorkspaces', () => {
         description: 'Test'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...newWorkspace, _id: '3' })
       });
@@ -124,7 +124,7 @@ describe('useWorkspaces', () => {
     it('should update workspace successfully', async () => {
       const updatedData = { name: 'Updated Name' };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockWorkspaces
@@ -151,7 +151,7 @@ describe('useWorkspaces', () => {
 
   describe('deleteWorkspace', () => {
     it('should delete workspace successfully', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockWorkspaces
@@ -183,7 +183,7 @@ describe('useWorkspaces', () => {
         role: 'member'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ message: 'Invitation sent' })
       });
@@ -206,7 +206,7 @@ describe('useWorkspaces', () => {
 
   describe('setCurrentWorkspace', () => {
     it('should set current workspace', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockWorkspaces
       });
@@ -227,7 +227,7 @@ describe('useWorkspaces', () => {
 
   describe('error handling', () => {
     it('should handle unauthorized error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 401,
         json: async () => ({ message: 'Unauthorized' })
@@ -243,7 +243,7 @@ describe('useWorkspaces', () => {
     });
 
     it('should handle validation error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 400,
         json: async () => ({ message: 'Validation failed' })

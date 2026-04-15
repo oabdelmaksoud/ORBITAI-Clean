@@ -9,6 +9,7 @@ import { Project } from '../models/Project.model.js';
 import { geminiService } from './gemini.service.js';
 import { evaluationService } from './evaluation.service.js';
 import { usageTracker } from './llm/UsageTracker.js';
+import { llmRouter } from './llm/LLMRouter.js';
 
 interface BackgroundTask {
   id: string;
@@ -162,7 +163,7 @@ Please complete this task and provide your output.`;
           inputTokens: result.usage?.promptTokens || 0,
           outputTokens: result.usage?.candidatesTokens || 0,
           requestType: 'agent-task',
-          context: 'background' as any,
+          context: 'background',
           success: true,
           latencyMs: latency,
           metadata: {
@@ -236,9 +237,9 @@ Please complete this task and provide your output.`;
           if (taskIndex !== -1) {
             project.tasks[taskIndex].status = 'Failed';
             if (project.tasks[taskIndex].logs) {
-              project.tasks[taskIndex].logs.push(`[Background] Task failed: ${(error instanceof Error ? error.message : String(error))}`);
+              project.tasks[taskIndex].logs.push(`[Background] Task failed: ${error.message}`);
             } else {
-              project.tasks[taskIndex].logs = [`[Background] Task failed: ${(error instanceof Error ? error.message : String(error))}`];
+              project.tasks[taskIndex].logs = [`[Background] Task failed: ${error.message}`];
             }
             await project.save();
           }
@@ -292,7 +293,7 @@ Please complete this task and provide your output.`;
           }
         }
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Failed to update task status when stopping background task:`, error);
     }
 

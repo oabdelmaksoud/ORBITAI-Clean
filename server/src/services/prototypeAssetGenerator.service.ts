@@ -202,7 +202,7 @@ class PrototypeAssetGenerator {
 
             throw new Error('All providers failed');
         } catch (error: unknown) {
-            logger.warn(`[AssetGenerator] Failed to generate ${asset.name}: ${(error instanceof Error ? error.message : String(error))}`);
+            logger.warn(`[AssetGenerator] Failed to generate ${asset.name}: ${error.message}`);
             throw error;
         }
     }
@@ -334,7 +334,7 @@ class PrototypeAssetGenerator {
         if (!fs.existsSync(projectAssetsDir)) {
             try {
                 fs.mkdirSync(projectAssetsDir, { recursive: true });
-            } catch (err: unknown) {
+            } catch (err) {
                 logger.error(`[AssetGenerator] Failed to create assets directory: ${projectAssetsDir}`, err);
                 return assets; // Return original assets with data URLs if save fails
             }

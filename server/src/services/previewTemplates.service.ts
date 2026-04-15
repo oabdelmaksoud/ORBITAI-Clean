@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 
 export interface PreviewTemplate {
   id: string;
@@ -269,7 +270,7 @@ export class PreviewTemplatesService {
   customizeTemplate(
     template: PreviewTemplate,
     userGoal: string,
-    _requirements: { requirements: string[]; features: string[]; constraints: string[] },
+    requirements: { requirements: string[]; features: string[]; constraints: string[] },
     techStack: string[]
   ): PreviewTemplate {
     // Return template as-is - AI generation will customize it

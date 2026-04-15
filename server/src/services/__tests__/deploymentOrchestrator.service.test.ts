@@ -2,8 +2,12 @@
  * Deployment Orchestrator Service Tests
  */
 
-import { describe, it, expect } from 'vitest';
-import { DeploymentConfig, DeploymentResult } from '../deploymentOrchestrator.service.js';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import {
+  deploymentOrchestratorService,
+  DeploymentConfig,
+  DeploymentResult,
+} from '../services/deploymentOrchestrator.service';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Deployment Orchestrator Service', () => {
@@ -49,19 +53,9 @@ describe('Deployment Orchestrator Service', () => {
     it('should require valid deployment configuration', async () => {
       const invalidConfigs = [
         { projectId: '', projectName: 'App', codeArtifactId: testArtifactId, platform: 'vercel' },
-        {
-          projectId: testProjectId,
-          projectName: '',
-          codeArtifactId: testArtifactId,
-          platform: 'vercel',
-        },
+        { projectId: testProjectId, projectName: '', codeArtifactId: testArtifactId, platform: 'vercel' },
         { projectId: testProjectId, projectName: 'App', codeArtifactId: '', platform: 'vercel' },
-        {
-          projectId: testProjectId,
-          projectName: 'App',
-          codeArtifactId: testArtifactId,
-          platform: 'invalid',
-        },
+        { projectId: testProjectId, projectName: 'App', codeArtifactId: testArtifactId, platform: 'invalid' },
       ];
 
       // Validation would happen during actual orchestration
@@ -262,7 +256,7 @@ describe('Deployment Orchestrator Service', () => {
 
       expect(result.status).toBe('failed');
       expect(result.error).toBeTruthy();
-      expect(result.logs!.length).toBeGreaterThan(0);
+      expect(result.logs.length).toBeGreaterThan(0);
     });
   });
 

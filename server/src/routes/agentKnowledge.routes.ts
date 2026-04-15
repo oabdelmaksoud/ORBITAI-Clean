@@ -140,11 +140,10 @@ router.get('/:agentRole', async (req: AdminRequest, res, next) => {
     const agent = await AgentKnowledge.findOne({ agentRole }).lean();
     
     if (!agent) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Agent knowledge not found'
       });
-      return;
     }
 
     res.json({

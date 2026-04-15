@@ -28,19 +28,16 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
 
     const clientId = process.env.GITHUB_CLIENT_ID;
     if (!clientId) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message:
-          'GitHub integration not configured. Please set GITHUB_CLIENT_ID environment variable.',
+        message: 'GitHub integration not configured. Please set GITHUB_CLIENT_ID environment variable.'
       });
-      return;
     }
 
     const scopes = ['repo', 'read:user', 'user:email'];
     const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
 
-    const authUrl =
-      `https://github.com/login/oauth/authorize?` +
+    const authUrl = `https://github.com/login/oauth/authorize?` +
       `client_id=${clientId}&` +
       `scope=${scopes.join(' ')}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
@@ -50,16 +47,14 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
       success: true,
       data: {
         authUrl,
-        state,
-      },
+        state
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to initiate GitHub OAuth:', error);
     res.status(500).json({
       success: false,
-      message:
-        (error instanceof Error ? error.message : String(error)) ||
-        'Failed to initiate GitHub OAuth',
+      message: error.message || 'Failed to initiate GitHub OAuth'
     });
   }
 });
@@ -70,15 +65,13 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    // @ts-ignore TS6133
-    const { code, _state } = req.query;
+    const { code, state } = req.query;
 
     if (!code) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'Authorization code is required',
+        message: 'Authorization code is required'
       });
-      return;
     }
 
     const clientId = process.env.GITHUB_CLIENT_ID;
@@ -86,11 +79,10 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/github/callback`;
 
     if (!clientId || !clientSecret) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'GitHub integration not configured',
+        message: 'GitHub integration not configured'
       });
-      return;
     }
 
     // Exchange code for token
@@ -98,28 +90,28 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,
         code: code as string,
-        redirect_uri: redirectUri,
-      }),
+        redirect_uri: redirectUri
+      })
     });
 
     const tokenData = await tokenResponse.json();
 
-    if ((tokenData as any).error) {
-      throw new Error((tokenData as any).error_description || 'Failed to exchange code for token');
+    if (tokenData.error) {
+      throw new Error(tokenData.error_description || 'Failed to exchange code for token');
     }
 
     // Get user info
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
-        Authorization: `Bearer ${(tokenData as any).access_token}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
     });
 
     const userData = await userResponse.json();
@@ -131,18 +123,16 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
       success: true,
       message: 'GitHub integration connected successfully',
       data: {
-        username: (userData as any).login,
-        name: (userData as any).name,
-        email: (userData as any).email,
-      },
+        username: userData.login,
+        name: userData.name,
+        email: userData.email
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to handle GitHub OAuth callback:', error);
     res.status(500).json({
       success: false,
-      message:
-        (error instanceof Error ? error.message : String(error)) ||
-        'Failed to complete GitHub OAuth',
+      message: error.message || 'Failed to complete GitHub OAuth'
     });
   }
 });
@@ -151,44 +141,42 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
  * GET /api/integrations/github/repos
  * List user repositories
  */
-router.get('/repos', authenticateToken, async (_req: AuthRequest, res) => {
+router.get('/repos', authenticateToken, async (req: AuthRequest, res) => {
   try {
     // In production, retrieve stored token from database
     const accessToken = process.env.GITHUB_ACCESS_TOKEN;
 
     if (!accessToken) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'GitHub not connected. Please authenticate first.',
+        message: 'GitHub not connected. Please authenticate first.'
       });
-      return;
     }
 
     const response = await fetch('https://api.github.com/user/repos?per_page=10&sort=updated', {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
     });
 
     const data = await response.json();
 
-    if ((data as any).message && (data as any).message.includes('Bad credentials')) {
+    if (data.message && data.message.includes('Bad credentials')) {
       throw new Error('Invalid GitHub token');
     }
 
     res.json({
       success: true,
       data: {
-        repos: data || [],
-      },
+        repos: data || []
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to list GitHub repositories:', error);
     res.status(500).json({
       success: false,
-      message:
-        (error instanceof Error ? error.message : String(error)) || 'Failed to list repositories',
+      message: error.message || 'Failed to list repositories'
     });
   }
 });
@@ -202,56 +190,53 @@ router.post('/create-repo', authenticateToken, async (req: AuthRequest, res) => 
     const { name, description, private: isPrivate } = req.body;
 
     if (!name) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'Repository name is required',
+        message: 'Repository name is required'
       });
-      return;
     }
 
     // In production, retrieve stored token from database
     const accessToken = process.env.GITHUB_ACCESS_TOKEN;
 
     if (!accessToken) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'GitHub not connected',
+        message: 'GitHub not connected'
       });
-      return;
     }
 
     const response = await fetch('https://api.github.com/user/repos', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         name,
         description: description || '',
-        private: isPrivate || false,
-      }),
+        private: isPrivate || false
+      })
     });
 
     const data = await response.json();
 
-    if ((data as any).message) {
-      throw new Error((data as any).message);
+    if (data.message) {
+      throw new Error(data.message);
     }
 
     res.json({
       success: true,
       data: {
-        repo: data,
-      },
+        repo: data
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to create GitHub repository:', error);
     res.status(500).json({
       success: false,
-      message:
-        (error instanceof Error ? error.message : String(error)) || 'Failed to create repository',
+      message: error.message || 'Failed to create repository'
     });
   }
 });
@@ -265,31 +250,29 @@ router.post('/create-workflow', authenticateToken, async (req: AuthRequest, res)
     const { owner, repo, workflowName, platform } = req.body;
 
     if (!owner || !repo) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'Owner and repo are required',
+        message: 'Owner and repo are required'
       });
-      return;
     }
 
     const accessToken = process.env.GITHUB_ACCESS_TOKEN;
 
     if (!accessToken) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'GitHub not connected',
+        message: 'GitHub not connected'
       });
-      return;
     }
 
     // Import github service dynamically
     const { githubService } = await import('../services/github.service.js');
 
     // Generate workflow config based on platform
-    const workflowConfig = (githubService as any).generateDeploymentWorkflow(platform || 'vercel');
+    const workflowConfig = githubService.generateDeploymentWorkflow(platform || 'vercel');
 
     // Create workflow file
-    const result = await (githubService as any).createWorkflow(
+    const result = await githubService.createWorkflow(
       accessToken,
       owner,
       repo,
@@ -302,15 +285,14 @@ router.post('/create-workflow', authenticateToken, async (req: AuthRequest, res)
       data: {
         path: result.path,
         sha: result.sha,
-        message: `Workflow created at ${result.path}`,
-      },
+        message: `Workflow created at ${result.path}`
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to create GitHub workflow:', error);
     res.status(500).json({
       success: false,
-      message:
-        (error instanceof Error ? error.message : String(error)) || 'Failed to create workflow',
+      message: error.message || 'Failed to create workflow'
     });
   }
 });
@@ -324,21 +306,19 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
     const { projectId, owner, repo, branch, createRepo } = req.body;
 
     if (!projectId) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'Project ID is required',
+        message: 'Project ID is required'
       });
-      return;
     }
 
     const accessToken = process.env.GITHUB_ACCESS_TOKEN;
 
     if (!accessToken) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'GitHub not connected',
+        message: 'GitHub not connected'
       });
-      return;
     }
 
     // Import services
@@ -347,22 +327,22 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
 
     const project = await Project.findById(projectId).lean();
     if (!project) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Project not found',
+        message: 'Project not found'
       });
-      return;
     }
 
     // Get generated files from project artifacts
-    const codeArtifacts = project.artifacts?.filter((a: any) => a.type === 'code') || [];
+    const codeArtifacts = project.artifacts?.filter(
+      (a: any) => a.type === 'code'
+    ) || [];
 
     if (codeArtifacts.length === 0) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'No generated code found. Generate code first.',
+        message: 'No generated code found. Generate code first.'
       });
-      return;
     }
 
     // Parse the code artifacts to get files
@@ -373,11 +353,11 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
         if (content.files) {
           files = files.concat(content.files);
         }
-      } catch (e: unknown) {
+      } catch (e) {
         // Not JSON, treat as raw file
         files.push({
           path: artifact.title || 'untitled.ts',
-          content: artifact.content,
+          content: artifact.content
         });
       }
     }
@@ -388,10 +368,10 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
 
     if (createRepo) {
       try {
-        await (githubService as any).createRepository(accessToken, {
+        await githubService.createRepository(accessToken, {
           name: repoName,
           description: project.description || `Generated by ORBITAI`,
-          private: true,
+          private: true
         });
       } catch (e: any) {
         // Repo might already exist
@@ -400,7 +380,7 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
     }
 
     // Push files to repository
-    const result = await (githubService as any).pushGeneratedProject(
+    const result = await githubService.pushGeneratedProject(
       accessToken,
       repoOwner,
       repoName,
@@ -415,14 +395,14 @@ router.post('/push-project', authenticateToken, async (req: AuthRequest, res) =>
         repoUrl: `https://github.com/${repoOwner}/${repoName}`,
         commitSha: result.sha,
         filesCount: files.length,
-        branch: branch || 'main',
-      },
+        branch: branch || 'main'
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to push project to GitHub:', error);
     res.status(500).json({
       success: false,
-      message: (error instanceof Error ? error.message : String(error)) || 'Failed to push project',
+      message: error.message || 'Failed to push project'
     });
   }
 });
@@ -440,52 +420,46 @@ router.get('/workflow-templates', authenticateToken, async (_req, res) => {
           id: 'vercel',
           name: 'Vercel Deployment',
           description: 'Auto-deploy to Vercel on push to main',
-          secrets: ['VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID'],
+          secrets: ['VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID']
         },
         {
           id: 'railway',
           name: 'Railway Deployment',
           description: 'Auto-deploy to Railway on push to main',
-          secrets: ['RAILWAY_TOKEN', 'RAILWAY_SERVICE'],
+          secrets: ['RAILWAY_TOKEN', 'RAILWAY_SERVICE']
         },
         {
           id: 'netlify',
           name: 'Netlify Deployment',
           description: 'Auto-deploy to Netlify on push to main',
-          secrets: ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID'],
+          secrets: ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID']
         },
         {
           id: 'render',
           name: 'Render Deployment',
           description: 'Auto-deploy to Render on push to main',
-          secrets: ['RENDER_API_KEY', 'RENDER_SERVICE_ID'],
+          secrets: ['RENDER_API_KEY', 'RENDER_SERVICE_ID']
         },
         {
           id: 'aws',
           name: 'AWS ECS Deployment',
           description: 'Auto-deploy to AWS ECS on push to main',
-          secrets: [
-            'AWS_ACCESS_KEY_ID',
-            'AWS_SECRET_ACCESS_KEY',
-            'AWS_REGION',
-            'ECR_REPOSITORY',
-            'ECR_REGISTRY',
-          ],
+          secrets: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'ECR_REPOSITORY', 'ECR_REGISTRY']
         },
         {
           id: 'gcp',
           name: 'Google Cloud Run Deployment',
           description: 'Auto-deploy to Cloud Run on push to main',
-          secrets: ['GCP_PROJECT_ID', 'GCP_SA_KEY'],
+          secrets: ['GCP_PROJECT_ID', 'GCP_SA_KEY']
         },
         {
           id: 'azure',
           name: 'Azure Container Apps Deployment',
           description: 'Auto-deploy to Azure Container Apps on push to main',
-          secrets: ['AZURE_CREDENTIALS', 'AZURE_RG', 'AZURE_APP'],
-        },
-      ],
-    },
+          secrets: ['AZURE_CREDENTIALS', 'AZURE_RG', 'AZURE_APP']
+        }
+      ]
+    }
   });
 });
 

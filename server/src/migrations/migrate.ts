@@ -5,6 +5,7 @@
 
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger.js';
+import { config } from '../config/env.js';
 
 interface Migration {
   version: number;
@@ -82,7 +83,7 @@ export async function runMigrations(targetVersion?: number): Promise<void> {
     } else {
       logger.info('Database is up to date');
     }
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('Migration failed:', error);
     throw error;
   }

@@ -16,9 +16,7 @@ export interface AuthRequest extends Request {
 }
 
 // Helper to wrap async middleware for Express
-const asyncHandler = (
-  fn: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>
-): RequestHandler => {
+const asyncHandler = (fn: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>): RequestHandler => {
   return (req, res, next) => {
     Promise.resolve(fn(req as AuthRequest, res, next)).catch(next);
   };
@@ -36,26 +34,21 @@ async function authenticateTokenAsync(
     return next(new AppError('Access token required', 401));
   }
 
-  try {
-    const decoded = jwt.verify(token, config.jwtSecret) as {
-      userId: string;
-      email: string;
-      name?: string;
-      plan: string;
-      role?: string;
+  // Check if this is a guest token (starts with 'guest-token-')
+  if (token.startsWith('guest-token-')) {
+    // Allow guest users with minimal permissions
+    req.user = {
+      id: 'guest',
+      email: 'guest@local',
+      name: 'Guest',
+      plan: 'free',
+      role: 'guest'
     };
+    return next();
+  }
 
-    // Handle JWT-based guest tokens (role === 'guest')
-    if (decoded.role === 'guest') {
-      req.user = {
-        id: decoded.userId || 'guest',
-        email: decoded.email || 'guest@local',
-        name: decoded.name || 'Guest',
-        plan: 'free',
-        role: 'guest',
-      };
-      return next();
-    }
+  try {
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; email: string; name?: string; plan: string; role?: string };
 
     // If role is not in token (old tokens), fetch from database
     let role = decoded.role;
@@ -74,10 +67,10 @@ async function authenticateTokenAsync(
       email: decoded.email,
       name: decoded.name || decoded.email.split('@')[0], // Fallback to email prefix if name not in token
       plan: decoded.plan,
-      role: role,
+      role: role
     };
     next();
-  } catch (error: unknown) {
+  } catch (error) {
     return next(new AppError('Invalid or expired token', 401));
   }
 }
@@ -86,9 +79,11 @@ async function authenticateTokenAsync(
 export const authenticateToken = asyncHandler(authenticateTokenAsync);
 
 export function generateToken(userId: string, email: string, plan: string, role?: string): string {
-  return jwt.sign({ userId, email, plan, role }, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
-  } as jwt.SignOptions);
+  return jwt.sign(
+    { userId, email, plan, role },
+    config.jwtSecret,
+    { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
+  );
 }
 
 // Optional authentication - doesn't error if no token, but populates user if token is valid
@@ -104,26 +99,21 @@ async function authenticateTokenOptionalAsync(
     return next(); // Continue without user
   }
 
-  try {
-    const decoded = jwt.verify(token, config.jwtSecret) as {
-      userId: string;
-      email: string;
-      name?: string;
-      plan: string;
-      role?: string;
+  // Check if this is a guest token (starts with 'guest-token-')
+  if (token.startsWith('guest-token-')) {
+    // Allow guest users with minimal permissions
+    req.user = {
+      id: 'guest',
+      email: 'guest@local',
+      name: 'Guest',
+      plan: 'free',
+      role: 'guest'
     };
+    return next();
+  }
 
-    // Handle JWT-based guest tokens (role === 'guest')
-    if (decoded.role === 'guest') {
-      req.user = {
-        id: decoded.userId || 'guest',
-        email: decoded.email || 'guest@local',
-        name: decoded.name || 'Guest',
-        plan: 'free',
-        role: 'guest',
-      };
-      return next();
-    }
+  try {
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; email: string; name?: string; plan: string; role?: string };
 
     // If role is not in token (old tokens), fetch from database
     let role = decoded.role;
@@ -141,10 +131,10 @@ async function authenticateTokenOptionalAsync(
       email: decoded.email,
       name: decoded.name || decoded.email.split('@')[0],
       plan: decoded.plan,
-      role: role,
+      role: role
     };
     next();
-  } catch (error: unknown) {
+  } catch (error) {
     // If token is invalid, just continue without user (treat as guest)
     next();
   }

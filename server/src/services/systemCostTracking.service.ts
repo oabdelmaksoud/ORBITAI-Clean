@@ -5,47 +5,36 @@
 
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { AppError } from '../middleware/errorHandler.js';
+import mongoose from 'mongoose';
 
 export interface SystemCostBreakdown {
   totalCost: number;
   userInitiatedCost: number;
   systemInitiatedCost: number;
-  byProvider: Record<
-    string,
-    {
-      totalCost: number;
-      userInitiatedCost: number;
-      systemInitiatedCost: number;
-      calls: number;
-      tokens: number;
-    }
-  >;
-  byModel: Record<
-    string,
-    {
-      totalCost: number;
-      userInitiatedCost: number;
-      systemInitiatedCost: number;
-      calls: number;
-      tokens: number;
-    }
-  >;
-  byRequestType: Record<
-    string,
-    {
-      totalCost: number;
-      userInitiatedCost: number;
-      systemInitiatedCost: number;
-      calls: number;
-    }
-  >;
-  byContext: Record<
-    string,
-    {
-      totalCost: number;
-      calls: number;
-    }
-  >;
+  byProvider: Record<string, {
+    totalCost: number;
+    userInitiatedCost: number;
+    systemInitiatedCost: number;
+    calls: number;
+    tokens: number;
+  }>;
+  byModel: Record<string, {
+    totalCost: number;
+    userInitiatedCost: number;
+    systemInitiatedCost: number;
+    calls: number;
+    tokens: number;
+  }>;
+  byRequestType: Record<string, {
+    totalCost: number;
+    userInitiatedCost: number;
+    systemInitiatedCost: number;
+    calls: number;
+  }>;
+  byContext: Record<string, {
+    totalCost: number;
+    calls: number;
+  }>;
   timeSeries: Array<{
     date: string;
     totalCost: number;
@@ -93,7 +82,9 @@ export class SystemCostTrackingService {
   /**
    * Get comprehensive system cost breakdown
    */
-  async getSystemCostBreakdown(options: CostAnalysisOptions = {}): Promise<SystemCostBreakdown> {
+  async getSystemCostBreakdown(
+    options: CostAnalysisOptions = {}
+  ): Promise<SystemCostBreakdown> {
     try {
       const {
         startDate,
@@ -102,7 +93,7 @@ export class SystemCostTrackingService {
         modelId,
         includeSystemCalls = true,
         includeUserCalls = true,
-        groupBy = 'day',
+        groupBy = 'day'
       } = options;
 
       // Build query
@@ -124,10 +115,13 @@ export class SystemCostTrackingService {
       } else if (!includeSystemCalls) {
         query.$or = [
           { userId: { $exists: true, $ne: null } },
-          { projectId: { $exists: true, $ne: null } },
+          { projectId: { $exists: true, $ne: null } }
         ];
       } else if (!includeUserCalls) {
-        query.$and = [{ userId: { $exists: false } }, { projectId: { $exists: false } }];
+        query.$and = [
+          { userId: { $exists: false } },
+          { projectId: { $exists: false } }
+        ];
       }
 
       // Fetch all usage records
@@ -145,7 +139,7 @@ export class SystemCostTrackingService {
         timeSeries: [],
         topUsers: [],
         topProjects: [],
-        systemOperations: [],
+        systemOperations: []
       };
 
       // Process each usage record
@@ -169,7 +163,7 @@ export class SystemCostTrackingService {
             userInitiatedCost: 0,
             systemInitiatedCost: 0,
             calls: 0,
-            tokens: 0,
+            tokens: 0
           };
         }
         breakdown.byProvider[usage.provider].totalCost += cost;
@@ -188,7 +182,7 @@ export class SystemCostTrackingService {
             userInitiatedCost: 0,
             systemInitiatedCost: 0,
             calls: 0,
-            tokens: 0,
+            tokens: 0
           };
         }
         breakdown.byModel[usage.modelId].totalCost += cost;
@@ -206,7 +200,7 @@ export class SystemCostTrackingService {
             totalCost: 0,
             userInitiatedCost: 0,
             systemInitiatedCost: 0,
-            calls: 0,
+            calls: 0
           };
         }
         breakdown.byRequestType[usage.requestType].totalCost += cost;
@@ -222,7 +216,7 @@ export class SystemCostTrackingService {
         if (!breakdown.byContext[context]) {
           breakdown.byContext[context] = {
             totalCost: 0,
-            calls: 0,
+            calls: 0
           };
         }
         breakdown.byContext[context].totalCost += cost;
@@ -236,7 +230,7 @@ export class SystemCostTrackingService {
               userId: usage.userId,
               totalCost: cost,
               calls: 1,
-              tokens,
+              tokens
             });
           } else {
             breakdown.topUsers[userIndex].totalCost += cost;
@@ -247,15 +241,13 @@ export class SystemCostTrackingService {
 
         // Top projects
         if (usage.projectId) {
-          const projectIndex = breakdown.topProjects.findIndex(
-            p => p.projectId === usage.projectId
-          );
+          const projectIndex = breakdown.topProjects.findIndex(p => p.projectId === usage.projectId);
           if (projectIndex === -1) {
             breakdown.topProjects.push({
               projectId: usage.projectId,
               totalCost: cost,
               calls: 1,
-              tokens,
+              tokens
             });
           } else {
             breakdown.topProjects[projectIndex].totalCost += cost;
@@ -272,7 +264,7 @@ export class SystemCostTrackingService {
             breakdown.systemOperations.push({
               operation,
               totalCost: cost,
-              calls: 1,
+              calls: 1
             });
           } else {
             breakdown.systemOperations[opIndex].totalCost += cost;
@@ -296,10 +288,7 @@ export class SystemCostTrackingService {
 
       return breakdown;
     } catch (error: unknown) {
-      throw new AppError(
-        `Failed to get system cost breakdown: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
+      throw new AppError(`Failed to get system cost breakdown: ${error.message}`, 500);
     }
   }
 
@@ -309,49 +298,47 @@ export class SystemCostTrackingService {
   private async generateTimeSeries(
     query: any,
     groupBy: 'day' | 'hour' | 'week' | 'month'
-  ): Promise<
-    Array<{
-      date: string;
-      totalCost: number;
-      userInitiatedCost: number;
-      systemInitiatedCost: number;
-      calls: number;
-    }>
-  > {
+  ): Promise<Array<{
+    date: string;
+    totalCost: number;
+    userInitiatedCost: number;
+    systemInitiatedCost: number;
+    calls: number;
+  }>> {
     try {
+      let dateFormat: string;
       let dateGroup: any;
-      let _dateFormat: string;
 
       switch (groupBy) {
         case 'hour':
-          _dateFormat = '%Y-%m-%d %H:00:00';
+          dateFormat = '%Y-%m-%d %H:00:00';
           dateGroup = {
             year: { $year: '$timestamp' },
             month: { $month: '$timestamp' },
             day: { $dayOfMonth: '$timestamp' },
-            hour: { $hour: '$timestamp' },
+            hour: { $hour: '$timestamp' }
           };
           break;
         case 'day':
-          _dateFormat = '%Y-%m-%d';
+          dateFormat = '%Y-%m-%d';
           dateGroup = {
             year: { $year: '$timestamp' },
             month: { $month: '$timestamp' },
-            day: { $dayOfMonth: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
           };
           break;
         case 'week':
-          _dateFormat = '%Y-W%V';
+          dateFormat = '%Y-W%V';
           dateGroup = {
             year: { $year: '$timestamp' },
-            week: { $week: '$timestamp' },
+            week: { $week: '$timestamp' }
           };
           break;
         case 'month':
-          _dateFormat = '%Y-%m';
+          dateFormat = '%Y-%m';
           dateGroup = {
             year: { $year: '$timestamp' },
-            month: { $month: '$timestamp' },
+            month: { $month: '$timestamp' }
           };
           break;
       }
@@ -367,23 +354,23 @@ export class SystemCostTrackingService {
                 $cond: [
                   { $or: [{ $ne: ['$userId', null] }, { $ne: ['$projectId', null] }] },
                   '$totalCost',
-                  0,
-                ],
-              },
+                  0
+                ]
+              }
             },
             systemInitiatedCost: {
               $sum: {
                 $cond: [
                   { $and: [{ $eq: ['$userId', null] }, { $eq: ['$projectId', null] }] },
                   '$totalCost',
-                  0,
-                ],
-              },
+                  0
+                ]
+              }
             },
-            calls: { $sum: 1 },
-          },
+            calls: { $sum: 1 }
+          }
         },
-        { $sort: { _id: 1 } },
+        { $sort: { '_id': 1 } }
       ];
 
       const results = await LLMUsage.aggregate(pipeline);
@@ -405,7 +392,7 @@ export class SystemCostTrackingService {
           totalCost: result.totalCost || 0,
           userInitiatedCost: result.userInitiatedCost || 0,
           systemInitiatedCost: result.systemInitiatedCost || 0,
-          calls: result.calls || 0,
+          calls: result.calls || 0
         };
       });
     } catch (error: unknown) {
@@ -429,7 +416,7 @@ export class SystemCostTrackingService {
       timeSeries: [],
       topUsers: [],
       topProjects: [],
-      systemOperations: [],
+      systemOperations: []
     };
   }
 
@@ -453,8 +440,8 @@ export class SystemCostTrackingService {
       const query = {
         timestamp: {
           $gte: startDate,
-          $lte: endDate,
-        },
+          $lte: endDate
+        }
       };
 
       const [userUsage, systemUsage] = await Promise.all([
@@ -462,13 +449,16 @@ export class SystemCostTrackingService {
           ...query,
           $or: [
             { userId: { $exists: true, $ne: null } },
-            { projectId: { $exists: true, $ne: null } },
-          ],
+            { projectId: { $exists: true, $ne: null } }
+          ]
         }).lean(),
         LLMUsage.find({
           ...query,
-          $and: [{ userId: { $exists: false } }, { projectId: { $exists: false } }],
-        }).lean(),
+          $and: [
+            { userId: { $exists: false } },
+            { projectId: { $exists: false } }
+          ]
+        }).lean()
       ]);
 
       const userCost = userUsage.reduce((sum, u) => sum + (u.totalCost || 0), 0);
@@ -479,10 +469,7 @@ export class SystemCostTrackingService {
       const systemCalls = systemUsage.length;
       const totalCalls = userCalls + systemCalls;
 
-      const daysDiff = Math.max(
-        1,
-        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-      );
+      const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
 
       return {
         totalCost,
@@ -492,13 +479,10 @@ export class SystemCostTrackingService {
         userCalls,
         systemCalls,
         averageCostPerCall: totalCalls > 0 ? totalCost / totalCalls : 0,
-        costPerDay: totalCost / daysDiff,
+        costPerDay: totalCost / daysDiff
       };
     } catch (error: unknown) {
-      throw new AppError(
-        `Failed to get cost summary: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
+      throw new AppError(`Failed to get cost summary: ${error.message}`, 500);
     }
   }
 }

@@ -87,12 +87,11 @@ router.put('/settings/global', async (req: Request, res: Response) => {
     // Validate settings
     const validation = llmRouterSettingsService.validateSettings(settings);
     if (!validation.valid) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'Invalid settings',
         errors: validation.errors
       });
-      return;
     }
 
     const updated = await llmRouterSettingsService.updateGlobalSettings(settings);
@@ -151,12 +150,11 @@ router.put('/settings/user/:userId', async (req: Request, res: Response) => {
     // Validate settings
     const validation = llmRouterSettingsService.validateSettings(settings);
     if (!validation.valid) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'Invalid settings',
         errors: validation.errors
       });
-      return;
     }
 
     const updated = await llmRouterSettingsService.updateUserSettings(userId, settings);
@@ -268,11 +266,10 @@ router.post('/rules', async (req: Request, res: Response) => {
 
     // Validate routerType
     if (ruleData.routerType !== 'end-user' && ruleData.routerType !== 'internal') {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'Invalid routerType. Must be "end-user" or "internal"'
       });
-      return;
     }
 
     const rule = await RoutingRule.create(ruleData);
@@ -312,11 +309,10 @@ router.put('/rules/:ruleId', async (req: Request, res: Response) => {
     );
 
     if (!rule) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Routing rule not found'
       });
-      return;
     }
 
     // Clear the routing engine cache so the updated rule takes effect immediately
@@ -348,11 +344,10 @@ router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
 
     const rule = await RoutingRule.findByIdAndDelete(ruleId);
     if (!rule) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Routing rule not found'
       });
-      return;
     }
 
     // Remove rule from all settings that reference it
@@ -388,11 +383,10 @@ router.post('/rules/test', async (req: Request, res: Response) => {
     const { rule, sampleTask } = req.body;
 
     if (!rule || !sampleTask) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'Rule and sampleTask are required'
       });
-      return;
     }
 
     const result = await llmRouterSettingsService.testRoutingRule(rule, sampleTask);
@@ -749,11 +743,10 @@ router.get('/decisions/:decisionId', async (req: Request, res: Response) => {
     const decision = await RoutingDecisionLog.findById(decisionId).lean();
 
     if (!decision) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Routing decision not found'
       });
-      return;
     }
 
     res.json({
@@ -951,11 +944,10 @@ router.post('/quotas', async (req: Request, res: Response) => {
 
     // Validate required fields
     if (!quotaData.targetType) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'targetType is required'
       });
-      return;
     }
 
     // Initialize currentUsage if not provided
@@ -1001,11 +993,10 @@ router.put('/quotas/:quotaId', async (req: Request, res: Response) => {
     );
 
     if (!quota) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Quota not found'
       });
-      return;
     }
 
     res.json({
@@ -1035,11 +1026,10 @@ router.delete('/quotas/:quotaId', async (req: Request, res: Response) => {
     const quota = await UsageQuota.findByIdAndDelete(quotaId);
 
     if (!quota) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Quota not found'
       });
-      return;
     }
 
     res.json({
@@ -1068,11 +1058,10 @@ router.get('/quotas/:quotaId', async (req: Request, res: Response) => {
     const quota = await UsageQuota.findById(quotaId).lean();
 
     if (!quota) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Quota not found'
       });
-      return;
     }
 
     res.json({

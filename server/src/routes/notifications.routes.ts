@@ -1,8 +1,9 @@
 import express from 'express';
 import { Notification } from '../models/Notification.model.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -23,8 +24,8 @@ router.get('/', async (req: AdminRequest, res, next) => {
     const query: any = {
       $or: [
         { userId: userId }, // User-specific notifications
-        { userId: null }, // System-wide notifications
-      ],
+        { userId: null }    // System-wide notifications
+      ]
     };
 
     if (unreadOnly) {
@@ -38,7 +39,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
 
     const unreadCount = await Notification.countDocuments({
       ...query,
-      isRead: false,
+      isRead: false
     });
 
     res.json({
@@ -49,14 +50,14 @@ router.get('/', async (req: AdminRequest, res, next) => {
           title: n.title,
           message: n.message,
           type: n.type,
-          category: (n as any).category,
-          isRead: (n as any).isRead,
-          link: (n as any).link,
-          metadata: (n as any).metadata,
-          createdAt: n.createdAt,
+          category: n.category,
+          isRead: n.isRead,
+          link: n.link,
+          metadata: n.metadata,
+          createdAt: n.createdAt
         })),
-        unreadCount,
-      },
+        unreadCount
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -72,13 +73,16 @@ router.get('/unread-count', async (req: AdminRequest, res, next) => {
     const userId = req.admin?.id || req.user?.id;
 
     const count = await Notification.countDocuments({
-      $or: [{ userId: userId }, { userId: null }],
-      isRead: false,
+      $or: [
+        { userId: userId },
+        { userId: null }
+      ],
+      isRead: false
     });
 
     res.json({
       success: true,
-      data: { count },
+      data: { count }
     });
   } catch (error: unknown) {
     next(error);
@@ -97,13 +101,13 @@ router.put('/:id/read', async (req: AdminRequest, res, next) => {
       throw new AppError('Notification not found', 404);
     }
 
-    (notification as any).isRead = true;
+    notification.isRead = true;
     notification.readAt = new Date();
     await notification.save();
 
     res.json({
       success: true,
-      message: 'Notification marked as read',
+      message: 'Notification marked as read'
     });
   } catch (error: unknown) {
     next(error);
@@ -120,20 +124,23 @@ router.put('/read-all', async (req: AdminRequest, res, next) => {
 
     await Notification.updateMany(
       {
-        $or: [{ userId: userId }, { userId: null }],
-        isRead: false,
+        $or: [
+          { userId: userId },
+          { userId: null }
+        ],
+        isRead: false
       },
       {
         $set: {
           isRead: true,
-          readAt: new Date(),
-        },
+          readAt: new Date()
+        }
       }
     );
 
     res.json({
       success: true,
-      message: 'All notifications marked as read',
+      message: 'All notifications marked as read'
     });
   } catch (error: unknown) {
     next(error);
@@ -154,7 +161,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'Notification deleted',
+      message: 'Notification deleted'
     });
   } catch (error: unknown) {
     next(error);

@@ -40,14 +40,13 @@ router.get('/check/:key', async (req, res, next) => {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       // MongoDB not connected - default to enabled for backward compatibility
-      res.json({
+      return res.json({
         success: true,
         data: {
           enabled: true,
           reason: 'MongoDB not connected, defaulting to enabled'
         }
       });
-      return;
     }
     
     const flag = await FeatureFlag.findOne({ 
@@ -56,19 +55,18 @@ router.get('/check/:key', async (req, res, next) => {
 
     if (!flag) {
       // If flag doesn't exist, default to enabled (backward compatibility)
-      res.json({
+      return res.json({
         success: true,
         data: {
           enabled: true,
           reason: 'Feature flag not found, defaulting to enabled'
         }
       });
-      return;
     }
 
     // First check: if isActive is false, feature is disabled for everyone
     if (!flag.isActive) {
-      res.json({
+      return res.json({
         success: true,
         data: {
           enabled: false,
@@ -78,7 +76,6 @@ router.get('/check/:key', async (req, res, next) => {
           reason: 'Feature flag is inactive'
         }
       });
-      return;
     }
 
     // Second check: environment-specific activation
@@ -87,7 +84,7 @@ router.get('/check/:key', async (req, res, next) => {
     
     if (flag.enabledEnvironments && flag.enabledEnvironments.length > 0) {
       if (!flag.enabledEnvironments.includes(currentEnv)) {
-        res.json({
+        return res.json({
           success: true,
           data: {
             enabled: false,
@@ -97,7 +94,6 @@ router.get('/check/:key', async (req, res, next) => {
             reason: `Feature is not enabled for environment '${currentEnv}'`
           }
         });
-        return;
       }
     }
 
@@ -240,7 +236,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         featureKey: newFlag.featureKey,
         message: 'Feature flags have been updated. Changes are effective immediately.'
       });
-    } catch (error: unknown) {
+    } catch (error) {
       // WebSocket not available - that's okay, cache will expire naturally
       logger.debug('WebSocket service not available for feature flag broadcast');
     }
@@ -266,7 +262,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       action: 'feature_flag.create',
       entityType: 'feature_flag',
       status: 'failed',
-      errorMessage: (error instanceof Error ? error.message : String(error))
+      errorMessage: error.message
     });
     next(error);
   }
@@ -337,7 +333,7 @@ router.put('/:key', async (req: AdminRequest, res, next) => {
         message: 'Feature flags have been updated. Changes are effective immediately.'
       });
       logger.info(`[Feature Flags] Broadcasted cache clear for feature: ${flag.featureKey}`);
-    } catch (error: unknown) {
+    } catch (error) {
       // WebSocket not available - that's okay, cache will expire naturally
       logger.debug('WebSocket service not available for feature flag broadcast');
     }
@@ -364,7 +360,7 @@ router.put('/:key', async (req: AdminRequest, res, next) => {
       entityType: 'feature_flag',
       entityId: req.params.key,
       status: 'failed',
-      errorMessage: (error instanceof Error ? error.message : String(error))
+      errorMessage: error.message
     });
     next(error);
   }
@@ -382,7 +378,7 @@ router.delete('/:key', async (req: AdminRequest, res, next) => {
       throw new AppError('Feature flag not found', 404);
     }
 
-    // const _featureKey = flag.featureKey;
+    const featureKey = flag.featureKey;
 
     // Soft delete - set isActive to false instead of actually deleting
     flag.isActive = false;
@@ -405,7 +401,7 @@ router.delete('/:key', async (req: AdminRequest, res, next) => {
         featureKey: flag.featureKey,
         message: 'Feature flags have been updated. Changes are effective immediately.'
       });
-    } catch (error: unknown) {
+    } catch (error) {
       // WebSocket not available - that's okay, cache will expire naturally
       logger.debug('WebSocket service not available for feature flag broadcast');
     }
@@ -420,7 +416,7 @@ router.delete('/:key', async (req: AdminRequest, res, next) => {
       entityType: 'feature_flag',
       entityId: req.params.key,
       status: 'failed',
-      errorMessage: (error instanceof Error ? error.message : String(error))
+      errorMessage: error.message
     });
     next(error);
   }

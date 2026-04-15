@@ -110,7 +110,7 @@ class CommunitySharingService {
           .sort({ averageRating: -1, downloads: -1, publishedAt: -1 })
           .limit(limit)
           .skip(offset)
-          .lean() as any,
+          .lean(),
         MarketplaceListing.countDocuments(filter)
       ]);
 
@@ -192,8 +192,7 @@ class CommunitySharingService {
 
       // Create forked improvement
       const forkedId = `pi-${crypto.randomUUID()}`;
-      // @ts-ignore TS6133
-      const _forkedImprovement = await ProcessImprovement.create({
+      const forkedImprovement = await ProcessImprovement.create({
         id: forkedId,
         title: customizations.title || `${originalImprovement.title} (Forked)`,
         description: customizations.description || originalImprovement.description,
@@ -334,18 +333,18 @@ class CommunitySharingService {
     topCategories: Array<{ category: string; count: number }>;
   }> {
     try {
-      const listings = await MarketplaceListing.find({ published: true }).lean() as any;
+      const listings = await MarketplaceListing.find({ published: true }).lean();
 
       const totalListings = listings.length;
-      const totalDownloads = listings.reduce((sum: any, l: any) => sum + l.downloads, 0);
-      const totalForks = listings.reduce((sum: any, l: any) => sum + l.forks, 0);
+      const totalDownloads = listings.reduce((sum, l) => sum + l.downloads, 0);
+      const totalForks = listings.reduce((sum, l) => sum + l.forks, 0);
       const averageRating = listings.length > 0
-        ? listings.reduce((sum: any, l: any) => sum + l.averageRating, 0) / listings.length
+        ? listings.reduce((sum, l) => sum + l.averageRating, 0) / listings.length
         : 0;
 
       // Top categories
       const categoryCounts = new Map<string, number>();
-      listings.forEach((l: any) => {
+      listings.forEach(l => {
         categoryCounts.set(l.category, (categoryCounts.get(l.category) || 0) + 1);
       });
 

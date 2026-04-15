@@ -45,7 +45,7 @@ router.get('/models', async (_req: AdminRequest, res, next) => {
       { key: 'groq', provider: 'groq' },
       { key: 'vertex', provider: 'vertex' },
       { key: 'azure', provider: 'azure' },
-      { key: 'e2b', provider: 'e2b' },
+      { key: 'e2b', provider: 'e2b' }
     ];
 
     const providerStatuses = await Promise.all(
@@ -59,7 +59,7 @@ router.get('/models', async (_req: AdminRequest, res, next) => {
       providers[key] = {
         enabled: source !== 'none',
         configured: source !== 'none',
-        source,
+        source
       };
     });
 
@@ -67,7 +67,7 @@ router.get('/models', async (_req: AdminRequest, res, next) => {
     // NOTE: We don't auto-disable models here - that would overwrite user choices on every page load
     // The POST /models/:id/enable endpoint already prevents enabling models without API keys
     const modelsWithApiKeyStatus = await Promise.all(
-      models.map(async model => {
+      models.map(async (model) => {
         const providerKey = model.provider.toLowerCase();
         const hasApiKey = await apiKeyProvider.hasApiKey(providerKey as any);
         const apiKeySource = await apiKeyProvider.getApiKeySource(providerKey as any);
@@ -75,7 +75,7 @@ router.get('/models', async (_req: AdminRequest, res, next) => {
         return {
           ...model,
           apiKeyConfigured: hasApiKey,
-          apiKeySource: apiKeySource,
+          apiKeySource: apiKeySource
         };
       })
     );
@@ -88,9 +88,9 @@ router.get('/models', async (_req: AdminRequest, res, next) => {
           enableMultiLLM: config.enableMultiLLM,
           defaultLLMProvider: config.defaultLLMProvider,
           llmRoutingStrategy: config.llmRoutingStrategy,
-          providers,
-        },
-      },
+          providers
+        }
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -108,11 +108,10 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
 
     const model = modelRegistry.getModel(id);
     if (!model) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Model not found',
+        message: 'Model not found'
       });
-      return;
     }
 
     // Allowed updates
@@ -120,7 +119,7 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
       'isEnabled',
       'status',
       'pricing',
-      'performance',
+      'performance'
     ];
 
     const filteredUpdates: any = {};
@@ -133,50 +132,40 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
     const success = await modelRegistry.updateModel(id, filteredUpdates);
 
     if (!success) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'Failed to update model',
+        message: 'Failed to update model'
       });
-      return;
     }
 
     // Verify the save was successful by checking the database
     try {
-      const { LLMModelConfig } = await import('../models/LLMModelConfig.model.js');
+      const { LLMModelConfig } = await import('../../models/LLMModelConfig.model.js');
       const savedConfig = await LLMModelConfig.findOne({ modelId: id });
 
       if (savedConfig) {
         // Verify isEnabled if it was updated
-        if (
-          filteredUpdates.isEnabled !== undefined &&
-          savedConfig.isEnabled !== filteredUpdates.isEnabled
-        ) {
-          logger.error(
-            `Database verification failed for model ${id}: Expected isEnabled=${filteredUpdates.isEnabled}, got ${savedConfig.isEnabled}`
-          );
-          res.status(500).json({
+        if (filteredUpdates.isEnabled !== undefined && savedConfig.isEnabled !== filteredUpdates.isEnabled) {
+          logger.error(`Database verification failed for model ${id}: Expected isEnabled=${filteredUpdates.isEnabled}, got ${savedConfig.isEnabled}`);
+          return res.status(500).json({
             success: false,
-            message: 'Model state was not saved correctly. Please try again.',
+            message: 'Model state was not saved correctly. Please try again.'
           });
-          return;
         }
 
         // Verify status if it was updated
         if (filteredUpdates.status !== undefined && savedConfig.status !== filteredUpdates.status) {
-          logger.error(
-            `Database verification failed for model ${id}: Expected status=${filteredUpdates.status}, got ${savedConfig.status}`
-          );
-          res.status(500).json({
+          logger.error(`Database verification failed for model ${id}: Expected status=${filteredUpdates.status}, got ${savedConfig.status}`);
+          return res.status(500).json({
             success: false,
-            message: 'Model status was not saved correctly. Please try again.',
+            message: 'Model status was not saved correctly. Please try again.'
           });
-          return;
         }
 
         logger.info(`Verified model ${id} update saved to database:`, {
           isEnabled: savedConfig.isEnabled,
           status: savedConfig.status,
-          updates: filteredUpdates,
+          updates: filteredUpdates
         });
       }
     } catch (verifyError: any) {
@@ -190,8 +179,8 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
       entityId: id,
       details: {
         modelId: id,
-        updates: filteredUpdates,
-      },
+        updates: filteredUpdates
+      }
     });
 
     logger.info(`Admin ${req.admin?.email} updated LLM model ${id}`);
@@ -200,11 +189,10 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
     await modelRegistry.initialize();
     const updatedModel = modelRegistry.getModel(id);
     if (!updatedModel) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Model not found',
+        message: 'Model not found'
       });
-      return;
     }
 
     // Add API key configuration status to the model (same as GET /models endpoint)
@@ -215,14 +203,14 @@ router.put('/models/:id', async (req: AdminRequest, res, next) => {
     const modelWithApiKeyStatus = {
       ...updatedModel,
       apiKeyConfigured: hasApiKey,
-      apiKeySource: apiKeySource,
+      apiKeySource: apiKeySource
     };
 
     res.json({
       success: true,
       data: {
-        model: modelWithApiKeyStatus,
-      },
+        model: modelWithApiKeyStatus
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -244,20 +232,18 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
     }
 
     if (typeof enabled !== 'boolean') {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'enabled must be a boolean',
+        message: 'enabled must be a boolean'
       });
-      return;
     }
 
     const model = modelRegistry.getModel(id);
     if (!model) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Model not found',
+        message: 'Model not found'
       });
-      return;
     }
 
     // Check if API key is configured for the provider (database first, then env fallback)
@@ -267,32 +253,29 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
 
       if (!hasKey) {
         const providerNames: Record<string, string> = {
-          openai: 'OpenAI',
-          anthropic: 'Anthropic',
-          gemini: 'Gemini',
-          deepseek: 'DeepSeek',
-          grok: 'Grok',
-          mistral: 'Mistral',
-          qwen: 'Qwen',
-          openrouter: 'OpenRouter',
-          groq: 'Groq',
-          vertex: 'Vertex AI',
-          azure: 'Azure OpenAI',
+          'openai': 'OpenAI',
+          'anthropic': 'Anthropic',
+          'gemini': 'Gemini',
+          'deepseek': 'DeepSeek',
+          'grok': 'Grok',
+          'mistral': 'Mistral',
+          'qwen': 'Qwen',
+          'openrouter': 'OpenRouter',
+          'groq': 'Groq',
+          'vertex': 'Vertex AI',
+          'azure': 'Azure OpenAI'
         };
 
         const providerName = providerNames[model.provider] || model.provider;
-        res.status(400).json({
+        return res.status(400).json({
           success: false,
-          message: `${providerName} API key not configured. Please add it via API Keys Management in the Admin Dashboard (recommended for security) or environment variables.`,
+          message: `${providerName} API key not configured. Please add it via API Keys Management in the Admin Dashboard (recommended for security) or environment variables.`
         });
-        return;
       }
 
       // Log if using environment variable (less secure)
-      if (keySource as string === 'environment') {
-        logger.warn(
-          `⚠️  Model ${model.id} enabled using environment variable API key. Consider migrating to database storage for better security.`
-        );
+      if (keySource === 'environment') {
+        logger.warn(`⚠️  Model ${model.id} enabled using environment variable API key. Consider migrating to database storage for better security.`);
       }
     }
 
@@ -300,27 +283,23 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
 
     if (!success) {
       logger.error(`Failed to enable/disable model ${id}: Database persistence failed`);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        message: 'Failed to save model state to database. Please try again or check server logs.',
+        message: 'Failed to save model state to database. Please try again or check server logs.'
       });
-      return;
     }
 
     // Verify the save was successful by checking the database
     try {
-      const { LLMModelConfig } = await import('../models/LLMModelConfig.model.js');
+      const { LLMModelConfig } = await import('../../models/LLMModelConfig.model.js');
       const savedConfig = await LLMModelConfig.findOne({ modelId: id });
 
       if (savedConfig && savedConfig.isEnabled !== enabled) {
-        logger.error(
-          `Database verification failed for model ${id}: Expected isEnabled=${enabled}, got ${savedConfig.isEnabled}`
-        );
-        res.status(500).json({
+        logger.error(`Database verification failed for model ${id}: Expected isEnabled=${enabled}, got ${savedConfig.isEnabled}`);
+        return res.status(500).json({
           success: false,
-          message: 'Model state was not saved correctly. Please try again.',
-        });
-        return;
+          message: 'Model state was not saved correctly. Please try again.'
+      });
       }
 
       logger.info(`Verified model ${id} state saved to database: isEnabled=${enabled}`);
@@ -335,34 +314,30 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
       entityId: id,
       details: {
         modelId: id,
-        enabled,
-      },
+        enabled
+      }
     });
 
     logger.info(`Admin ${req.admin?.email} ${enabled ? 'enabled' : 'disabled'} LLM model ${id}`);
 
     const updatedModel = modelRegistry.getModel(id);
     if (!updatedModel) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Model not found',
+        message: 'Model not found'
       });
-      return;
     }
 
     // Ensure the returned model has the correct isEnabled state
     if (updatedModel.isEnabled !== enabled) {
-      logger.warn(
-        `Model ${id} in-memory state (${updatedModel.isEnabled}) doesn't match requested state (${enabled}). Reloading from database.`
-      );
+      logger.warn(`Model ${id} in-memory state (${updatedModel.isEnabled}) doesn't match requested state (${enabled}). Reloading from database.`);
       await modelRegistry.initialize();
       const reloadedModel = modelRegistry.getModel(id);
       if (!reloadedModel) {
-        res.status(404).json({
+        return res.status(404).json({
           success: false,
-          message: 'Model not found after reload',
+          message: 'Model not found after reload'
         });
-        return;
       }
       // Use the reloaded model
       const finalModel = reloadedModel;
@@ -375,17 +350,16 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
       const modelWithApiKeyStatus = {
         ...finalModel,
         apiKeyConfigured: hasApiKey,
-        apiKeySource: apiKeySource,
+        apiKeySource: apiKeySource
       };
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           model: modelWithApiKeyStatus,
-          message: `Model ${enabled ? 'enabled' : 'disabled'} successfully`,
-        },
+          message: `Model ${enabled ? 'enabled' : 'disabled'} successfully`
+        }
       });
-      return;
     }
 
     // Add API key configuration status to the model (same as GET /models endpoint)
@@ -396,15 +370,15 @@ router.post('/models/:id/enable', async (req: AdminRequest, res, next) => {
     const modelWithApiKeyStatus = {
       ...updatedModel,
       apiKeyConfigured: hasApiKey,
-      apiKeySource: apiKeySource,
+      apiKeySource: apiKeySource
     };
 
     res.json({
       success: true,
       data: {
         model: modelWithApiKeyStatus,
-        message: `Model ${enabled ? 'enabled' : 'disabled'} successfully`,
-      },
+        message: `Model ${enabled ? 'enabled' : 'disabled'} successfully`
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -431,7 +405,7 @@ router.get('/config', async (_req: AdminRequest, res, next) => {
       { key: 'groq', provider: 'groq' },
       { key: 'vertex', provider: 'vertex' },
       { key: 'azure', provider: 'azure' },
-      { key: 'e2b', provider: 'e2b' },
+      { key: 'e2b', provider: 'e2b' }
     ];
 
     const providerStatuses = await Promise.all(
@@ -445,7 +419,7 @@ router.get('/config', async (_req: AdminRequest, res, next) => {
       providers[key] = {
         configured: source !== 'none',
         hasKey: source !== 'none',
-        source,
+        source
       };
     });
 
@@ -455,8 +429,8 @@ router.get('/config', async (_req: AdminRequest, res, next) => {
         enableMultiLLM: config.enableMultiLLM,
         defaultLLMProvider: config.defaultLLMProvider,
         llmRoutingStrategy: config.llmRoutingStrategy,
-        providers,
-      },
+        providers
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -470,34 +444,30 @@ router.get('/config', async (_req: AdminRequest, res, next) => {
 router.post('/test/:id', async (req: AdminRequest, res, next) => {
   try {
     const { id } = req.params;
-    // @ts-ignore TS6133
-    const { _prompt } = req.body;
+    const { prompt } = req.body;
 
     const model = modelRegistry.getModel(id);
     if (!model) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Model not found',
+        message: 'Model not found'
       });
-      return;
     }
 
     // Prevent testing deprecated or maintenance models
     if (model.status === 'deprecated' || model.status === 'maintenance') {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: `Model is ${model.status}. ${model.status === 'deprecated' ? 'This model is no longer available.' : 'This model is under maintenance and not available for testing.'}`,
-        status: model.status,
+        status: model.status
       });
-      return;
     }
 
     if (!model.isEnabled) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: 'Model is not enabled',
+        message: 'Model is not enabled'
       });
-      return;
     }
 
     // Check if API key is configured (database first, then env fallback)
@@ -507,17 +477,17 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
     const apiKeySource = await apiKeyProvider.getApiKeySource(model.provider as any);
 
     const providerNames: Record<string, string> = {
-      openai: 'OpenAI',
-      anthropic: 'Anthropic',
-      gemini: 'Gemini',
-      deepseek: 'DeepSeek',
-      grok: 'Grok',
-      mistral: 'Mistral',
-      qwen: 'Qwen',
-      openrouter: 'OpenRouter',
-      groq: 'Groq',
-      vertex: 'Vertex AI',
-      azure: 'Azure OpenAI',
+      'openai': 'OpenAI',
+      'anthropic': 'Anthropic',
+      'gemini': 'Gemini',
+      'deepseek': 'DeepSeek',
+      'grok': 'Grok',
+      'mistral': 'Mistral',
+      'qwen': 'Qwen',
+      'openrouter': 'OpenRouter',
+      'groq': 'Groq',
+      'vertex': 'Vertex AI',
+      'azure': 'Azure OpenAI'
     };
 
     const providerName = providerNames[model.provider] || model.provider;
@@ -526,25 +496,22 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
       : `${providerName} API key not configured. Please add it via API Keys Management in the Admin Dashboard (recommended for security) or environment variables.`;
 
     if (!apiKeyConfigured) {
-      res.json({
+      return res.json({
         success: true, // Keep true so frontend can handle gracefully
         data: {
           model: model.id,
           status: 'test_failed', // Explicitly set to test_failed
           error: apiKeyMessage,
-          message:
-            apiKeyMessage ||
-            `${providerName} API key not configured. Please add it via API Keys Management.`,
+          message: apiKeyMessage || `${providerName} API key not configured. Please add it via API Keys Management.`,
           testResult: {
             response: undefined,
             modelUsed: model.id,
             provider: model.provider,
             tokensUsed: 0,
-            fallbackUsed: false,
-          },
-        },
+            fallbackUsed: false
+          }
+        }
       });
-      return;
     }
 
     // Real model testing using LLM Router
@@ -558,7 +525,7 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
         testPrompt,
         model.modelIdentifier || model.id, // Use modelIdentifier (e.g., 'gemini-3-pro-preview') instead of id
         {
-          systemInstruction: 'You are a test assistant. Respond briefly.',
+          systemInstruction: 'You are a test assistant. Respond briefly.'
         },
         false, // Don't fallback during testing
         undefined, // No routing context
@@ -568,14 +535,13 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
 
       // Additional validation: Check if the response looks valid
       // If we got a response but it's an error message about API keys, fail the test
-      if (
-        testResult.text &&
-        (testResult.text.toLowerCase().includes('api key') ||
-          testResult.text.toLowerCase().includes('authentication') ||
-          testResult.text.toLowerCase().includes('unauthorized') ||
-          testResult.text.toLowerCase().includes('invalid key'))
-      ) {
-        res.json({
+      if (testResult.text && (
+        testResult.text.toLowerCase().includes('api key') ||
+        testResult.text.toLowerCase().includes('authentication') ||
+        testResult.text.toLowerCase().includes('unauthorized') ||
+        testResult.text.toLowerCase().includes('invalid key')
+      )) {
+        return res.json({
           success: true,
           data: {
             model: model.id,
@@ -587,11 +553,10 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
               modelUsed: model.id,
               provider: model.provider,
               tokensUsed: testResult.usage?.totalTokens || 0,
-              fallbackUsed: false,
-            },
-          },
+              fallbackUsed: false
+            }
+          }
         });
-        return;
       }
 
       // Success - API key is valid and model responded correctly
@@ -605,10 +570,10 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
             modelUsed: testResult.modelUsed,
             provider: testResult.provider,
             tokensUsed: testResult.usage?.totalTokens || 0,
-            fallbackUsed: testResult.fallbackUsed || false,
+            fallbackUsed: testResult.fallbackUsed || false
           },
-          message: `Model test completed successfully. API key is configured${apiKeySource === 'database' ? ' (from database - secure)' : apiKeySource as string === 'environment' ? ' (from environment variables - consider migrating to database)' : ''}.`,
-        },
+          message: `Model test completed successfully. API key is configured${apiKeySource === 'database' ? ' (from database - secure)' : apiKeySource === 'environment' ? ' (from environment variables - consider migrating to database)' : ''}.`
+        }
       });
     } catch (testError: any) {
       logger.error(`Model test failed for ${model.id}:`, testError);
@@ -638,9 +603,9 @@ router.post('/test/:id', async (req: AdminRequest, res, next) => {
             modelUsed: model.id,
             provider: model.provider,
             tokensUsed: 0,
-            fallbackUsed: false,
-          },
-        },
+            fallbackUsed: false
+          }
+        }
       });
     }
   } catch (error: unknown) {

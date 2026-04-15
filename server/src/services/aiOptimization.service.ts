@@ -5,6 +5,7 @@
  */
 
 import { ProcessImprovement } from '../models/ProcessImprovement.model.js';
+import { Workflow } from '../models/Workflow.model.js';
 import { logger } from '../utils/logger.js';
 
 export interface ProcessAnalysis {
@@ -163,9 +164,9 @@ class AIOptimizationService {
    */
   private generateRecommendations(
     improvement: any,
-    _strengths: string[],
-    _weaknesses: string[],
-    _opportunities: string[]
+    strengths: string[],
+    weaknesses: string[],
+    opportunities: string[]
   ): OptimizationRecommendation[] {
     const recommendations: OptimizationRecommendation[] = [];
 
@@ -272,7 +273,7 @@ class AIOptimizationService {
       const testResults = {
         successRate: 75 + Math.random() * 20, // Simulated
         averageDuration: improvement.usage.timesUsed > 0 
-          ? (((improvement as any).statistics)?.averageDuration || 0) * (0.8 + Math.random() * 0.4)
+          ? (improvement.statistics?.averageDuration || 0) * (0.8 + Math.random() * 0.4)
           : 1000,
         userSatisfaction: 70 + Math.random() * 25
       };
@@ -307,7 +308,7 @@ class AIOptimizationService {
 
       // Simple prediction based on historical data
       const baseSuccessRate = improvement.usage.successRate || 70;
-      const baseDuration = ((improvement as any).statistics)?.averageDuration || 1000;
+      const baseDuration = improvement.statistics?.averageDuration || 1000;
 
       // Adjust based on context
       let predictedSuccessRate = baseSuccessRate;

@@ -3,6 +3,7 @@
  * Analyzes brainstorming ideas to detect potential sub-projects (webapp, mobile app, website, etc.)
  */
 
+import { logger } from '../utils/logger.js';
 
 export interface DetectedSubProject {
   id: string;

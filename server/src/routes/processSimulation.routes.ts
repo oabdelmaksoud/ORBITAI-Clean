@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { processSimulationService } from '../services/processSimulation.service.js';
+import { logger } from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 const router = express.Router();

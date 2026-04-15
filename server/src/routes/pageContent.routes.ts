@@ -22,7 +22,7 @@ router.get('/:pageKey', async (req: AdminRequest, res, next) => {
 
     const sections = await PageContent.find({
       pageKey,
-      isActive: true,
+      isActive: true
     })
       .sort({ sortOrder: 1 })
       .lean();
@@ -39,7 +39,7 @@ router.get('/:pageKey', async (req: AdminRequest, res, next) => {
         sortOrder: section.sortOrder,
         metadata: section.metadata || {},
         createdAt: section.createdAt,
-        updatedAt: section.updatedAt,
+        updatedAt: section.updatedAt
       };
     });
 
@@ -47,8 +47,8 @@ router.get('/:pageKey', async (req: AdminRequest, res, next) => {
       success: true,
       data: {
         pageKey,
-        sections: sectionsMap,
-      },
+        sections: sectionsMap
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to get page content:', error);
@@ -66,15 +66,14 @@ router.get('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
 
     const section = await PageContent.findOne({
       pageKey,
-      sectionKey,
+      sectionKey
     }).lean();
 
     if (!section) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: 'Section not found',
+        message: 'Section not found'
       });
-      return;
     }
 
     res.json({
@@ -89,9 +88,9 @@ router.get('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
           sortOrder: section.sortOrder,
           metadata: section.metadata || {},
           createdAt: section.createdAt,
-          updatedAt: section.updatedAt,
-        },
-      },
+          updatedAt: section.updatedAt
+        }
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to get page section:', error);
@@ -123,8 +122,8 @@ router.post('/', async (req: AdminRequest, res, next) => {
       metadata: {
         lastEditedBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedAt: new Date(),
-        version: existing ? (existing.metadata?.version || 0) + 1 : 1,
-      },
+        version: existing ? ((existing.metadata?.version || 0) + 1) : 1
+      }
     };
 
     let section;
@@ -140,7 +139,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         action: 'page_content.updated',
         entityType: 'page_content',
         entityId: existing._id.toString(),
-        details: { pageKey, sectionKey },
+        details: { pageKey, sectionKey }
       });
 
       logger.info(`Admin ${req.admin?.email} updated page section ${pageKey}.${sectionKey}`);
@@ -152,7 +151,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
         action: 'page_content.created',
         entityType: 'page_content',
         entityId: section._id.toString(),
-        details: { pageKey, sectionKey },
+        details: { pageKey, sectionKey }
       });
 
       logger.info(`Admin ${req.admin?.email} created page section ${pageKey}.${sectionKey}`);
@@ -162,24 +161,24 @@ router.post('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: {
         section: {
-          id: section!._id.toString(),
-          pageKey: section!.pageKey,
-          sectionKey: section!.sectionKey,
-          content: section!.content,
-          isActive: section!.isActive,
-          sortOrder: section!.sortOrder,
-          metadata: (section as any)?.metadata || {},
-          createdAt: section!.createdAt,
-          updatedAt: section!.updatedAt,
-        },
-      },
+          id: section._id.toString(),
+          pageKey: section.pageKey,
+          sectionKey: section.sectionKey,
+          content: section.content,
+          isActive: section.isActive,
+          sortOrder: section.sortOrder,
+          metadata: section.metadata || {},
+          createdAt: section.createdAt,
+          updatedAt: section.updatedAt
+        }
+      }
     });
   } catch (error: unknown) {
     await logAudit(req, {
       action: 'page_content.create',
       entityType: 'page_content',
       status: 'failed',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error.message
     });
     logger.error('Failed to save page content:', error);
     next(error);
@@ -206,8 +205,8 @@ router.put('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
         ...existing.metadata,
         lastEditedBy: req.admin?.email || req.user?.email || 'unknown',
         lastEditedAt: new Date(),
-        version: (existing.metadata?.version || 0) + 1,
-      },
+        version: (existing.metadata?.version || 0) + 1
+      }
     };
 
     if (content !== undefined) updates.content = content;
@@ -224,7 +223,7 @@ router.put('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
       action: 'page_content.updated',
       entityType: 'page_content',
       entityId: existing._id.toString(),
-      details: { pageKey, sectionKey },
+      details: { pageKey, sectionKey }
     });
 
     logger.info(`Admin ${req.admin?.email} updated page section ${pageKey}.${sectionKey}`);
@@ -241,9 +240,9 @@ router.put('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
           sortOrder: updated?.sortOrder,
           metadata: updated?.metadata || {},
           createdAt: updated?.createdAt,
-          updatedAt: updated?.updatedAt,
-        },
-      },
+          updatedAt: updated?.updatedAt
+        }
+      }
     });
   } catch (error: unknown) {
     await logAudit(req, {
@@ -251,7 +250,7 @@ router.put('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
       entityType: 'page_content',
       entityId: `${req.params.pageKey}.${req.params.sectionKey}`,
       status: 'failed',
-      errorMessage: error instanceof Error ? error.message : String(error),
+      errorMessage: error.message
     });
     logger.error('Failed to update page content:', error);
     next(error);
@@ -280,14 +279,14 @@ router.delete('/:pageKey/:sectionKey', async (req: AdminRequest, res, next) => {
       action: 'page_content.deleted',
       entityType: 'page_content',
       entityId: section._id.toString(),
-      details: { pageKey, sectionKey },
+      details: { pageKey, sectionKey }
     });
 
     logger.info(`Admin ${req.admin?.email} deleted page section ${pageKey}.${sectionKey}`);
 
     res.json({
       success: true,
-      message: 'Section deactivated successfully',
+      message: 'Section deactivated successfully'
     });
   } catch (error: unknown) {
     logger.error('Failed to delete page content:', error);
@@ -305,7 +304,7 @@ router.get('/public/:pageKey', async (req, res, next) => {
 
     const sections = await PageContent.find({
       pageKey,
-      isActive: true,
+      isActive: true
     })
       .sort({ sortOrder: 1 })
       .lean();
@@ -314,7 +313,7 @@ router.get('/public/:pageKey', async (req, res, next) => {
     const sectionsMap: Record<string, any> = {};
     sections.forEach(section => {
       sectionsMap[section.sectionKey] = {
-        content: section.content,
+        content: section.content
       };
     });
 
@@ -322,8 +321,8 @@ router.get('/public/:pageKey', async (req, res, next) => {
       success: true,
       data: {
         pageKey,
-        sections: sectionsMap,
-      },
+        sections: sectionsMap
+      }
     });
   } catch (error: unknown) {
     logger.error('Failed to get public page content:', error);

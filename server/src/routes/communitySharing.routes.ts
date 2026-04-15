@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { communitySharingService } from '../services/communitySharing.service.js';
+import { logger } from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 const router = express.Router();
@@ -144,7 +145,7 @@ router.post('/import', async (req: AdminRequest, res, next) => {
  * GET /api/admin/community/stats
  * Get marketplace statistics
  */
-router.get('/stats', async (_req: AdminRequest, res, next) => {
+router.get('/stats', async (req: AdminRequest, res, next) => {
   try {
     const stats = await communitySharingService.getMarketplaceStats();
 

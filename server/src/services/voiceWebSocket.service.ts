@@ -31,8 +31,7 @@ class VoiceWebSocketService {
   private sessions: Map<string, VoiceSession> = new Map();
   private readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   private readonly AUDIO_BUFFER_SIZE = 5 * 1024 * 1024; // 5MB max buffer
-  // @ts-ignore TS6133
-  private readonly _SILENCE_THRESHOLD = 2000; // 2 seconds of silence to process
+  private readonly SILENCE_THRESHOLD = 2000; // 2 seconds of silence to process
 
   /**
    * Initialize WebSocket server for voice
@@ -43,7 +42,7 @@ class VoiceWebSocketService {
     // This prevents conflicts with Socket.IO which also handles WebSocket upgrades
     this.wss = new WebSocketServer({
       noServer: true,
-      perMessageDeflate: false, // Disable compression for binary audio
+      perMessageDeflate: false // Disable compression for binary audio
     });
 
     // Handle upgrade requests manually for /ws/voice path only
@@ -52,7 +51,7 @@ class VoiceWebSocketService {
 
       // Only handle /ws/voice path, let Socket.IO handle other paths
       if (pathname === '/ws/voice') {
-        this.wss!.handleUpgrade(request, socket, head, ws => {
+        this.wss!.handleUpgrade(request, socket, head, (ws) => {
           this.wss!.emit('connection', ws, request);
         });
       }
@@ -77,7 +76,7 @@ class VoiceWebSocketService {
         audioBuffer: [],
         isRecording: false,
         lastActivity: Date.now(),
-        conversationHistory: [],
+        conversationHistory: []
       };
 
       this.sessions.set(sessionId, session);
@@ -86,7 +85,7 @@ class VoiceWebSocketService {
       this.sendMessage(ws, {
         type: 'connected',
         sessionId,
-        message: 'Voice session established',
+        message: 'Voice session established'
       });
 
       // Handle incoming messages
@@ -95,8 +94,7 @@ class VoiceWebSocketService {
           session.lastActivity = Date.now();
 
           // Check if it's JSON (control message) or binary (audio)
-          if (data[0] === 0x7b) {
-            // '{' - JSON starts with {
+          if (data[0] === 0x7B) { // '{' - JSON starts with {
             const message = JSON.parse(data.toString());
             await this.handleControlMessage(session, message);
           } else {
@@ -104,12 +102,10 @@ class VoiceWebSocketService {
             await this.handleAudioChunk(session, data);
           }
         } catch (error: unknown) {
-          logger.error(
-            `[VoiceWebSocket] Error handling message: ${error instanceof Error ? error.message : String(error)}`
-          );
+          logger.error(`[VoiceWebSocket] Error handling message: ${error.message}`);
           this.sendMessage(ws, {
             type: 'error',
-            message: error instanceof Error ? error.message : String(error),
+            message: error.message
           });
         }
       });
@@ -120,7 +116,7 @@ class VoiceWebSocketService {
         this.cleanupSession(sessionId);
       });
 
-      ws.on('error', error => {
+      ws.on('error', (error) => {
         logger.error(`[VoiceWebSocket] WebSocket error: ${error.message}`);
         this.cleanupSession(sessionId);
       });
@@ -142,7 +138,7 @@ class VoiceWebSocketService {
         session.audioBuffer = [];
         this.sendMessage(session.ws, {
           type: 'recording_started',
-          message: 'Recording started',
+          message: 'Recording started'
         });
         break;
 
@@ -160,7 +156,7 @@ class VoiceWebSocketService {
         }
         this.sendMessage(session.ws, {
           type: 'recording_stopped',
-          message: 'Recording stopped',
+          message: 'Recording stopped'
         });
         break;
 
@@ -187,7 +183,7 @@ class VoiceWebSocketService {
       logger.warn(`[VoiceWebSocket] Audio buffer overflow for session ${session.sessionId}`);
       this.sendMessage(session.ws, {
         type: 'error',
-        message: 'Audio buffer overflow',
+        message: 'Audio buffer overflow'
       });
       return;
     }
@@ -198,7 +194,7 @@ class VoiceWebSocketService {
     // Send acknowledgment
     this.sendMessage(session.ws, {
       type: 'audio_received',
-      bufferSize: currentSize + audioData.length,
+      bufferSize: currentSize + audioData.length
     });
   }
 
@@ -222,7 +218,7 @@ class VoiceWebSocketService {
       // Send processing status
       this.sendMessage(session.ws, {
         type: 'processing',
-        message: 'Transcribing audio...',
+        message: 'Transcribing audio...'
       });
 
       // Step 1: Transcribe audio
@@ -238,15 +234,13 @@ class VoiceWebSocketService {
         this.sendMessage(session.ws, {
           type: 'transcription',
           text: transcription,
-          interim: false,
+          interim: false
         });
       } catch (error: unknown) {
-        logger.error(
-          `[VoiceWebSocket] Transcription failed: ${error instanceof Error ? error.message : String(error)}`
-        );
+        logger.error(`[VoiceWebSocket] Transcription failed: ${error.message}`);
         this.sendMessage(session.ws, {
           type: 'error',
-          message: `Transcription failed: ${error instanceof Error ? error.message : String(error)}`,
+          message: `Transcription failed: ${error.message}`
         });
         await unlink(tempFilePath).catch(() => {});
         return;
@@ -258,7 +252,7 @@ class VoiceWebSocketService {
       if (!transcription || transcription.trim().length === 0) {
         this.sendMessage(session.ws, {
           type: 'error',
-          message: 'No speech detected in audio',
+          message: 'No speech detected in audio'
         });
         return;
       }
@@ -266,21 +260,20 @@ class VoiceWebSocketService {
       // Add to conversation history
       session.conversationHistory.push({
         role: 'user',
-        content: transcription,
+        content: transcription
       });
 
       // Step 2: Get LLM response
       this.sendMessage(session.ws, {
         type: 'processing',
-        message: 'Generating response...',
+        message: 'Generating response...'
       });
 
       try {
         // Build prompt with conversation history
-        const historyPrompt =
-          session.conversationHistory.length > 0
-            ? `${session.conversationHistory.map(h => `${h.role}: ${h.content}`).join('\n')}\nuser: ${transcription}`
-            : transcription;
+        const historyPrompt = session.conversationHistory.length > 0
+          ? `${session.conversationHistory.map(h => `${h.role}: ${h.content}`).join('\n')}\nuser: ${transcription}`
+          : transcription;
 
         // Use executeWithFallback with internal router type for voice conversations
         // This allows us to track with requestType: 'voice' while using internal router
@@ -290,14 +283,14 @@ class VoiceWebSocketService {
             agentRole: 'Voice Assistant',
             taskType: 'chat',
             systemInstruction: `You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences) for natural voice interaction. Be friendly and engaging.`,
-            maxTokens: 150, // Limit for faster, shorter responses
+            maxTokens: 150 // Limit for faster, shorter responses
           },
           routingContext: {
-            userId: session.userId,
+            userId: session.userId
           },
           requestType: 'voice-conversation', // Track as voice conversation
           contextType: 'other',
-          routerType: 'internal', // Use internal router for cost optimization
+          routerType: 'internal' // Use internal router for cost optimization
         });
 
         const aiText = llmResponse.text;
@@ -305,19 +298,19 @@ class VoiceWebSocketService {
         // Add to conversation history
         session.conversationHistory.push({
           role: 'agent',
-          content: aiText,
+          content: aiText
         });
 
         // Send text response
         this.sendMessage(session.ws, {
           type: 'ai_text',
-          text: aiText,
+          text: aiText
         });
 
         // Step 3: Synthesize speech
         this.sendMessage(session.ws, {
           type: 'processing',
-          message: 'Generating audio...',
+          message: 'Generating audio...'
         });
 
         try {
@@ -331,47 +324,48 @@ class VoiceWebSocketService {
           this.sendMessage(session.ws, {
             type: 'ai_audio',
             audio: synthesisResult.audioBuffer.toString('base64'),
-            mimeType: synthesisResult.mimeType,
+            mimeType: synthesisResult.mimeType
           });
 
           // Update session in pipecat bridge (for conversation persistence)
           if (session.conversationId) {
-            await pipecatBridgeService.addTranscript(session.sessionId, transcription, aiText);
+            pipecatBridgeService.addTranscript(
+              session.sessionId,
+              transcription,
+              aiText
+            );
           }
 
           // Send completion message
           this.sendMessage(session.ws, {
-            type: 'response_complete',
+            type: 'response_complete'
           });
+
         } catch (error: unknown) {
-          logger.error(
-            `[VoiceWebSocket] Synthesis failed: ${error instanceof Error ? error.message : String(error)}`
-          );
+          logger.error(`[VoiceWebSocket] Synthesis failed: ${error.message}`);
           this.sendMessage(session.ws, {
             type: 'error',
-            message: `Audio generation failed: ${error instanceof Error ? error.message : String(error)}`,
+            message: `Audio generation failed: ${error.message}`
           });
           // Still send completion so client returns to active state
           this.sendMessage(session.ws, {
-            type: 'response_complete',
+            type: 'response_complete'
           });
         }
+
       } catch (error: unknown) {
-        logger.error(
-          `[VoiceWebSocket] LLM request failed: ${error instanceof Error ? error.message : String(error)}`
-        );
+        logger.error(`[VoiceWebSocket] LLM request failed: ${error.message}`);
         this.sendMessage(session.ws, {
           type: 'error',
-          message: `AI response failed: ${error instanceof Error ? error.message : String(error)}`,
+          message: `AI response failed: ${error.message}`
         });
       }
+
     } catch (error: unknown) {
-      logger.error(
-        `[VoiceWebSocket] Error processing audio: ${error instanceof Error ? error.message : String(error)}`
-      );
+      logger.error(`[VoiceWebSocket] Error processing audio: ${error.message}`);
       this.sendMessage(session.ws, {
         type: 'error',
-        message: `Processing failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Processing failed: ${error.message}`
       });
     }
   }

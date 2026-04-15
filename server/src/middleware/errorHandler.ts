@@ -30,13 +30,10 @@ export async function errorHandler(
   logger.error('Error:', {
     message,
     statusCode,
+    stack: err.stack,
     path: req.path,
-    method: req.method,
+    method: req.method
   });
-
-  if (err.stack) {
-    logger.debug('Error stack trace:', { stack: err.stack });
-  }
 
   // Send to error tracking service (non-blocking)
   try {
@@ -57,7 +54,7 @@ export async function errorHandler(
     success: false,
     error: {
       message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-    },
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    }
   });
 }

@@ -1,8 +1,7 @@
 /**
  * User API Key Encryption Service
  * Encrypts/decrypts user API keys using AES-256-GCM encryption
- * Uses a dedicated encryption key (USER_API_KEY_ENCRYPTION_KEY env var),
- * falling back to JWT secret for backward compatibility.
+ * Uses user-specific encryption keys derived from user ID + JWT secret
  */
 
 import crypto from 'crypto';
@@ -12,42 +11,21 @@ import { logger } from '../utils/logger.js';
 class UserApiKeyEncryptionService {
   private readonly ALGORITHM = 'aes-256-gcm';
   private readonly IV_LENGTH = 16; // 128 bits
-  // @ts-ignore TS6133
-  private readonly _SALT_LENGTH = 64; // 512 bits
-  // @ts-ignore TS6133
-  private readonly _TAG_LENGTH = 16; // 128 bits
+  private readonly SALT_LENGTH = 64; // 512 bits
+  private readonly TAG_LENGTH = 16; // 128 bits
   private readonly KEY_LENGTH = 32; // 256 bits
-  private encryptionKeyWarningLogged = false;
 
   /**
-   * Get the encryption secret, preferring a dedicated env var over jwtSecret
-   */
-  private getEncryptionSecret(): string {
-    const dedicatedKey = process.env.USER_API_KEY_ENCRYPTION_KEY;
-    if (dedicatedKey && dedicatedKey.trim().length > 0) {
-      return dedicatedKey;
-    }
-
-    // Fall back to jwtSecret for backward compatibility, but warn
-    if (!this.encryptionKeyWarningLogged) {
-      logger.warn(
-        'USER_API_KEY_ENCRYPTION_KEY is not set. Falling back to JWT secret for API key encryption. ' +
-          'Set USER_API_KEY_ENCRYPTION_KEY to a dedicated secret to decouple API key encryption from JWT authentication.'
-      );
-      this.encryptionKeyWarningLogged = true;
-    }
-    return config.jwtSecret;
-  }
-
-  /**
-   * Derive encryption key from user ID and encryption secret
+   * Derive encryption key from user ID and JWT secret
    */
   private deriveKey(userId: string): Buffer {
-    const encryptionSecret = this.getEncryptionSecret();
-    const salt = crypto.createHash('sha256').update(`${userId}:${encryptionSecret}`).digest();
+    const salt = crypto
+      .createHash('sha256')
+      .update(`${userId}:${config.jwtSecret}`)
+      .digest();
 
     return crypto.pbkdf2Sync(
-      encryptionSecret,
+      config.jwtSecret,
       salt,
       100000, // iterations
       this.KEY_LENGTH,
@@ -83,9 +61,7 @@ class UserApiKeyEncryptionService {
       return combined;
     } catch (error: unknown) {
       logger.error(`Failed to encrypt API key for user ${userId}:`, error);
-      throw new Error(
-        `Encryption failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(`Encryption failed: ${error.message}`);
     }
   }
 
@@ -121,9 +97,7 @@ class UserApiKeyEncryptionService {
       return decrypted;
     } catch (error: unknown) {
       logger.error(`Failed to decrypt API key for user ${userId}:`, error);
-      throw new Error(
-        `Decryption failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(`Decryption failed: ${error.message}`);
     }
   }
 
@@ -148,14 +122,14 @@ class UserApiKeyEncryptionService {
       gemini: /^AIza[0-9A-Za-z-_]{35}$/,
       ollama: /^.*$/, // Ollama doesn't use API keys
       vllm: /^.*$/, // vLLM doesn't use API keys
-      openai_compatible: /^.*$/, // OpenAI-compatible may or may not use keys
+      openai_compatible: /^.*$/ // OpenAI-compatible may or may not use keys
     };
 
     const validation = validations[provider.toLowerCase()];
     if (validation && !validation.test(apiKey)) {
       return {
         valid: false,
-        error: `Invalid API key format for ${provider}. Please check your API key.`,
+        error: `Invalid API key format for ${provider}. Please check your API key.`
       };
     }
 

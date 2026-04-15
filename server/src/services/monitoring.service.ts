@@ -54,7 +54,7 @@ export class MonitoringService {
       path,
       userId,
       startedAt: new Date(),
-      duration: 0,
+      duration: 0
     });
     return requestId;
   }
@@ -87,12 +87,12 @@ export class MonitoringService {
     try {
       const sessions = await Session.find({
         isActive: true,
-        expiresAt: { $gt: new Date() },
+        expiresAt: { $gt: new Date() }
       })
         .sort({ lastActivity: -1 })
         .limit(100);
 
-      return sessions.map((session: any) => ({
+      return sessions.map(session => ({
         id: session._id.toString(),
         userId: session.userId,
         userEmail: session.email,
@@ -100,13 +100,10 @@ export class MonitoringService {
         userAgent: session.userAgent,
         createdAt: session.createdAt,
         lastActivity: session.lastActivity,
-        expiresAt: session.expiresAt,
-      })) as any;
+        expiresAt: session.expiresAt
+      }));
     } catch (error: unknown) {
-      throw new AppError(
-        `Failed to get active sessions: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
+      throw new AppError(`Failed to get active sessions: ${error.message}`, 500);
     }
   }
 
@@ -130,17 +127,14 @@ export class MonitoringService {
         entityType: 'session',
         details: {
           sessionId,
-          targetUserId: session.userId,
+          targetUserId: session.userId
         },
         ipAddress: 'admin-console',
         userAgent: 'admin-console',
-        success: true,
+        success: true
       });
     } catch (error: unknown) {
-      throw new AppError(
-        `Failed to kill session: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
+      throw new AppError(`Failed to kill session: ${error.message}`, 500);
     }
   }
 
@@ -150,7 +144,7 @@ export class MonitoringService {
   getActiveRequests(): ActiveRequest[] {
     return Array.from(this.activeRequests.values()).map(req => ({
       ...req,
-      duration: Date.now() - req.startedAt.getTime(),
+      duration: Date.now() - req.startedAt.getTime()
     }));
   }
 
@@ -162,27 +156,27 @@ export class MonitoringService {
       if (!queueService) {
         return {
           available: false,
-          message: 'Queue service not available',
+          message: 'Queue service not available'
         };
       }
 
       // Get queue stats if available
-      const stats = (await (queueService as any).getStats?.()) || {
+      const stats = await queueService.getStats?.() || {
         waiting: 0,
         active: 0,
         completed: 0,
-        failed: 0,
+        failed: 0
       };
 
       return {
         available: true,
-        ...stats,
+        ...stats
       };
     } catch (error: unknown) {
       logger.error('Failed to get queue status:', error);
       return {
         available: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: error.message
       };
     }
   }
@@ -196,7 +190,7 @@ export class MonitoringService {
         throw new AppError('Queue service not available', 400);
       }
 
-      await (queueService as any).clear?.();
+      await queueService.clear?.();
 
       // Log audit
       await AuditLog.create({
@@ -206,13 +200,10 @@ export class MonitoringService {
         details: {},
         ipAddress: 'admin-console',
         userAgent: 'admin-console',
-        success: true,
+        success: true
       });
     } catch (error: unknown) {
-      throw new AppError(
-        `Failed to clear queue: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
+      throw new AppError(`Failed to clear queue: ${error.message}`, 500);
     }
   }
 
@@ -223,7 +214,7 @@ export class MonitoringService {
     try {
       const activeSessions = await Session.countDocuments({
         isActive: true,
-        expiresAt: { $gt: new Date() },
+        expiresAt: { $gt: new Date() }
       });
 
       const activeRequests = this.activeRequests.size;
@@ -237,13 +228,10 @@ export class MonitoringService {
         queueProcessing: queueStatus.active || 0,
         memoryUsage: process.memoryUsage(),
         uptime: process.uptime(),
-        timestamp: new Date(),
+        timestamp: new Date()
       };
     } catch (error: unknown) {
-      throw new AppError(
-        `Failed to get system metrics: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
+      throw new AppError(`Failed to get system metrics: ${error.message}`, 500);
     }
   }
 }

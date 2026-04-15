@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken} from '../middleware/auth.js';
+import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { checkFeatureAccess, FeatureRequest } from '../middleware/featureCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { executeCommand, getTerminalInfo } from '../services/terminalService.js';
@@ -55,7 +55,7 @@ router.post('/execute', checkFeatureAccess('terminal_access'), async (req: Featu
  * GET /api/terminal/info
  * Get terminal environment information - protected by terminal_access feature flag
  */
-router.get('/info', checkFeatureAccess('terminal_access'), async (_req: FeatureRequest, res, next) => {
+router.get('/info', checkFeatureAccess('terminal_access'), async (req: FeatureRequest, res, next) => {
   try {
     const info = await getTerminalInfo();
 

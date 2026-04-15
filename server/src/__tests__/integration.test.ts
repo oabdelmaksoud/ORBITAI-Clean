@@ -1,91 +1,59 @@
 /**
  * Integration Tests
- * End-to-end tests for complete workflows using in-memory MongoDB
+ * End-to-end tests for complete workflows
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import mongoose from 'mongoose';
-
-// Set JWT_SECRET before importing anything that uses config
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only';
-
-// Mock feature flags - allow most features but deny view_all_projects for user isolation
-vi.mock('../services/featureFlags.service.js', () => ({
-  isFeatureEnabled: vi.fn().mockImplementation((featureKey: string, _role?: string) => {
-    // Deny view_all_projects so users can only see their own projects
-    if (featureKey === 'view_all_projects') return Promise.resolve(false);
-    return Promise.resolve(true);
-  }),
-}));
-
-// Mock heavy services that project.routes imports
-vi.mock('../services/projectPackager.service.js', () => ({
-  projectPackagerService: {
-    packageProject: vi.fn().mockResolvedValue(null),
-  },
-}));
-
-vi.mock('../services/projectCompletion.service.js', () => ({
-  projectCompletionService: {
-    checkProjectCompletion: vi.fn().mockResolvedValue({ completed: false }),
-  },
-}));
-
-vi.mock('../services/autoCompletion.service.js', () => ({
-  autoCompletionService: {
-    checkAndAdvancePhase: vi.fn().mockResolvedValue(null),
-  },
-}));
-
-const { default: authRoutes } = await import('../routes/auth.routes.js');
-const { default: projectRoutes } = await import('../routes/project.routes.js');
-const { getAuthHeaders, createTestUser } = await import('./helpers/testHelpers.js');
+import authRoutes from '../routes/auth.routes.js';
+import projectRoutes from '../routes/project.routes.js';
+import taskRoutes from '../routes/task.routes.js';
+import agentRoutes from '../routes/agent.routes.js';
+import { setupTestEnv, teardownTestEnv, cleanupTestData, createTestUser, createTestProject, getAuthHeaders } from './helpers/testHelpers.js';
 
 const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
-
-// Error handler
-app.use((err: any, _req: any, res: any, _next: any) => {
-  res.status(err.statusCode || 500).json({
-    success: false,
-    message: err.message || 'Internal server error',
-  });
-});
-
-beforeAll(async () => {
-  const uri = process.env.TEST_MONGODB_URI || process.env.MONGODB_URI;
-  if (!uri) throw new Error('TEST_MONGODB_URI not set');
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri);
-  }
-});
-
-beforeEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    await collections[key].deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+app.use('/api/tasks', taskRoutes);
+app.use('/api/agents', agentRoutes);
 
 describe('Integration Tests - Complete Workflows', () => {
-  describe('Complete User Registration and Project Creation Flow', () => {
-    it('should complete full workflow: register -> login -> create project -> update project', async () => {
+  let authToken: string;
+  let userId: string;
+
+  beforeEach(async () => {
+    await setupTestEnv();
+    await cleanupTestData();
+    const { user, token } = await createTestUser({
+      email: 'integration@example.com',
+      name: 'Integration User'
+    });
+    authToken = token;
+    userId = user._id.toString();
+  });
+
+  afterEach(async () => {
+    await cleanupTestData();
+  });
+
+  afterAll(async () => {
+    await teardownTestEnv();
+  });
+
+  describe('Complete User Registration → Project Creation → Task Management Flow', () => {
+    it('should complete full workflow: register → login → create project → create task → update task', async () => {
       // Step 1: Register new user
       const registerData = {
         email: `workflow-${Date.now()}@example.com`,
         password: 'Workflow@1234',
-        name: 'Workflow User',
+        name: 'Workflow User'
       };
 
-      const registerResponse = await request(app).post('/api/auth/register').send(registerData);
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .send(registerData);
 
       expect(registerResponse.status).toBe(201);
       expect(registerResponse.body.data).toHaveProperty('user');
@@ -93,16 +61,20 @@ describe('Integration Tests - Complete Workflows', () => {
       const workflowToken = registerResponse.body.data.token;
 
       // Step 2: Login with registered user
-      const loginResponse = await request(app).post('/api/auth/login').send({
-        email: registerData.email,
-        password: registerData.password,
-      });
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: registerData.email,
+          password: registerData.password
+        });
 
       expect(loginResponse.status).toBe(200);
       expect(loginResponse.body.data).toHaveProperty('token');
 
       // Step 3: Get current user
-      const meResponse = await request(app).get('/api/auth/me').set(getAuthHeaders(workflowToken));
+      const meResponse = await request(app)
+        .get('/api/auth/me')
+        .set(getAuthHeaders(workflowToken));
 
       expect(meResponse.status).toBe(200);
       expect(meResponse.body.data.user.email).toBe(registerData.email.toLowerCase());
@@ -111,7 +83,7 @@ describe('Integration Tests - Complete Workflows', () => {
       const projectData = {
         name: 'Workflow Test Project',
         description: 'Testing complete workflow',
-        methodology: 'V-Model',
+        methodology: 'V-Model'
       };
 
       const projectResponse = await request(app)
@@ -125,7 +97,7 @@ describe('Integration Tests - Complete Workflows', () => {
       // Step 5: Update project
       const updateData = {
         name: 'Updated Workflow Project',
-        currentPhase: 'Requirements',
+        currentPhase: 'Requirements'
       };
 
       const updateResponse = await request(app)
@@ -156,28 +128,35 @@ describe('Integration Tests - Complete Workflows', () => {
 
   describe('Authentication Flow', () => {
     it('should handle complete authentication workflow', async () => {
+      // Register → Login → Get Profile → Logout (implicit via token expiry)
       const email = `auth-${Date.now()}@example.com`;
 
       // Register
-      const registerResponse = await request(app).post('/api/auth/register').send({
-        email,
-        password: 'Auth@1234',
-        name: 'Auth User',
-      });
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email,
+          password: 'Auth@1234',
+          name: 'Auth User'
+        });
 
       expect(registerResponse.status).toBe(201);
       const token = registerResponse.body.data.token;
 
       // Login
-      const loginResponse = await request(app).post('/api/auth/login').send({
-        email,
-        password: 'Auth@1234',
-      });
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email,
+          password: 'Auth@1234'
+        });
 
       expect(loginResponse.status).toBe(200);
 
       // Get Profile (should work)
-      const profileResponse = await request(app).get('/api/auth/me').set(getAuthHeaders(token));
+      const profileResponse = await request(app)
+        .get('/api/auth/me')
+        .set(getAuthHeaders(token));
 
       expect(profileResponse.status).toBe(200);
       expect(profileResponse.body.data.user.email).toBe(email.toLowerCase());
@@ -185,15 +164,18 @@ describe('Integration Tests - Complete Workflows', () => {
 
     it('should reject invalid authentication attempts', async () => {
       // Invalid login
-      const loginResponse = await request(app).post('/api/auth/login').send({
-        email: 'nonexistent@example.com',
-        password: 'WrongPassword',
-      });
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'nonexistent@example.com',
+          password: 'WrongPassword'
+        });
 
       expect(loginResponse.status).toBe(401);
 
       // Access protected route without token
-      const protectedResponse = await request(app).get('/api/projects');
+      const protectedResponse = await request(app)
+        .get('/api/projects');
 
       expect(protectedResponse.status).toBe(401);
     });
@@ -201,6 +183,7 @@ describe('Integration Tests - Complete Workflows', () => {
 
   describe('Project Lifecycle', () => {
     it('should handle complete project lifecycle', async () => {
+      // Create → Read → Update → Delete
       const { token } = await createTestUser();
 
       // Create
@@ -210,7 +193,7 @@ describe('Integration Tests - Complete Workflows', () => {
         .send({
           name: 'Lifecycle Project',
           description: 'Testing lifecycle',
-          methodology: 'Agile',
+          methodology: 'Agile'
         });
 
       expect(createResponse.status).toBe(201);
@@ -230,7 +213,7 @@ describe('Integration Tests - Complete Workflows', () => {
         .set(getAuthHeaders(token))
         .send({
           name: 'Updated Lifecycle Project',
-          description: 'Updated description',
+          description: 'Updated description'
         });
 
       expect(updateResponse.status).toBe(200);
@@ -253,7 +236,7 @@ describe('Integration Tests - Complete Workflows', () => {
       // Try to create project with invalid data (should fail validation)
       const invalidProject = {
         name: 'ab', // Too short
-        description: 'Test',
+        description: 'Test'
       };
 
       const invalidResponse = await request(app)
@@ -267,7 +250,7 @@ describe('Integration Tests - Complete Workflows', () => {
       const validProject = {
         name: 'Valid Project Name',
         description: 'Valid description',
-        methodology: 'V-Model',
+        methodology: 'V-Model'
       };
 
       const validResponse = await request(app)
@@ -282,11 +265,11 @@ describe('Integration Tests - Complete Workflows', () => {
   describe('Multi-User Isolation', () => {
     it('should isolate projects between users', async () => {
       // Create two users
-      const { token: token1 } = await createTestUser({
-        email: 'user1@example.com',
+      const { user: user1, token: token1 } = await createTestUser({
+        email: 'user1@example.com'
       });
-      const { token: token2 } = await createTestUser({
-        email: 'user2@example.com',
+      const { user: user2, token: token2 } = await createTestUser({
+        email: 'user2@example.com'
       });
 
       // User 1 creates project
@@ -295,17 +278,19 @@ describe('Integration Tests - Complete Workflows', () => {
         .set(getAuthHeaders(token1))
         .send({
           name: 'User 1 Project',
-          description: 'Private project',
+          description: 'Private project'
         });
 
       expect(projectResponse.status).toBe(201);
       const projectId = projectResponse.body.data.project._id;
 
       // User 2 should not see User 1's project
-      const user2Projects = await request(app).get('/api/projects').set(getAuthHeaders(token2));
+      const user2Projects = await request(app)
+        .get('/api/projects')
+        .set(getAuthHeaders(token2));
 
       expect(user2Projects.status).toBe(200);
-      const user2ProjectIds = user2Projects.body.data.projects.map((p: any) => p._id || p.id);
+      const user2ProjectIds = user2Projects.body.data.projects.map((p: any) => p.id);
       expect(user2ProjectIds).not.toContain(projectId);
 
       // User 2 should not be able to access User 1's project
@@ -313,7 +298,7 @@ describe('Integration Tests - Complete Workflows', () => {
         .get(`/api/projects/${projectId}`)
         .set(getAuthHeaders(token2));
 
-      expect([403, 404]).toContain(accessAttempt.status);
+      expect(accessAttempt.status).toBe(404); // Not found (or 403 Forbidden)
     });
   });
 });

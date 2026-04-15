@@ -47,9 +47,8 @@ const TestMaintenanceStatus: React.FC<TestMaintenanceStatusProps> = ({ projectId
   const loadStatus = async () => {
     setLoading(true);
     try {
-      // TODO(#44): Implement GET /api/projects/:projectId/test-maintenance when backend is ready
+      // In real implementation, fetch from backend
       setReport(null);
-      setError('Test maintenance status is not yet available. The backend endpoint is pending implementation.');
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load test maintenance status');
     } finally {

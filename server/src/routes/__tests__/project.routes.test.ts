@@ -2,7 +2,8 @@
  * Project API Integration Tests
  * Tests critical project CRUD operations
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { Express } from 'express';
 
 // Mock mongoose and models
 vi.mock('mongoose', () => ({

@@ -38,12 +38,11 @@ class EnvironmentManagementService {
             resourceSizing: config.resourceSizing || {
               cpu: this.getDefaultCPU(config.name),
               memory: this.getDefaultMemory(config.name),
-              instances:
-                (config.resourceSizing as any)?.instances || this.getDefaultInstances(config.name),
+              instances: config.resourceSizing?.instances || this.getDefaultInstances(config.name)
             },
-            featureFlags: config.featureFlags || {},
+            featureFlags: config.featureFlags || {}
           },
-          status: 'inactive',
+          status: 'inactive'
         },
         { upsert: true, new: true }
       );
@@ -75,11 +74,10 @@ class EnvironmentManagementService {
         name: to,
         platform: sourceEnv.platform,
         envVars: sourceEnv.configuration.envVars,
-        resourceSizing:
-          to === 'production'
-            ? this.scaleForProduction(sourceEnv.configuration.resourceSizing)
-            : sourceEnv.configuration.resourceSizing,
-        featureFlags: sourceEnv.configuration.featureFlags,
+        resourceSizing: to === 'production'
+          ? this.scaleForProduction(sourceEnv.configuration.resourceSizing)
+          : sourceEnv.configuration.resourceSizing,
+        featureFlags: sourceEnv.configuration.featureFlags
       });
 
       logger.info(`Promoted environment from ${from} to ${to}`);
@@ -95,14 +93,10 @@ class EnvironmentManagementService {
    */
   private getDefaultCPU(env: string): string {
     switch (env) {
-      case 'production':
-        return '2';
-      case 'staging':
-        return '1';
-      case 'development':
-        return '0.5';
-      default:
-        return '1';
+      case 'production': return '2';
+      case 'staging': return '1';
+      case 'development': return '0.5';
+      default: return '1';
     }
   }
 
@@ -111,14 +105,10 @@ class EnvironmentManagementService {
    */
   private getDefaultMemory(env: string): string {
     switch (env) {
-      case 'production':
-        return '4GB';
-      case 'staging':
-        return '2GB';
-      case 'development':
-        return '1GB';
-      default:
-        return '2GB';
+      case 'production': return '4GB';
+      case 'staging': return '2GB';
+      case 'development': return '1GB';
+      default: return '2GB';
     }
   }
 
@@ -127,14 +117,10 @@ class EnvironmentManagementService {
    */
   private getDefaultInstances(env: string): number {
     switch (env) {
-      case 'production':
-        return 3;
-      case 'staging':
-        return 2;
-      case 'development':
-        return 1;
-      default:
-        return 1;
+      case 'production': return 3;
+      case 'staging': return 2;
+      case 'development': return 1;
+      default: return 1;
     }
   }
 
@@ -145,7 +131,7 @@ class EnvironmentManagementService {
     return {
       cpu: String(parseFloat(resourceSizing.cpu || '1') * 2),
       memory: resourceSizing.memory ? this.scaleMemory(resourceSizing.memory) : '4GB',
-      instances: (resourceSizing.instances || 1) * 2,
+      instances: (resourceSizing.instances || 1) * 2
     };
   }
 
@@ -165,10 +151,7 @@ class EnvironmentManagementService {
   /**
    * Get environment secrets
    */
-  async getEnvironmentSecrets(
-    projectId: string,
-    environment: string
-  ): Promise<Record<string, string>> {
+  async getEnvironmentSecrets(projectId: string, environment: string): Promise<Record<string, string>> {
     const env = await Environment.findOne({ projectId, name: environment });
     if (!env) {
       return {};

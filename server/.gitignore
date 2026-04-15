@@ -8,10 +8,6 @@ dist/
 .env
 .env.local
 .env.*.local
-.env.production
-.env.staging
-.env.*
-!.env.example
 
 # Logs
 logs/
@@ -39,7 +35,4 @@ coverage/
 tmp/
 temp/
 uploads/
-
-# Backup files (may contain PII or credentials)
-backups/
 

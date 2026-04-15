@@ -3,7 +3,6 @@ import { Comment } from '../models/Comment.model';
 import { Notification } from '../models/Notification.model';
 import { authenticateToken } from '../middleware/auth';
 import { Types } from 'mongoose';
-import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -16,8 +15,15 @@ router.use(authenticateToken);
  */
 router.post('/', async (req, res) => {
   try {
-    const { workspace, project, resourceType, resourceId, content, parentComment } = req.body;
-    const userId = (req as any).user._id;
+    const {
+      workspace,
+      project,
+      resourceType,
+      resourceId,
+      content,
+      parentComment
+    } = req.body;
+    const userId = req.user._id;
 
     // Create comment
     const comment = new Comment({
@@ -28,7 +34,7 @@ router.post('/', async (req, res) => {
       parentComment,
       author: userId,
       content,
-      mentions: [], // TODO: Extract mentions from content
+      mentions: [] // TODO: Extract mentions from content
     });
 
     await comment.save();
@@ -40,7 +46,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(comment);
   } catch (error: any) {
-    logger.error('Create comment error:', error);
+    console.error('Create comment error:', error);
     res.status(500).json({ error: error.message || 'Failed to create comment' });
   }
 });
@@ -70,7 +76,7 @@ router.get('/', async (req, res) => {
 
     res.json(comments);
   } catch (error: any) {
-    logger.error('Get comments error:', error);
+    console.error('Get comments error:', error);
     res.status(500).json({ error: error.message || 'Failed to get comments' });
   }
 });
@@ -88,18 +94,16 @@ router.get('/:id', async (req, res) => {
       .populate('reactions.user', 'name avatar');
 
     if (!comment) {
-      res.status(404).json({ error: 'Comment not found' });
-      return;
+      return res.status(404).json({ error: 'Comment not found' });
     }
 
     if (comment.isDeleted) {
-      res.status(410).json({ error: 'Comment has been deleted' });
-      return;
+      return res.status(410).json({ error: 'Comment has been deleted' });
     }
 
     res.json(comment);
   } catch (error: any) {
-    logger.error('Get comment error:', error);
+    console.error('Get comment error:', error);
     res.status(500).json({ error: error.message || 'Failed to get comment' });
   }
 });
@@ -112,24 +116,21 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
-    const userId = (req as any).user._id;
+    const userId = req.user._id;
 
     const comment = await Comment.findById(id);
 
     if (!comment) {
-      res.status(404).json({ error: 'Comment not found' });
-      return;
+      return res.status(404).json({ error: 'Comment not found' });
     }
 
     // Check if user is author
     if (!comment.author.equals(userId)) {
-      res.status(403).json({ error: 'Only the author can edit comment' });
-      return;
+      return res.status(403).json({ error: 'Only the author can edit comment' });
     }
 
     if (comment.isDeleted) {
-      res.status(400).json({ error: 'Cannot edit deleted comment' });
-      return;
+      return res.status(400).json({ error: 'Cannot edit deleted comment' });
     }
 
     comment.content = content;
@@ -138,7 +139,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(comment);
   } catch (error: any) {
-    logger.error('Update comment error:', error);
+    console.error('Update comment error:', error);
     res.status(500).json({ error: error.message || 'Failed to update comment' });
   }
 });
@@ -150,26 +151,24 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user._id;
+    const userId = req.user._id;
 
     const comment = await Comment.findById(id);
 
     if (!comment) {
-      res.status(404).json({ error: 'Comment not found' });
-      return;
+      return res.status(404).json({ error: 'Comment not found' });
     }
 
     // Check if user is author or admin
     if (!comment.author.equals(userId)) {
-      res.status(403).json({ error: 'Only the author can delete comment' });
-      return;
+      return res.status(403).json({ error: 'Only the author can delete comment' });
     }
 
-    await (comment as any).softDelete();
+    await comment.softDelete();
 
     res.json({ message: 'Comment deleted successfully' });
   } catch (error: any) {
-    logger.error('Delete comment error:', error);
+    console.error('Delete comment error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete comment' });
   }
 });
@@ -182,13 +181,12 @@ router.post('/:id/reply', async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
-    const userId = (req as any).user._id;
+    const userId = req.user._id;
 
     const parentComment = await Comment.findById(id);
 
     if (!parentComment) {
-      res.status(404).json({ error: 'Parent comment not found' });
-      return;
+      return res.status(404).json({ error: 'Parent comment not found' });
     }
 
     // Create reply
@@ -200,7 +198,7 @@ router.post('/:id/reply', async (req, res) => {
       parentComment: parentComment._id,
       author: userId,
       content,
-      mentions: [], // TODO: Extract mentions
+      mentions: [] // TODO: Extract mentions
     });
 
     await reply.save();
@@ -208,22 +206,22 @@ router.post('/:id/reply', async (req, res) => {
 
     // Create notification for parent comment author
     if (!parentComment.author.equals(userId)) {
-      await (Notification as any).createNotification(
+      await Notification.createNotification(
         parentComment.author,
         'reply',
         'New reply to your comment',
-        `${(req as any).user.name} replied to your comment`,
+        `${req.user.name} replied to your comment`,
         {
           resourceType: 'comment',
           resourceId: reply._id,
-          actor: userId,
+          actor: userId
         }
       );
     }
 
     res.status(201).json(reply);
   } catch (error: any) {
-    logger.error('Reply to comment error:', error);
+    console.error('Reply to comment error:', error);
     res.status(500).json({ error: error.message || 'Failed to reply to comment' });
   }
 });
@@ -236,20 +234,19 @@ router.post('/:id/reactions', async (req, res) => {
   try {
     const { id } = req.params;
     const { type } = req.body;
-    const userId = (req as any).user._id;
+    const userId = req.user._id;
 
     const comment = await Comment.findById(id);
 
     if (!comment) {
-      res.status(404).json({ error: 'Comment not found' });
-      return;
+      return res.status(404).json({ error: 'Comment not found' });
     }
 
-    await (comment as any).addReaction(userId, type);
+    await comment.addReaction(userId, type);
 
     res.json(comment);
   } catch (error: any) {
-    logger.error('Add reaction error:', error);
+    console.error('Add reaction error:', error);
     res.status(500).json({ error: error.message || 'Failed to add reaction' });
   }
 });
@@ -261,20 +258,19 @@ router.post('/:id/reactions', async (req, res) => {
 router.delete('/:id/reactions', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user._id;
+    const userId = req.user._id;
 
     const comment = await Comment.findById(id);
 
     if (!comment) {
-      res.status(404).json({ error: 'Comment not found' });
-      return;
+      return res.status(404).json({ error: 'Comment not found' });
     }
 
-    await (comment as any).removeReaction(userId);
+    await comment.removeReaction(userId);
 
     res.json(comment);
   } catch (error: any) {
-    logger.error('Remove reaction error:', error);
+    console.error('Remove reaction error:', error);
     res.status(500).json({ error: error.message || 'Failed to remove reaction' });
   }
 });
@@ -286,24 +282,23 @@ router.delete('/:id/reactions', async (req, res) => {
 router.put('/:id/resolve', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user._id;
+    const userId = req.user._id;
 
     const comment = await Comment.findById(id);
 
     if (!comment) {
-      res.status(404).json({ error: 'Comment not found' });
-      return;
+      return res.status(404).json({ error: 'Comment not found' });
     }
 
     if (comment.isResolved) {
-      await (comment as any).unresolve();
+      await comment.unresolve();
     } else {
-      await (comment as any).resolve(userId);
+      await comment.resolve(userId);
     }
 
     res.json(comment);
   } catch (error: any) {
-    logger.error('Resolve comment error:', error);
+    console.error('Resolve comment error:', error);
     res.status(500).json({ error: error.message || 'Failed to resolve comment' });
   }
 });
@@ -316,11 +311,11 @@ router.get('/:id/thread', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const replies = await (Comment as any).getThreadReplies(new Types.ObjectId(id));
+    const replies = await Comment.getThreadReplies(new Types.ObjectId(id));
 
     res.json(replies);
   } catch (error: any) {
-    logger.error('Get thread error:', error);
+    console.error('Get thread error:', error);
     res.status(500).json({ error: error.message || 'Failed to get thread' });
   }
 });

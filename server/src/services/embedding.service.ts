@@ -83,11 +83,11 @@ export class EmbeddingService {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'OpenAI API error' }));
-        throw new Error((error as any).message || 'Failed to generate OpenAI embedding');
+        throw new Error(error.message || 'Failed to generate OpenAI embedding');
       }
 
       const data = await response.json();
-      return (data as any).data[0].embedding;
+      return data.data[0].embedding;
     } catch (error: unknown) {
       logger.error('OpenAI embedding generation failed:', error);
       // Fallback to hash-based embedding

@@ -1,5 +1,6 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { AppError } from '../middleware/errorHandler.js';
 import { MaturityAssessmentService } from '../services/maturityAssessment.service.js';
 import { logger } from '../utils/logger.js';
 

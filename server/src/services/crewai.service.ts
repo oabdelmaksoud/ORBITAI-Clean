@@ -122,13 +122,11 @@ class CrewAIService {
           prompt: taskDescription || agent.goal,
           taskType: 'analysis',
           agentRole: agent.role,
-          context: 'system',
+          context: 'system'
         });
 
         model = routingDecision.selectedModel.modelIdentifier;
-        logger.info(
-          `[CrewAI] Internal router selected: ${model} (${routingDecision.tier} tier) for agent ${agent.role}`
-        );
+        logger.info(`[CrewAI] Internal router selected: ${model} (${routingDecision.tier} tier) for agent ${agent.role}`);
       } catch (routerError: any) {
         logger.warn(`[CrewAI] Internal router failed, using default model: ${routerError.message}`);
         const openaiKey = await apiKeyProvider.getApiKey('openai');
@@ -155,14 +153,12 @@ class CrewAIService {
       });
     } else if (geminiKey) {
       llm = new ChatGoogleGenerativeAI({
-        model: model,
+        modelName: model,
         temperature,
         apiKey: geminiKey,
-      } as any);
+      });
     } else {
-      throw new Error(
-        'No LLM API key configured. Add API keys via Admin Console → Settings → API Keys'
-      );
+      throw new Error('No LLM API key configured. Add API keys via Admin Console → Settings → API Keys');
     }
 
     this.llmCache.set(cacheKey, llm);
@@ -172,11 +168,7 @@ class CrewAIService {
   /**
    * Execute a task with an agent
    */
-  private async executeTask(
-    task: Task,
-    agent: Agent,
-    context: Record<string, any> = {}
-  ): Promise<{
+  private async executeTask(task: Task, agent: Agent, context: Record<string, any> = {}): Promise<{
     output: string;
     status: 'completed' | 'failed';
     executionTime: number;
@@ -203,8 +195,9 @@ ${Object.keys(context).length > 0 ? `Context from previous tasks:\n${JSON.string
 Provide your response:`;
 
       const response = await llm.invoke(systemPrompt);
-      const output =
-        typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const output = typeof response.content === 'string'
+        ? response.content
+        : JSON.stringify(response.content);
 
       const executionTime = Date.now() - startTime;
 
@@ -216,7 +209,7 @@ Provide your response:`;
     } catch (error: unknown) {
       logger.error(`Task ${task.id} execution failed:`, error);
       return {
-        output: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        output: `Error: ${error.message}`,
         status: 'failed',
         executionTime: Date.now() - startTime,
       };
@@ -226,10 +219,7 @@ Provide your response:`;
   /**
    * Execute a crew (run all tasks with their assigned agents)
    */
-  async executeCrew(
-    crewId: string,
-    inputs: Record<string, any> = {}
-  ): Promise<CrewExecutionResult> {
+  async executeCrew(crewId: string, inputs: Record<string, any> = {}): Promise<CrewExecutionResult> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -315,9 +305,7 @@ Provide your response:`;
 
     if (crew.verbose) {
       logger.info(`Crew ${crewId} execution completed in ${totalExecutionTime}ms`);
-      logger.info(
-        `Tasks: ${taskResults.filter(r => r.status === 'completed').length}/${taskResults.length} completed`
-      );
+      logger.info(`Tasks: ${taskResults.filter(r => r.status === 'completed').length}/${taskResults.length} completed`);
     }
 
     return {

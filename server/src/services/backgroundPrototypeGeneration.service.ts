@@ -186,7 +186,7 @@ class BackgroundPrototypeGenerationService {
       logger.error(`[BackgroundPrototype] Job ${jobId} failed:`, error);
 
       job.status = 'failed';
-      job.error = (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+      job.error = error.message || 'Unknown error';
       job.completedAt = new Date();
       await job.save();
     } finally {
@@ -221,7 +221,7 @@ class BackgroundPrototypeGenerationService {
 
       await conversation.save();
       logger.info(`[BackgroundPrototype] Updated conversation ${conversationId} with preview`);
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`[BackgroundPrototype] Failed to update conversation ${conversationId}:`, error);
       throw error;
     }

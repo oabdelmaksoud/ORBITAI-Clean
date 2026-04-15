@@ -46,7 +46,7 @@ class CollaborativeWikiService {
     content: string,
     contentType: 'markdown' | 'html' | 'plain',
     userId: string,
-    _userName: string
+    userName: string
   ): Promise<ICollaborativeDocument> {
     const id = `doc-${crypto.randomUUID()}`;
 

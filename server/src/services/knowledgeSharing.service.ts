@@ -97,7 +97,7 @@ class KnowledgeSharingService {
       });
     }
 
-    return await KnowledgeBase.find(query).lean() as any;
+    return await KnowledgeBase.find(query).lean();
   }
 
   /**

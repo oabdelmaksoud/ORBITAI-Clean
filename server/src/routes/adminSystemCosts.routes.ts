@@ -49,7 +49,7 @@ router.get('/breakdown', async (req: AdminRequest, res, next) => {
       success: true,
       data: breakdown
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -63,11 +63,10 @@ router.get('/summary', async (req: AdminRequest, res, next) => {
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'startDate and endDate are required'
       });
-      return;
     }
 
     const summary = await systemCostTrackingService.getCostSummary(
@@ -79,7 +78,7 @@ router.get('/summary', async (req: AdminRequest, res, next) => {
       success: true,
       data: summary
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -110,7 +109,7 @@ router.get('/current-period', async (_req: AdminRequest, res, next) => {
         month: monthSummary
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

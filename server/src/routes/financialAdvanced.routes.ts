@@ -2,6 +2,10 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { User } from '../models/User.model.js';
+import { Project } from '../models/Project.model.js';
+import { ActivityEvent } from '../models/ActivityEvent.model.js';
+import { AppError } from '../middleware/errorHandler.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -237,8 +241,8 @@ router.get('/churn-impact', async (_req: AdminRequest, res, next) => {
     });
 
     const now = new Date();
-    // const _thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    // const _sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
     // Identify churned users (no login in 60+ days)
     const users = await User.find({}).lean();

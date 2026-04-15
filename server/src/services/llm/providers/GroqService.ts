@@ -14,9 +14,7 @@ async function getGroqApiKey(): Promise<string> {
   if (dbKey) {
     return dbKey;
   }
-  throw new Error(
-    'Groq API key not configured. Please add it via Admin Console → Settings → API Keys'
-  );
+  throw new Error('Groq API key not configured. Please add it via Admin Console → Settings → API Keys');
 }
 
 export interface LLMResponse {
@@ -33,21 +31,13 @@ export interface LLMResponse {
 }
 
 class GroqService {
-  private cachedClient: OpenAI | null = null;
-  private cachedApiKey: string | null = null;
-
-  // Get client dynamically with current API key, reusing if key unchanged
+  // Get client dynamically with current API key
   private async getClient(): Promise<OpenAI> {
     const apiKey = await getGroqApiKey();
-    if (this.cachedClient && this.cachedApiKey === apiKey) {
-      return this.cachedClient;
-    }
-    this.cachedClient = new OpenAI({
+    return new OpenAI({
       apiKey,
-      baseURL: 'https://api.groq.com/openai/v1',
+      baseURL: 'https://api.groq.com/openai/v1'
     });
-    this.cachedApiKey = apiKey;
-    return this.cachedClient;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -85,7 +75,7 @@ class GroqService {
         max_tokens: options?.maxTokens,
         top_p: options?.topP,
         frequency_penalty: options?.frequencyPenalty,
-        presence_penalty: options?.presencePenalty,
+        presence_penalty: options?.presencePenalty
       };
 
       // Add tools if provided (Groq supports OpenAI-compatible tools)
@@ -106,9 +96,9 @@ class GroqService {
       if (choice.message?.tool_calls) {
         for (const toolCall of choice.message.tool_calls) {
           functionCalls.push({
-            name: (toolCall as any).function?.name,
-            arguments: (toolCall as any).function?.arguments,
-            id: toolCall.id,
+            name: toolCall.function?.name,
+            arguments: toolCall.function?.arguments,
+            id: toolCall.id
           });
         }
       }
@@ -117,27 +107,20 @@ class GroqService {
       const usage = {
         promptTokens: completion.usage?.prompt_tokens || 0,
         completionTokens: completion.usage?.completion_tokens || 0,
-        totalTokens: completion.usage?.total_tokens || 0,
+        totalTokens: completion.usage?.total_tokens || 0
       };
 
       return {
         text: choice.message?.content || '',
-        functionCalls:
-          functionCalls.length > 0
-            ? functionCalls.map(fc => ({
-                name: fc.name,
-                args: fc.arguments
-                  ? typeof fc.arguments === 'string'
-                    ? JSON.parse(fc.arguments)
-                    : fc.arguments
-                  : {},
-              }))
-            : undefined,
+        functionCalls: functionCalls.length > 0 ? functionCalls.map(fc => ({
+          name: fc.name,
+          args: fc.arguments ? (typeof fc.arguments === 'string' ? JSON.parse(fc.arguments) : fc.arguments) : {}
+        })) : undefined,
         usage: {
           promptTokens: usage.promptTokens,
           completionTokens: usage.completionTokens,
-          totalTokens: usage.totalTokens,
-        },
+          totalTokens: usage.totalTokens
+        }
       };
     } catch (error: unknown) {
       const apiError = toApiError(error);
@@ -155,8 +138,8 @@ class GroqService {
       function: {
         name: tool.name || tool.function?.name,
         description: tool.description || tool.function?.description,
-        parameters: tool.parameters || tool.function?.parameters || tool.schema,
-      },
+        parameters: tool.parameters || tool.function?.parameters || tool.schema
+      }
     }));
   }
 }

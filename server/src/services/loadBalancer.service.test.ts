@@ -3,7 +3,7 @@
 // Created: December 5, 2025
 
 import { LoadBalancerService } from './loadBalancer.service';
-import { MultiCloudStatus } from '../types/multiCloud.types';
+import { LoadBalancerConfig, MultiCloudStatus } from '../types/multiCloud.types';
 
 describe('LoadBalancerService', () => {
   const service = new LoadBalancerService();

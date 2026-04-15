@@ -13,9 +13,7 @@ async function getAnthropicApiKey(): Promise<string> {
   if (dbKey) {
     return dbKey;
   }
-  throw new Error(
-    'Anthropic API key not configured. Please add it via Admin Console → Settings → API Keys'
-  );
+  throw new Error('Anthropic API key not configured. Please add it via Admin Console → Settings → API Keys');
 }
 
 export interface LLMResponse {
@@ -34,18 +32,10 @@ export interface LLMConfig {
 }
 
 export class AnthropicService {
-  private cachedClient: Anthropic | null = null;
-  private cachedApiKey: string | null = null;
-
-  // Get client dynamically with current API key, reusing if key unchanged
+  // Get client dynamically with current API key
   private async getClient(): Promise<Anthropic> {
     const apiKey = await getAnthropicApiKey();
-    if (this.cachedClient && this.cachedApiKey === apiKey) {
-      return this.cachedClient;
-    }
-    this.cachedClient = new Anthropic({ apiKey });
-    this.cachedApiKey = apiKey;
-    return this.cachedClient;
+    return new Anthropic({ apiKey });
   }
 
   async isAvailable(): Promise<boolean> {
@@ -73,14 +63,14 @@ export class AnthropicService {
         messages: [
           {
             role: 'user',
-            content: prompt,
-          },
-        ],
+            content: prompt
+          }
+        ]
       });
 
       const text = response.content
         .filter(item => item.type === 'text')
-        .map(item => (item as any).text)
+        .map(item => (item as Anthropic.Message.TextBlock).text)
         .join('');
 
       return {
@@ -88,8 +78,8 @@ export class AnthropicService {
         usage: {
           promptTokens: response.usage.input_tokens,
           completionTokens: response.usage.output_tokens,
-          totalTokens: response.usage.input_tokens + response.usage.output_tokens,
-        },
+          totalTokens: response.usage.input_tokens + response.usage.output_tokens
+        }
       };
     } catch (error: unknown) {
       const apiError = toApiError(error);
@@ -100,7 +90,7 @@ export class AnthropicService {
 
   async generateStructuredOutput(
     prompt: string,
-    _schema: any,
+    schema: any,
     model: string = 'claude-3-5-sonnet-20241022'
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema. Always return valid JSON.`;
@@ -109,12 +99,12 @@ export class AnthropicService {
 
     const result = await this.generateContent(fullPrompt, model, {
       temperature: 0.3,
-      maxTokens: 4096,
+      maxTokens: 4096
     });
 
     try {
       return JSON.parse(result.text);
-    } catch (error: unknown) {
+    } catch (error) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -123,6 +113,7 @@ export class AnthropicService {
       throw new Error('Failed to parse structured output');
     }
   }
+
 }
 
 export const anthropicService = new AnthropicService();

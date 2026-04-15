@@ -28,11 +28,10 @@ userRouter.get('/project/:projectId', async (req: AuthRequest, res, next) => {
 
     // Validate ObjectId format before querying database
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: 'Invalid project ID format'
       });
-      return;
     }
 
     // Verify project belongs to user
@@ -42,11 +41,10 @@ userRouter.get('/project/:projectId', async (req: AuthRequest, res, next) => {
     });
 
     if (!project) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
-      return;
     }
 
     // Get usage stats for this project

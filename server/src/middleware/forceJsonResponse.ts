@@ -19,8 +19,8 @@ export function forceJsonResponse(req: Request, res: Response, next: NextFunctio
   // Store original json method
   const originalJson = res.json.bind(res);
   const originalSend = res.send.bind(res);
-  // const _originalSendFile = res.sendFile.bind(res);
-  // const _originalRender = res.render.bind(res);
+  const originalSendFile = res.sendFile.bind(res);
+  const originalRender = res.render.bind(res);
 
   // Force Content-Type to JSON for API routes
   res.setHeader('Content-Type', 'application/json');
@@ -66,7 +66,7 @@ export function forceJsonResponse(req: Request, res: Response, next: NextFunctio
   };
 
   // Override res.sendFile to prevent serving HTML files for API routes
-  res.sendFile = function (_path: string, ..._args: any[]) {
+  res.sendFile = function (path: string, ...args: any[]) {
     res.setHeader('Content-Type', 'application/json');
     return originalJson({
       success: false,
@@ -79,7 +79,7 @@ export function forceJsonResponse(req: Request, res: Response, next: NextFunctio
   };
 
   // Override res.render to prevent rendering HTML templates for API routes
-  res.render = function (_view: string, ..._args: any[]) {
+  res.render = function (view: string, ...args: any[]) {
     res.setHeader('Content-Type', 'application/json');
     return originalJson({
       success: false,

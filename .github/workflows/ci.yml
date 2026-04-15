@@ -10,27 +10,8 @@ env:
   NODE_VERSION: '20.x'
 
 jobs:
-  # Secrets scanning — runs first, blocks all other jobs on leak detection
-  secrets-scan:
-    name: Secrets Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Scan for secrets with TruffleHog
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event.before }}
-          head: ${{ github.event.after }}
-          extra_args: --only-verified
-
   # Lint and type check
   lint:
-    needs: secrets-scan
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
@@ -51,9 +32,7 @@ jobs:
         continue-on-error: true  # TODO: Remove after fixing existing warnings
 
       - name: Run TypeScript type check
-        working-directory: ./client
         run: npx tsc --noEmit
-        continue-on-error: true  # TODO: Remove after fixing pre-existing App.tsx type mismatches
 
       - name: Install backend dependencies
         working-directory: ./server

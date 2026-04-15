@@ -103,8 +103,8 @@ export class QwenService {
       let text = '';
       if (Array.isArray(data) && data[0]?.generated_text) {
         text = data[0].generated_text;
-      } else if ((data as any).generated_text) {
-        text = (data as any).generated_text;
+      } else if (data.generated_text) {
+        text = data.generated_text;
       } else if (typeof data === 'string') {
         text = data;
       } else {
@@ -146,7 +146,7 @@ export class QwenService {
 
     try {
       return JSON.parse(result.text);
-    } catch (error: unknown) {
+    } catch (error) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

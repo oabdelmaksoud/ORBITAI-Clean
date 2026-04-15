@@ -4,11 +4,12 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { config } from '../config/env.js';
 
 // Types for Neo4j (will be resolved from dynamic import)
 type Driver = any;
-// type Session = any;
-// type Result = any;
+type Session = any;
+type Result = any;
 
 export interface GraphNode {
   id: string;
@@ -51,7 +52,7 @@ class Neo4jService {
 
     try {
       // Dynamic import to avoid crashing if package is not installed
-      const neo4jModule = await import('neo4j-driver').catch((_err) => {
+      const neo4jModule = await import('neo4j-driver').catch((err) => {
         throw new Error('neo4j-driver package not installed. Install it with: npm install neo4j-driver');
       });
       this.neo4j = neo4jModule.default;
@@ -96,7 +97,7 @@ class Neo4jService {
 
       logger.debug('Neo4j indexes created');
     } catch (error: unknown) {
-      logger.warn('Failed to create Neo4j indexes:', (error instanceof Error ? error.message : String(error)));
+      logger.warn('Failed to create Neo4j indexes:', error.message);
     } finally {
       await session.close();
     }
@@ -219,7 +220,7 @@ class Neo4jService {
 
       const result = await session.run(query, { ...properties, limit });
 
-      return result.records.map((record: any) => {
+      return result.records.map(record => {
         const node = record.get('n');
         return {
           id: node.properties.id,
@@ -253,7 +254,7 @@ class Neo4jService {
         : '[*]';
 
       const directionArrow = direction === 'outgoing' ? '->' : direction === 'incoming' ? '<-' : '-';
-      // const _maxDepth = depth > 0 ? `1..${depth}` : '1..';
+      const maxDepth = depth > 0 ? `1..${depth}` : '1..';
 
       const query = `
         MATCH path = (start:\`${startNodeLabel}\` {id: $startId})${directionArrow}${relFilter}${directionArrow}(end)
@@ -264,7 +265,7 @@ class Neo4jService {
 
       const result = await session.run(query, { startId: startNodeId });
 
-      return result.records.map((record: any) => {
+      return result.records.map(record => {
         const path = record.get('path');
         const nodes: GraphNode[] = [];
         const relationships: GraphRelationship[] = [];
@@ -392,9 +393,9 @@ class Neo4jService {
     try {
       const result = await session.run(cypher, parameters);
       return {
-        records: result.records.map((record: any) => {
+        records: result.records.map(record => {
           const obj: any = {};
-          record.keys.forEach((key: any) => {
+          record.keys.forEach(key => {
             obj[key] = record.get(key);
           });
           return obj;
@@ -429,7 +430,7 @@ class Neo4jService {
       ]);
 
       const labelCounts = await Promise.all(
-        labels.records.map(async (record: any) => {
+        labels.records.map(async (record) => {
           const label = record.get('label');
           const countResult = await session.run(`MATCH (n:\`${label}\`) RETURN count(n) as count`);
           return {
@@ -440,7 +441,7 @@ class Neo4jService {
       );
 
       const typeCounts = await Promise.all(
-        types.records.map(async (record: any) => {
+        types.records.map(async (record) => {
           const type = record.get('relationshipType');
           const countResult = await session.run(`MATCH ()-[r:\`${type}\`]->() RETURN count(r) as count`);
           return {
@@ -480,7 +481,7 @@ class Neo4jService {
         { projectId }
       );
 
-      const nodes: GraphNode[] = nodeResult.records.map((record: any) => {
+      const nodes: GraphNode[] = nodeResult.records.map(record => {
         const node = record.get('n');
         return {
           id: node.properties.id || node.identity.toString(),
@@ -501,7 +502,7 @@ class Neo4jService {
         { projectId }
       );
 
-      const relationships: GraphRelationship[] = relResult.records.map((record: any) => {
+      const relationships: GraphRelationship[] = relResult.records.map(record => {
         const rel = record.get('r');
         return {
           id: rel.identity.toString(),
@@ -543,7 +544,7 @@ class Neo4jService {
       const nodeMap = new Map<string, GraphNode>();
       const relationships: GraphRelationship[] = [];
 
-      result.records.forEach((record: any) => {
+      result.records.forEach(record => {
         const nodeA = record.get('a');
         const nodeB = record.get('b');
         const rel = record.get('r');
