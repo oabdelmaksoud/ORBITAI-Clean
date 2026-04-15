@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
   parseMentions,
   extractMentionedUsernames,
@@ -6,7 +7,7 @@ import {
   findMentionAtCursor,
   checkIncompleteMention,
   completeMention
-} from '../mentionParser';
+} from '../utils/mentionParser';
 
 describe('mentionParser', () => {
   describe('parseMentions', () => {
@@ -115,6 +116,7 @@ describe('mentionParser', () => {
     it('should reject empty username', () => {
       const result = validateMentionSyntax('Hello @');
       expect(result.valid).toBe(false);
+      expect(result.error).toContain('at least 1 character');
     });
 
     it('should reject too long username', () => {
@@ -127,6 +129,27 @@ describe('mentionParser', () => {
     it('should reject invalid characters', () => {
       const result = validateMentionSyntax('@user!name');
       expect(result.valid).toBe(false);
+      expect(result.error).toContain('only contain letters');
+    });
+
+    it('should validate multiple correct mentions', () => {
+      const result = validateMentionSyntax('Hello @john and @jane_123');
+      expect(result.valid).toBe(true);
+    });
+
+    it('should reject if any mention is invalid', () => {
+      const result = validateMentionSyntax('Hello @john and @jane!123');
+      expect(result.valid).toBe(false);
+    });
+
+    it('should handle text with no mentions', () => {
+      const result = validateMentionSyntax('Hello world');
+      expect(result.valid).toBe(true);
+    });
+
+    it('should allow trailing punctuation like commas and periods', () => {
+      const result = validateMentionSyntax('Hello @john. How are you, @jane?');
+      expect(result.valid).toBe(true);
     });
   });
 
