@@ -18,6 +18,7 @@
         "build:server": "npm run build --workspace=server",
         "clean": "rm -rf client/dist server/dist shared/dist",
         "test": "npm run test --workspaces --if-present",
+        "test:e2e": "playwright test",
         "test:integration": "echo 'Integration tests run as part of workspace tests' && exit 0",
         "lint": "npm run lint --workspace=client && npm run lint --workspace=server",
         "typecheck": "npm run typecheck --workspace=client && npm run typecheck --workspace=server",
