@@ -80,7 +80,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 /**
  * Validate file upload
  */
-export function validateFileUpload(req: Request, res: Response, next: NextFunction): void {
+export function validateFileUpload(req: Request, _res: Response, next: NextFunction): void {
   if (!req.file && !req.files) {
     return next();
   }

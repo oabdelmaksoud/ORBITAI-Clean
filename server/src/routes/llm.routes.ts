@@ -23,15 +23,15 @@ const router = express.Router();
 
 // Optional authentication - allows unauthenticated requests but extracts user if available
 router.use((req: AuthRequest, res, next) => {
-  console.log(`[llm.routes.ts] Request matched /api/llm router. Path: ${req.path}`);
+  logger.info(`[llm.routes.ts] Request matched /api/llm router. Path: ${req.path}`);
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     authenticateToken(req, res, () => {
-      console.log(`[llm.routes.ts] Auth passed for ${req.path}`);
+      logger.info(`[llm.routes.ts] Auth passed for ${req.path}`);
       next();
     });
   } else {
-    console.log(`[llm.routes.ts] No auth header for ${req.path}`);
+    logger.info(`[llm.routes.ts] No auth header for ${req.path}`);
     next();
   }
 });
@@ -94,7 +94,7 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
           chatPrompt = researchContext + chatPrompt;
           logger.info(`[LLMRouter] Research injected (${researchResult.text.length} chars)`);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         logger.warn('[LLMRouter] Chat research failed, proceeding without it:', err);
       }
     }
@@ -107,9 +107,10 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
 
     if (isWizardContext && !systemInstruction) {
       const conversationLength = history?.length || 0;
-      const collectedInfo = conversationLength >= 4;
+      // const _collectedInfo = conversationLength >= 4;
 
-      const wizardInstructions = `\n\n[WIZARD MODE - Project Setup Assistant]
+      // @ts-ignore TS6133
+      const _wizardInstructions = `\n\n[WIZARD MODE - Project Setup Assistant]
 You are an engaging, friendly AI assistant helping a user describe their project idea. Your goal is to have a natural, conversational dialogue that helps them think through their project.
 
 RESPONSE LENGTH:
@@ -426,7 +427,8 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
  */
 router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res, _next) => {
   try {
-    const { task, projectState, useInternet, mcpServers, selectedStandards } = req.body;
+    // @ts-ignore TS6133
+    const { task, projectState, useInternet, _mcpServers, selectedStandards } = req.body;
 
     if (!task) {
       res.status(400).json({
@@ -622,7 +624,8 @@ Return a JSON object with:
 
 Be specific to the project context and role.`;
 
-    const responseSchema: Schema = {
+    // @ts-ignore TS6133
+    const _responseSchema: Schema = {
       type: Type.OBJECT,
       properties: {
         name: { type: Type.STRING },
@@ -713,7 +716,8 @@ router.post('/quick-suggestions', async (req: AuthRequest, res, _next) => {
       return;
     }
 
-    const responseSchema: Schema = {
+    // @ts-ignore TS6133
+    const _responseSchema: Schema = {
       type: Type.OBJECT,
       properties: {
         suggestions: {
@@ -988,7 +992,8 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
  */
 router.post('/orchestrate', async (req: AuthRequest, res, _next) => {
   try {
-    const { phase, description, completedTasks, useInternet, mcpServers, maxTasks, agents } = req.body;
+    // @ts-ignore TS6133
+    const { phase, description, completedTasks, useInternet, _mcpServers, maxTasks, agents } = req.body;
 
     if (!phase || !description || !agents) {
       res.status(400).json({ success: false, message: 'phase, description, and agents are required' });
@@ -1063,7 +1068,8 @@ Keep the research concise and focused on actionable insights for task generation
     );
     const prompt = enhancedPromptResult.prompt;
 
-    const responseSchema: Schema = {
+    // @ts-ignore TS6133
+    const _responseSchema: Schema = {
       type: Type.OBJECT,
       properties: {
         tasks: {
@@ -1302,7 +1308,8 @@ Return a JSON object with the modified task fields:
 
 Only include fields that should be modified. Keep other fields unchanged.`;
 
-    const responseSchema: Schema = {
+    // @ts-ignore TS6133
+    const _responseSchema: Schema = {
       type: Type.OBJECT,
       properties: {
         title: { type: Type.STRING },

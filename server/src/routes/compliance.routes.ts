@@ -28,15 +28,17 @@ router.post('/:projectId/:standard/generate', authenticateToken, async (req: Aut
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     const validStandards = ['gdpr', 'hipaa', 'soc2', 'pci_dss', 'iso27001'];
     if (!validStandards.includes(standard)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: `Invalid standard. Must be one of: ${validStandards.join(', ')}`
       });
+      return;
     }
 
     logger.info(`Generating ${standard} compliance checklist for project: ${projectId}`);
@@ -55,7 +57,7 @@ router.post('/:projectId/:standard/generate', authenticateToken, async (req: Aut
     res.status(500).json({
       success: false,
       message: 'Failed to generate compliance checklist',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -70,7 +72,8 @@ router.get('/:projectId/:standard/validate', authenticateToken, async (req: Auth
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
     logger.info(`Validating ${standard} compliance for project: ${projectId}`);
@@ -89,7 +92,7 @@ router.get('/:projectId/:standard/validate', authenticateToken, async (req: Auth
     res.status(500).json({
       success: false,
       message: 'Failed to validate compliance',
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });

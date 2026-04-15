@@ -173,7 +173,7 @@ class CostForecastingService {
 
       this.forecastCache = { data: forecast, timestamp: Date.now() };
       return forecast;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[CostForecasting] Failed to generate forecast:', error);
       throw error;
     }
@@ -227,7 +227,7 @@ class CostForecastingService {
       }
 
       return anomalies.sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[CostForecasting] Failed to detect anomalies:', error);
       throw error;
     }
@@ -334,7 +334,7 @@ class CostForecastingService {
           : 0,
         breakdown
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[CostForecasting] Failed to run what-if scenario:', error);
       throw error;
     }

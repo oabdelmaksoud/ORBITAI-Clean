@@ -119,7 +119,7 @@ router.post('/chat/start', authenticateToken, validate(startChatSchema), async (
         try {
           const aiResponse = await aiSupportAgent.generateAIResponse(chat.chatId, initialMessage, user.id);
           await aiSupportAgent.processAIResponse(chat.chatId, user.id, aiResponse);
-        } catch (err) {
+        } catch (err: unknown) {
           logger.error('[Support Chat] Error generating initial AI response:', err);
         }
       });
@@ -131,7 +131,7 @@ router.post('/chat/start', authenticateToken, validate(startChatSchema), async (
       success: true,
       data: { chat, aiPowered: true }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -153,7 +153,7 @@ router.get('/chat/active', authenticateToken, async (req: AuthRequest, res, next
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -221,7 +221,7 @@ router.post('/chat/:chatId/message', authenticateToken, validate(sendMessageSche
           try {
             const aiResponse = await aiSupportAgent.generateAIResponse(chatId, content, user.id);
             await aiSupportAgent.processAIResponse(chatId, user.id, aiResponse);
-          } catch (err) {
+          } catch (err: unknown) {
             logger.error('[Support Chat] Error generating AI response:', err);
             // Fallback: escalate to human on AI error
             const fallbackResponse = {
@@ -248,7 +248,7 @@ router.post('/chat/:chatId/message', authenticateToken, validate(sendMessageSche
       success: true,
       data: { message, aiHandled: chat.status === 'ai_active' }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -308,7 +308,7 @@ router.post('/chat/:chatId/end', authenticateToken, async (req: AuthRequest, res
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -341,7 +341,7 @@ router.post('/chat/:chatId/rate', authenticateToken, validate(rateChatSchema), a
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -378,7 +378,7 @@ router.get('/chat/history', authenticateToken, async (req: AuthRequest, res, nex
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -406,7 +406,7 @@ router.get('/admin/chat/queue', authenticateToken, requireAdmin, async (_req: Au
       success: true,
       data: { queue: queueWithWaitTime }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -434,7 +434,7 @@ router.get('/admin/chat/active', authenticateToken, requireAdmin, async (req: Au
       success: true,
       data: { chats }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -496,7 +496,7 @@ router.get('/admin/chat/stats', authenticateToken, requireAdmin, async (_req: Au
         agentStats
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -565,7 +565,7 @@ router.post('/admin/chat/:chatId/accept', authenticateToken, requireAdmin, async
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -610,7 +610,7 @@ router.get('/admin/chat/:chatId', authenticateToken, requireAdmin, async (req: A
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -663,7 +663,7 @@ router.post('/admin/chat/:chatId/message', authenticateToken, requireAdmin, vali
       success: true,
       data: { message }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -747,7 +747,7 @@ router.post('/admin/chat/:chatId/transfer', authenticateToken, requireAdmin, val
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -808,7 +808,7 @@ router.post('/admin/chat/:chatId/end', authenticateToken, requireAdmin, validate
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -878,7 +878,7 @@ router.post('/admin/chat/:chatId/create-ticket', authenticateToken, requireAdmin
       success: true,
       data: { ticket }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -932,7 +932,7 @@ router.get('/admin/chat/history', authenticateToken, requireAdmin, async (req: A
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -969,7 +969,7 @@ router.get('/admin/agents', authenticateToken, requireAdmin, async (_req: AuthRe
       success: true,
       data: { agents: agentsWithStats }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -988,7 +988,7 @@ router.get('/admin/tasks', authenticateToken, requireAdmin, async (_req: AuthReq
       success: true,
       data: { tasks }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -1025,7 +1025,7 @@ router.put('/admin/tasks/:taskId', authenticateToken, requireAdmin, async (req: 
       success: true,
       data: { task }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -1099,7 +1099,7 @@ router.post('/admin/chat/:chatId/escalate', authenticateToken, requireAdmin, asy
       success: true,
       data: { chat }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -1151,7 +1151,7 @@ router.get('/admin/chat/ai-stats', authenticateToken, requireAdmin, async (_req:
         totalBackgroundTasks: taskStats.length
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

@@ -18,7 +18,8 @@ export async function connectDatabase(): Promise<void> {
       serverSelectionTimeoutMS: 10000, // Increased from 5000 to 10000
       socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
-      maxPoolSize: 10,
+      maxPoolSize: 50,
+      minPoolSize: 5,
       retryWrites: true
     });
     logger.info('MongoDB connected successfully');
@@ -70,7 +71,7 @@ export async function connectDatabase(): Promise<void> {
       logger.info('MongoDB connection closed through app termination');
       process.exit(0);
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('MongoDB connection failed:', error);
     logger.warn('⚠️  Starting server without database connection. Some features may not work.');
     // Do not throw error to allow server to start in degraded mode

@@ -45,10 +45,7 @@ class LLMCostOptimizationService {
   /**
    * Analyze costs
    */
-  async analyzeCosts(
-    userId?: string,
-    days: number = 30
-  ): Promise<CostAnalysis> {
+  async analyzeCosts(userId?: string, days: number = 30): Promise<CostAnalysis> {
     try {
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       const query: any = { createdAt: { $gte: startDate } };
@@ -59,8 +56,8 @@ class LLMCostOptimizationService {
       const usageRecords = await LLMUsage.find(query).lean();
 
       // Calculate totals
-      const totalCost = usageRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
-      const totalTokens = usageRecords.reduce((sum, r) => sum + (r.inputTokens || 0) + (r.outputTokens || 0), 0);
+      const totalCost = usageRecords.reduce((sum, r) => sum + ((r as any).cost || 0), 0);
+      // const _totalTokens = usageRecords.reduce((sum, r) => sum + (r.inputTokens || 0) + (r.outputTokens || 0), 0);
 
       // Group by provider
       const byProvider = this.groupByProvider(usageRecords, totalCost);
@@ -80,7 +77,7 @@ class LLMCostOptimizationService {
         byProvider,
         byModel,
         trends,
-        forecast
+        forecast,
       };
     } catch (error: unknown) {
       logger.error('Cost analysis failed:', error);
@@ -91,10 +88,7 @@ class LLMCostOptimizationService {
   /**
    * Group by provider
    */
-  private groupByProvider(
-    records: any[],
-    totalCost: number
-  ): CostAnalysis['byProvider'] {
+  private groupByProvider(records: any[], totalCost: number): CostAnalysis['byProvider'] {
     const providerMap = new Map<string, { cost: number; usage: number }>();
 
     for (const record of records) {
@@ -108,21 +102,20 @@ class LLMCostOptimizationService {
       data.usage += (record.inputTokens || 0) + (record.outputTokens || 0);
     }
 
-    return Array.from(providerMap.entries()).map(([provider, data]) => ({
-      provider,
-      cost: Math.round(data.cost * 100) / 100,
-      percentage: totalCost > 0 ? Math.round((data.cost / totalCost) * 100) : 0,
-      usage: data.usage
-    })).sort((a, b) => b.cost - a.cost);
+    return Array.from(providerMap.entries())
+      .map(([provider, data]) => ({
+        provider,
+        cost: Math.round(data.cost * 100) / 100,
+        percentage: totalCost > 0 ? Math.round((data.cost / totalCost) * 100) : 0,
+        usage: data.usage,
+      }))
+      .sort((a, b) => b.cost - a.cost);
   }
 
   /**
    * Group by model
    */
-  private groupByModel(
-    records: any[],
-    totalCost: number
-  ): CostAnalysis['byModel'] {
+  private groupByModel(records: any[], _totalCost: number): CostAnalysis['byModel'] {
     const modelMap = new Map<string, { cost: number; usage: number; count: number }>();
 
     for (const record of records) {
@@ -137,20 +130,21 @@ class LLMCostOptimizationService {
       data.count++;
     }
 
-    return Array.from(modelMap.entries()).map(([modelId, data]) => ({
-      modelId,
-      cost: Math.round(data.cost * 100) / 100,
-      usage: data.usage,
-      averageCostPerToken: data.usage > 0 
-        ? Math.round((data.cost / data.usage) * 1000000) / 1000000 
-        : 0
-    })).sort((a, b) => b.cost - a.cost);
+    return Array.from(modelMap.entries())
+      .map(([modelId, data]) => ({
+        modelId,
+        cost: Math.round(data.cost * 100) / 100,
+        usage: data.usage,
+        averageCostPerToken:
+          data.usage > 0 ? Math.round((data.cost / data.usage) * 1000000) / 1000000 : 0,
+      }))
+      .sort((a, b) => b.cost - a.cost);
   }
 
   /**
    * Calculate trends
    */
-  private calculateTrends(records: any[], days: number): CostAnalysis['trends'] {
+  private calculateTrends(records: any[], _days: number): CostAnalysis['trends'] {
     const dailyData = new Map<string, { cost: number; usage: number }>();
 
     for (const record of records) {
@@ -169,7 +163,7 @@ class LLMCostOptimizationService {
       .map(([date, data]) => ({
         date: new Date(date),
         cost: Math.round(data.cost * 100) / 100,
-        usage: data.usage
+        usage: data.usage,
       }));
   }
 
@@ -181,7 +175,7 @@ class LLMCostOptimizationService {
       return {
         nextWeek: 0,
         nextMonth: 0,
-        confidence: 0
+        confidence: 0,
       };
     }
 
@@ -198,7 +192,7 @@ class LLMCostOptimizationService {
     return {
       nextWeek: Math.round(nextWeek * 100) / 100,
       nextMonth: Math.round(nextMonth * 100) / 100,
-      confidence: Math.round(confidence)
+      confidence: Math.round(confidence),
     };
   }
 
@@ -217,7 +211,7 @@ class LLMCostOptimizationService {
         description: `Consider using cheaper models (GPT-4o Mini, Gemini Flash) for simple tasks instead of ${expensiveModels[0].modelId}`,
         potentialSavings: 30,
         impact: 'high',
-        implementation: 'Update routing rules to prefer cheaper models for low-complexity tasks'
+        implementation: 'Update routing rules to prefer cheaper models for low-complexity tasks',
       });
     }
 
@@ -228,11 +222,11 @@ class LLMCostOptimizationService {
 
       if (recentAvg > olderAvg * 1.2) {
         suggestions.push({
-          type: 'cost_optimization',
+          type: 'cost_optimization' as any,
           description: 'Costs have increased 20%+ recently. Review model usage patterns.',
           potentialSavings: 20,
           impact: 'medium',
-          implementation: 'Analyze recent usage patterns and optimize routing'
+          implementation: 'Analyze recent usage patterns and optimize routing',
         });
       }
     }
@@ -263,6 +257,3 @@ class LLMCostOptimizationService {
 }
 
 export const llmCostOptimizationService = new LLMCostOptimizationService();
-
-
-

@@ -6,7 +6,7 @@
 import { logger } from '../utils/logger.js';
 import { codeQualityAssuranceService } from './codeQualityAssurance.service.js';
 import { llmRouter } from './llm/LLMRouter.js';
-import { Type, Schema } from '@google/genai';
+// import { Type, Schema } from '@google/genai';
 
 export interface RefinementResult {
   originalCode: string;
@@ -49,7 +49,7 @@ class CodeRefinementService {
     logger.info(`Starting code refinement. Target score: ${targetScore}, Max iterations: ${maxIterations}`);
 
     // Initial quality assessment
-    const initialScore = await codeQualityAssuranceService.calculateQualityScore(code, language);
+    const initialScore = await (codeQualityAssuranceService as any).calculateQualityScore(code, language);
     logger.info(`Initial quality score: ${initialScore}/100`);
 
     if (initialScore >= targetScore) {
@@ -92,7 +92,7 @@ class CodeRefinementService {
         );
 
         // Get refined code from LLM
-        const refinedResponse = await llmRouter.routeAndExecute({
+        const refinedResponse = await (llmRouter as any).routeAndExecute({
           prompt: refinementPrompt,
           taskType: 'code_refinement',
           agentRole: 'Implementation Agent',
@@ -107,7 +107,7 @@ class CodeRefinementService {
         const refinedCode = this.extractCodeFromResponse(refinedResponse.content, language);
         
         // Assess refined code quality
-        const refinedScore = await codeQualityAssuranceService.calculateQualityScore(
+        const refinedScore = await (codeQualityAssuranceService as any).calculateQualityScore(
           refinedCode,
           language
         );
@@ -136,7 +136,7 @@ class CodeRefinementService {
         }
       } catch (error: unknown) {
         logger.error(`Refinement iteration ${iteration} failed:`, error);
-        improvements.push(`Iteration ${iteration} failed: ${error.message}`);
+        improvements.push(`Iteration ${iteration} failed: ${(error instanceof Error ? error.message : String(error))}`);
         break;
       }
     }
@@ -166,7 +166,7 @@ class CodeRefinementService {
     language: string,
     options: RefinementOptions
   ): string {
-    const focusAreas = options.focusAreas || ['all'];
+    // const _focusAreas = options.focusAreas || ['all'];
     const context = options.context || {};
 
     let prompt = `You are an expert ${language} developer. Refine the following code to improve its quality.
@@ -288,7 +288,7 @@ ${code.substring(0, 6000)}
 
 Return only the refined code.`;
 
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'code_refinement',
         agentRole: 'Implementation Agent',

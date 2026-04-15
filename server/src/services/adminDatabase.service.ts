@@ -49,7 +49,7 @@ export class AdminDatabaseService {
       const collections = await db.listCollections().toArray();
       return collections.map(col => col.name);
     } catch (error: unknown) {
-      throw new AppError(`Failed to list collections: ${error.message}`, 500);
+      throw new AppError(`Failed to list collections: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -76,7 +76,7 @@ export class AdminDatabaseService {
         avgObjSize: count > 0 ? (stats.size / count) : 0
       };
     } catch (error: unknown) {
-      throw new AppError(`Failed to get collection stats: ${error.message}`, 500);
+      throw new AppError(`Failed to get collection stats: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -86,7 +86,7 @@ export class AdminDatabaseService {
   async executeQuery(
     options: QueryOptions,
     adminId: string,
-    adminEmail: string
+    _adminEmail: string
   ): Promise<any> {
     try {
       const { collection, query, projection, limit, skip, sort, readOnly } = options;
@@ -157,7 +157,7 @@ export class AdminDatabaseService {
         entityType: options.collection,
         details: {
           query: options.query,
-          error: error.message
+          error: (error instanceof Error ? error.message : String(error))
         },
         ipAddress: 'admin-console',
         userAgent: 'admin-console',
@@ -174,7 +174,7 @@ export class AdminDatabaseService {
   async updateRecords(
     options: UpdateOptions,
     adminId: string,
-    adminEmail: string
+    _adminEmail: string
   ): Promise<any> {
     try {
       const { collection, filter, update, options: updateOptions } = options;
@@ -242,7 +242,7 @@ export class AdminDatabaseService {
         details: {
           filter: options.filter,
           update: options.update,
-          error: error.message
+          error: (error instanceof Error ? error.message : String(error))
         },
         ipAddress: 'admin-console',
         userAgent: 'admin-console',
@@ -259,7 +259,7 @@ export class AdminDatabaseService {
   async deleteRecords(
     options: DeleteOptions,
     adminId: string,
-    adminEmail: string
+    _adminEmail: string
   ): Promise<any> {
     try {
       const { collection, filter, limit } = options;
@@ -286,7 +286,7 @@ export class AdminDatabaseService {
       const totalCount = await dbCollection.countDocuments(filter);
 
       // Apply delete limit
-      const deleteLimit = Math.min(limit || this.MAX_DELETE_LIMIT, this.MAX_DELETE_LIMIT);
+      // const _deleteLimit = Math.min(limit || this.MAX_DELETE_LIMIT, this.MAX_DELETE_LIMIT);
 
       // Execute delete
       const result = await dbCollection.deleteMany(filter);
@@ -319,7 +319,7 @@ export class AdminDatabaseService {
         entityType: options.collection,
         details: {
           filter: options.filter,
-          error: error.message
+          error: (error instanceof Error ? error.message : String(error))
         },
         ipAddress: 'admin-console',
         userAgent: 'admin-console',
@@ -365,7 +365,7 @@ export class AdminDatabaseService {
         data: documents
       };
     } catch (error: unknown) {
-      throw new AppError(`Failed to backup collection: ${error.message}`, 500);
+      throw new AppError(`Failed to backup collection: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 
@@ -398,7 +398,7 @@ export class AdminDatabaseService {
         sample
       };
     } catch (error: unknown) {
-      throw new AppError(`Failed to get collection schema: ${error.message}`, 500);
+      throw new AppError(`Failed to get collection schema: ${(error instanceof Error ? error.message : String(error))}`, 500);
     }
   }
 }

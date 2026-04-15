@@ -13,7 +13,7 @@ const router = express.Router();
  * Initialize standards research service
  * POST /api/standards-research/initialize
  */
-router.post('/initialize', async (req, res, _next) => {
+router.post('/initialize', async (_req, res, _next) => {
   try {
     await standardsResearchService.initialize();
     res.json({
@@ -25,7 +25,7 @@ router.post('/initialize', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize standards research service',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -71,7 +71,7 @@ router.post('/research', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Standards research failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -117,7 +117,7 @@ router.post('/audit', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Audit research failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -163,7 +163,7 @@ router.post('/compliance', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Compliance research failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -209,7 +209,7 @@ router.post('/evaluation', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Evaluation research failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });
@@ -255,7 +255,7 @@ router.post('/comprehensive', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Comprehensive research failed',
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
     });
   }
 });

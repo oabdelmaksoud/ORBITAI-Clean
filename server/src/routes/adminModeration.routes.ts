@@ -48,7 +48,7 @@ router.get('/pending', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -63,10 +63,11 @@ router.post('/approve/:id', async (req: AdminRequest, res, next) => {
     const item = await ModerationQueue.findById(id);
 
     if (!item) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Moderation item not found'
       });
+      return;
     }
 
     item.status = 'approved';
@@ -93,7 +94,7 @@ router.post('/approve/:id', async (req: AdminRequest, res, next) => {
       message: 'Content approved',
       data: item
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -108,19 +109,21 @@ router.post('/reject/:id', async (req: AdminRequest, res, next) => {
     const { reason } = req.body;
 
     if (!reason) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Rejection reason is required'
       });
+      return;
     }
 
     const item = await ModerationQueue.findById(id);
 
     if (!item) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Moderation item not found'
       });
+      return;
     }
 
     item.status = 'rejected';
@@ -149,7 +152,7 @@ router.post('/reject/:id', async (req: AdminRequest, res, next) => {
       message: 'Content rejected',
       data: item
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -160,14 +163,16 @@ router.post('/reject/:id', async (req: AdminRequest, res, next) => {
  */
 router.post('/flag/:id', async (req: AdminRequest, res, next) => {
   try {
-    const { id } = req.params;
+    // @ts-ignore TS6133
+    const { _id } = req.params;
     const { entityType, entityId, reason, flagType = 'manual' } = req.body;
 
     if (!entityType || !entityId || !reason) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'entityType, entityId, and reason are required'
       });
+      return;
     }
 
     // Find or create moderation queue item
@@ -221,7 +226,7 @@ router.post('/flag/:id', async (req: AdminRequest, res, next) => {
       message: 'Content flagged for review',
       data: item
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -266,7 +271,7 @@ router.get('/projects', async (req: AdminRequest, res, next) => {
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -280,10 +285,11 @@ router.post('/bulk-action', async (req: AdminRequest, res, next) => {
     const { action, itemIds, reason } = req.body;
 
     if (!action || !Array.isArray(itemIds) || itemIds.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'action and itemIds array are required'
       });
+      return;
     }
 
     const items = await ModerationQueue.find({
@@ -291,10 +297,11 @@ router.post('/bulk-action', async (req: AdminRequest, res, next) => {
     });
 
     if (items.length === 0) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'No items found'
       });
+      return;
     }
 
     const updates: any[] = [];
@@ -335,7 +342,7 @@ router.post('/bulk-action', async (req: AdminRequest, res, next) => {
       message: `${items.length} items ${action}d`,
       data: { count: items.length }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -385,7 +392,7 @@ router.get('/stats', async (_req: AdminRequest, res, next) => {
         byType
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

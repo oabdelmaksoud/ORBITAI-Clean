@@ -10,7 +10,7 @@ import mongoose from 'mongoose';
 const router = express.Router();
 
 // Middleware to check feature flag
-async function checkAgentCustomization(req: AuthRequest, res: express.Response, next: express.NextFunction) {
+async function checkAgentCustomization(req: AuthRequest, _res: express.Response, next: express.NextFunction) {
   try {
     const userRole = req.user?.role || 'public';
     const enabled = await isFeatureEnabled('agent_customization', userRole);
@@ -18,12 +18,12 @@ async function checkAgentCustomization(req: AuthRequest, res: express.Response, 
       throw new AppError('Agent customization is not enabled for your role', 403);
     }
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 }
 
-async function checkAgentDeletion(req: AuthRequest, res: express.Response, next: express.NextFunction) {
+async function checkAgentDeletion(req: AuthRequest, _res: express.Response, next: express.NextFunction) {
   try {
     const userRole = req.user?.role || 'public';
     const enabled = await isFeatureEnabled('agent_deletion', userRole);
@@ -31,7 +31,7 @@ async function checkAgentDeletion(req: AuthRequest, res: express.Response, next:
       throw new AppError('Agent deletion is not enabled for your role', 403);
     }
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 }
@@ -86,7 +86,7 @@ router.get('/', checkAgentCustomization, async (req: AuthRequest, res, next) => 
         }))
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -150,7 +150,7 @@ router.get('/public', checkAgentCustomization, async (req: AuthRequest, res, nex
         }))
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -193,7 +193,7 @@ router.get('/all-projects', checkAgentCustomization, async (req: AuthRequest, re
           return false;
         }
         return true;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`[Project Agents] Error validating agent: ${error}`);
         return false;
       }
@@ -210,7 +210,7 @@ router.get('/all-projects', checkAgentCustomization, async (req: AuthRequest, re
     if (validProjectIds.length === 0) {
       // No valid agents, return empty result with helpful message
       logger.info('[Project Agents] No agents with valid projectId found');
-      return res.json({
+      res.json({
         success: true,
         data: {
           totalAgents: 0,
@@ -220,6 +220,7 @@ router.get('/all-projects', checkAgentCustomization, async (req: AuthRequest, re
           message: 'No project-specific agents found. Create custom agents and assign them to a project to see them here.'
         }
       });
+      return;
     }
 
     // Now run aggregation with only valid ObjectIds
@@ -314,7 +315,7 @@ router.get('/all-projects', checkAgentCustomization, async (req: AuthRequest, re
         allAgents: projectAgents
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -355,7 +356,7 @@ router.get('/:id', checkAgentCustomization, async (req: AuthRequest, res, next) 
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -445,7 +446,7 @@ router.post('/', checkAgentCustomization, async (req: AuthRequest, res, next) =>
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -517,7 +518,7 @@ router.put('/:id', checkAgentCustomization, async (req: AuthRequest, res, next) 
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -564,7 +565,7 @@ router.delete('/:id', checkAgentDeletion, async (req: AuthRequest, res, next) =>
       success: true,
       message: 'Custom agent deleted successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -646,7 +647,7 @@ router.post('/:id/clone', checkAgentCustomization, async (req: AuthRequest, res,
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -690,7 +691,7 @@ router.post('/:id/rate', checkAgentCustomization, async (req: AuthRequest, res, 
         ratingCount: agent.ratingCount
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -779,7 +780,7 @@ router.get('/templates/list', checkAgentCustomization, async (_req: AuthRequest,
       success: true,
       data: { templates }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

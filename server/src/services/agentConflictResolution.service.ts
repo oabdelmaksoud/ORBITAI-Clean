@@ -49,7 +49,7 @@ class AgentConflictResolutionService {
    * Detect conflicts
    */
   async detectConflicts(
-    projectId: string,
+    _projectId: string,
     suggestions: Array<{
       agentId: string;
       agentRole: string;
@@ -306,7 +306,7 @@ Return as JSON.`;
     };
 
     try {
-      const response = await llmRouter.routeAndExecute({
+      const response = await (llmRouter as any).routeAndExecute({
         prompt,
         taskType: 'conflict_resolution',
         agentRole: 'Orchestrator',
@@ -324,7 +324,7 @@ Return as JSON.`;
         confidence: parsed.confidence || 70
       };
     } catch (error: unknown) {
-      logger.warn('LLM conflict resolution failed:', error.message);
+      logger.warn('LLM conflict resolution failed:', (error instanceof Error ? error.message : String(error)));
       // Fallback to priority-based
       const result = this.resolveByPriority(conflict);
       return {

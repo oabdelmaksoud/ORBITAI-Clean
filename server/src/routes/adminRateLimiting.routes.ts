@@ -35,7 +35,7 @@ router.get('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: { rules }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -49,18 +49,20 @@ router.post('/', async (req: AdminRequest, res, next) => {
     const { name, description, scope, scopeValue, limit, windowMs, priority } = req.body;
 
     if (!name || !scope || !limit || !windowMs) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'name, scope, limit, and windowMs are required'
       });
+      return;
     }
 
     // Validate scope-specific requirements
     if ((scope === 'user' || scope === 'plan' || scope === 'ip' || scope === 'endpoint') && !scopeValue) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: `scopeValue is required for scope type '${scope}'`
       });
+      return;
     }
 
     const rule = new RateLimitRule({
@@ -98,7 +100,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       success: true,
       data: rule
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -114,10 +116,11 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
 
     const rule = await RateLimitRule.findById(id);
     if (!rule) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Rate limit rule not found'
       });
+      return;
     }
 
     Object.assign(rule, updates);
@@ -141,7 +144,7 @@ router.put('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       data: rule
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -156,10 +159,11 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
 
     const rule = await RateLimitRule.findById(id);
     if (!rule) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Rate limit rule not found'
       });
+      return;
     }
 
     await RateLimitRule.deleteOne({ _id: id });
@@ -181,7 +185,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
       success: true,
       message: 'Rate limit rule deleted'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -206,7 +210,7 @@ router.get('/user/:userId', async (req: AdminRequest, res, next) => {
       success: true,
       data: { rules }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -221,10 +225,11 @@ router.post('/user/:userId', async (req: AdminRequest, res, next) => {
     const { limit, windowMs, name } = req.body;
 
     if (!limit || !windowMs) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'limit and windowMs are required'
       });
+      return;
     }
 
     // Find or create user-specific rule
@@ -271,7 +276,7 @@ router.post('/user/:userId', async (req: AdminRequest, res, next) => {
       success: true,
       data: rule
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -307,7 +312,7 @@ router.get('/stats', async (_req: AdminRequest, res, next) => {
         byScope
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

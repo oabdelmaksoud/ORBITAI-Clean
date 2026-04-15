@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { AuthRequest } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
 import { geminiService } from '../services/gemini.service.js';
 import jwt from 'jsonwebtoken';
@@ -13,7 +13,7 @@ import { config } from '../config/env.js';
 const router = express.Router();
 
 // Optional authentication - allows unauthenticated requests but extracts user if available
-router.use((req: AuthRequest, res, next) => {
+router.use((req: AuthRequest, _res, next) => {
   const authHeader = req.headers.authorization;
 
   // Valid token format: "Bearer <token>" where <token> is non-empty
@@ -33,7 +33,7 @@ router.use((req: AuthRequest, res, next) => {
           plan: decoded.plan,
           role: decoded.role || 'public' // Default to public if role missing
         };
-      } catch (error) {
+      } catch (error: unknown) {
         // Token invalid/expired - just log warning and proceed as guest
         // Do NOT return error response
         logger.warn('[Agent Assignment] Optional auth token invalid, proceeding as guest', { error: (error as Error).message });
@@ -54,10 +54,11 @@ router.post('/analyze-agent-requirements', async (req: AuthRequest, res) => {
     const { projectName, projectDescription, currentPhase, availableAgents } = req.body;
 
     if (!projectDescription) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Project description is required'
       });
+      return;
     }
 
     logger.info('[Agent Assignment] Analyzing project requirements with AI', {
@@ -157,7 +158,7 @@ IMPORTANT:
     logger.error('[Agent Assignment] Error analyzing requirements:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to analyze agent requirements'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to analyze agent requirements'
     });
   }
 });
@@ -171,10 +172,11 @@ router.post('/request-additional-agents', async (req: AuthRequest, res) => {
     const { projectDescription, currentAgentRoles, taskDescription, reason, availableAgents } = req.body;
 
     if (!taskDescription && !reason) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Task description or reason is required'
       });
+      return;
     }
 
     logger.info('[Agent Assignment] Requesting additional agents', {
@@ -243,7 +245,7 @@ If no additional agents are needed, return an empty selectedAgents array with re
     logger.error('[Agent Assignment] Error requesting additional agents:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to process additional agent request'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to process additional agent request'
     });
   }
 });
@@ -259,17 +261,19 @@ router.post('/intelligent-assignment', async (req: AuthRequest, res) => {
     const userId = req.user?.id || 'guest-user';
 
     if (!projectId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Project ID is required'
       });
+      return;
     }
 
     if (!projectDescription) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Project description is required'
       });
+      return;
     }
 
     logger.info('[Intelligent Assignment] Starting intelligent agent assignment', {
@@ -302,7 +306,7 @@ router.post('/intelligent-assignment', async (req: AuthRequest, res) => {
     logger.error('[Intelligent Assignment] Error in intelligent assignment:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to intelligently assign agents'
+      error: (error instanceof Error ? error.message : String(error)) || 'Failed to intelligently assign agents'
     });
   }
 });

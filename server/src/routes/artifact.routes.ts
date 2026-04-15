@@ -7,7 +7,6 @@ import multer from 'multer';
 import { validateFileUpload } from '../middleware/fileUploadValidation.js';
 import { validateArtifactCreation, getMaxFileSizeBytes } from '../utils/packageLimits.js';
 import { requirementsValidationService } from '../services/requirementsValidation.service.js';
-import { Artifact } from '../models/Artifact.model.js';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
@@ -46,7 +45,7 @@ const createDynamicMulter = () => {
         }
         next();
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   };
@@ -130,7 +129,7 @@ router.post('/upload/:projectId',
           suggestedRequirementLinks: suggestedLinks.filter(l => l.confidence >= 0.7) // Only return high confidence suggestions
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }

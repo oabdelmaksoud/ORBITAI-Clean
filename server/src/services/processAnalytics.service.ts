@@ -184,7 +184,7 @@ class ProcessAnalyticsService {
   /**
    * Calculate trends
    */
-  private calculateTrends(improvements: any[], timeRange?: { start: Date; end: Date }): ProcessAnalytics['trends'] {
+  private calculateTrends(improvements: any[], _timeRange?: { start: Date; end: Date }): ProcessAnalytics['trends'] {
     const createdMap = new Map<string, number>();
     const usedMap = new Map<string, number>();
 

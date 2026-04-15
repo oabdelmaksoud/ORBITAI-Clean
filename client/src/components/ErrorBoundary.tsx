@@ -98,7 +98,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isImportError ? 'Module Import Error' : 'Application Error'}
+                Something went wrong
               </h1>
             </div>
 
@@ -110,7 +110,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     but doesn't exist in the source file. This is often caused by:
                   </>
                 ) : (
-                  'An unexpected error occurred. Please try reloading the page.'
+                  'An unexpected error occurred'
                 )}
               </p>
 
@@ -154,6 +154,12 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Try Again
+              </button>
+              <button
+                onClick={() => { window.location.href = '/'; }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Go Home
               </button>
             </div>
 

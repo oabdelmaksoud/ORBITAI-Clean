@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Types } from 'mongoose';
+import { logger } from '../utils/logger.js';
 
 export interface GitHubUser {
   id: number;
@@ -41,7 +41,7 @@ class GitHubService {
     this.redirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:3001/api/integrations/github/callback';
     
     if (!this.clientId || !this.clientSecret) {
-      console.warn('GitHub OAuth credentials not configured');
+      logger.warn('GitHub OAuth credentials not configured');
     }
   }
   
@@ -86,7 +86,7 @@ class GitHubService {
       
       return response.data;
     } catch (error: any) {
-      console.error('GitHub token exchange error:', error.response?.data || error.message);
+      logger.error('GitHub token exchange error:', error.response?.data || error.message);
       throw new Error('Failed to exchange code for token');
     }
   }
@@ -105,7 +105,7 @@ class GitHubService {
       
       return response.data;
     } catch (error: any) {
-      console.error('GitHub get user error:', error.response?.data || error.message);
+      logger.error('GitHub get user error:', error.response?.data || error.message);
       throw new Error('Failed to get GitHub user');
     }
   }
@@ -124,7 +124,7 @@ class GitHubService {
       
       return response.data;
     } catch (error: any) {
-      console.error('GitHub get emails error:', error.response?.data || error.message);
+      logger.error('GitHub get emails error:', error.response?.data || error.message);
       throw new Error('Failed to get GitHub emails');
     }
   }
@@ -160,7 +160,7 @@ class GitHubService {
       
       return response.data;
     } catch (error: any) {
-      console.error('GitHub get repositories error:', error.response?.data || error.message);
+      logger.error('GitHub get repositories error:', error.response?.data || error.message);
       throw new Error('Failed to get GitHub repositories');
     }
   }
@@ -182,7 +182,7 @@ class GitHubService {
       
       return response.data;
     } catch (error: any) {
-      console.error('GitHub get repository error:', error.response?.data || error.message);
+      logger.error('GitHub get repository error:', error.response?.data || error.message);
       throw new Error('Failed to get GitHub repository');
     }
   }
@@ -209,7 +209,7 @@ class GitHubService {
         reset: new Date(response.data.rate.reset * 1000)
       };
     } catch (error: any) {
-      console.error('GitHub rate limit error:', error.response?.data || error.message);
+      logger.error('GitHub rate limit error:', error.response?.data || error.message);
       throw new Error('Failed to get rate limit');
     }
   }
@@ -219,7 +219,8 @@ class GitHubService {
    */
   async revokeToken(accessToken: string): Promise<void> {
     try {
-      const response = await axios.delete(
+      // @ts-ignore TS6133
+      const _response = await axios.delete(
         `https://api.github.com/applications/${this.clientId}/grant`,
         {
           auth: {
@@ -232,9 +233,9 @@ class GitHubService {
         }
       );
       
-      console.log('GitHub token revoked successfully');
+      logger.info('GitHub token revoked successfully');
     } catch (error: any) {
-      console.error('GitHub revoke token error:', error.response?.data || error.message);
+      logger.error('GitHub revoke token error:', error.response?.data || error.message);
       // Don't throw error, just log it
     }
   }

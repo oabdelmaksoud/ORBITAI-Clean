@@ -166,7 +166,7 @@ class BackupSchedulerService {
       logger.info(`[BackupScheduler] Starting automated backup: ${filename}`);
 
       // Perform backup
-      const db = mongoose.connection.db;
+      const db = mongoose.connection.db!;
       const backupData: any = {};
 
       if (schedule.collections && schedule.collections.length > 0) {
@@ -202,14 +202,14 @@ class BackupSchedulerService {
       // Clean up old backups
       await this.cleanupOldBackups(schedule.retentionDays);
     } catch (error: unknown) {
-      logger.error(`[BackupScheduler] Backup failed: ${error.message}`, error);
+      logger.error(`[BackupScheduler] Backup failed: ${(error instanceof Error ? error.message : String(error))}`, error);
       
       // Try to update backup record if it exists
       try {
         const backup = await DatabaseBackup.findOne({ filename });
         if (backup) {
           backup.status = 'failed';
-          backup.error = error.message;
+          backup.error = (error instanceof Error ? error.message : String(error));
           await backup.save();
         }
       } catch (updateError) {
@@ -244,11 +244,11 @@ class BackupSchedulerService {
           await DatabaseBackup.findByIdAndDelete(backup._id);
           logger.info(`[BackupScheduler] Cleaned up expired backup: ${backup.filename}`);
         } catch (error: unknown) {
-          logger.error(`[BackupScheduler] Failed to cleanup backup ${backup.filename}: ${error.message}`);
+          logger.error(`[BackupScheduler] Failed to cleanup backup ${backup.filename}: ${(error instanceof Error ? error.message : String(error))}`);
         }
       }
     } catch (error: unknown) {
-      logger.error(`[BackupScheduler] Cleanup cleanup failed: ${error.message}`);
+      logger.error(`[BackupScheduler] Cleanup cleanup failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
   }
 }

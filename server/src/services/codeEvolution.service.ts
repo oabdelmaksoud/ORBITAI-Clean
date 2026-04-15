@@ -5,7 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { CodeEvolution, ICodeEvolution } from '../models/CodeEvolution.model.js';
-import { Artifact, IArtifact } from '../models/Artifact.model.js';
+import { Artifact} from '../models/Artifact.model.js';
 import { codeQualityAssuranceService } from './codeQualityAssurance.service.js';
 
 export interface CodeEvolutionReport {
@@ -60,7 +60,7 @@ class CodeEvolutionService {
       }).sort({ timestamp: -1 });
 
       // Analyze current code
-      const qualityScore = await codeQualityAssuranceService.calculateQualityScore(
+      const qualityScore = await (codeQualityAssuranceService as any).calculateQualityScore(
         artifact.content,
         artifact.metadata?.language || 'typescript'
       );
@@ -105,7 +105,7 @@ class CodeEvolutionService {
         },
         changes,
         qualityTrend,
-        regressionPatterns,
+        regressionPatterns: regressionPatterns as any,
         timestamp: new Date()
       });
 
@@ -314,7 +314,7 @@ class CodeEvolutionService {
         artifactId,
         versions,
         qualityTrend,
-        regressionPatterns,
+        regressionPatterns: regressionPatterns as any,
         changeSummary: {
           totalVersions: versions.length,
           averageQualityChange: Math.round(averageQualityChange * 100) / 100,

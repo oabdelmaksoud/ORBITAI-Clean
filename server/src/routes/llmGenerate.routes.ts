@@ -29,10 +29,11 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
         const { text, model = 'text-embedding-004' } = req.body;
 
         if (!text) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Text is required'
             });
+            return;
         }
 
         // TODO: Implement embedding generation via Google AI
@@ -66,10 +67,11 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
         const { prompt, context = '' } = req.body;
 
         if (!prompt) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Prompt is required'
             });
+            return;
         }
 
         const userId = req.user?.id;
@@ -122,10 +124,11 @@ router.post('/generate-agent-profile', async (req: AuthRequest, res, _next) => {
         const { role, capabilities = [], domain = '' } = req.body;
 
         if (!role) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Role is required'
             });
+            return;
         }
 
         const userId = req.user?.id;
@@ -202,10 +205,11 @@ router.post('/quick-suggestions', async (req: AuthRequest, res, _next) => {
         const { context, type = 'general', count = 5 } = req.body;
 
         if (!context) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Context is required'
             });
+            return;
         }
 
         const userId = req.user?.id;
@@ -270,10 +274,11 @@ router.post('/generate-theme', async (req: AuthRequest, res, _next) => {
         const { projectType, style = 'modern', colorPreference = '' } = req.body;
 
         if (!projectType) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Project type is required'
             });
+            return;
         }
 
         const userId = req.user?.id;

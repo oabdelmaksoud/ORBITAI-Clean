@@ -85,7 +85,7 @@ export class CustomFeatureFlagProvider implements IFeatureFlagProvider {
       }
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Custom Provider] Error getting all flags:', error);
       return {};
     }
@@ -138,7 +138,7 @@ export class FlagsmithProvider implements IFeatureFlagProvider {
 
       this.initialized = true;
       logger.info('[Flagsmith] Provider initialized');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Flagsmith] Failed to initialize:', error);
       throw error;
     }
@@ -181,7 +181,7 @@ export class FlagsmithProvider implements IFeatureFlagProvider {
           source: 'flagsmith'
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`[Flagsmith] Error checking feature '${featureKey}':`, error);
       return {
         enabled: false,
@@ -238,7 +238,7 @@ export class FlagsmithProvider implements IFeatureFlagProvider {
 
         return result;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Flagsmith] Error getting all flags:', error);
       return {};
     }
@@ -308,7 +308,7 @@ class UnifiedFeatureFlagService {
       }
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`[Feature Flags] Error checking '${featureKey}', falling back:`, error);
       return await this.fallbackProvider.isEnabled(featureKey, user);
     }
@@ -317,7 +317,7 @@ class UnifiedFeatureFlagService {
   async getValue(featureKey: string, user: FeatureFlagUser): Promise<any> {
     try {
       return await this.primaryProvider.getValue(featureKey, user);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`[Feature Flags] Error getting value for '${featureKey}', falling back:`, error);
       return await this.fallbackProvider.getValue(featureKey, user);
     }
@@ -335,7 +335,7 @@ class UnifiedFeatureFlagService {
       }
       
       return await this.primaryProvider.getAllFlags(user);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Feature Flags] Error getting all flags, falling back:', error);
       return await this.fallbackProvider.getAllFlags(user);
     }
@@ -400,7 +400,7 @@ class UnifiedFeatureFlagService {
   }
 
   async getABTestVariant(
-    featureKey: string,
+    _featureKey: string,
     user: FeatureFlagUser,
     config: ABTestConfig
   ): Promise<string> {

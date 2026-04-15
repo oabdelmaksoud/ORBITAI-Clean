@@ -3,11 +3,41 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ApiKeyManagementService } from '../../services/apiKeyManagement.service.js';
+import { apiKeyManagement } from '../../services/apiKeyManagement.service.js';
 import { ApiKey } from '../../models/ApiKey.model.js';
 
 // Mock dependencies
-vi.mock('../../models/ApiKey.model.js');
+vi.mock('../../models/ApiKey.model.js', () => {
+  const saveFn = vi.fn().mockResolvedValue(true);
+  class MockApiKey {
+    static findOne = vi.fn();
+    static find = vi.fn();
+    static deleteOne = vi.fn();
+    static __mockSave = saveFn;
+
+    _id = { toString: () => 'key123' };
+    provider: string;
+    keyName: string;
+    encryptedValue: string;
+    iv: string;
+    tag: string;
+    isActive = true;
+    createdAt = new Date();
+    updatedAt = new Date();
+    save = saveFn;
+    metadata: any;
+
+    constructor(data: any) {
+      this.provider = data.provider;
+      this.keyName = data.keyName;
+      this.encryptedValue = data.encryptedValue;
+      this.iv = data.iv;
+      this.tag = data.tag;
+      this.metadata = data.metadata;
+    }
+  }
+  return { ApiKey: MockApiKey };
+});
 vi.mock('../../services/apiKeyEncryption.service.js', () => ({
   apiKeyEncryption: {
     validateKeyFormat: vi.fn(() => ({ valid: true })),
@@ -17,6 +47,7 @@ vi.mock('../../services/apiKeyEncryption.service.js', () => ({
       tag: 'tag_value',
     })),
     decrypt: vi.fn((encrypted: string) => encrypted.replace('encrypted_', '')),
+    maskKey: vi.fn((key: string) => '••••••••'),
   },
 }));
 vi.mock('../../utils/logger.js', () => ({
@@ -27,10 +58,10 @@ vi.mock('../../utils/logger.js', () => ({
 }));
 
 describe('API Key Management Service', () => {
-  let service: ApiKeyManagementService;
+  let service: typeof apiKeyManagement;
 
   beforeEach(() => {
-    service = new ApiKeyManagementService();
+    service = apiKeyManagement;
     vi.clearAllMocks();
   });
 
@@ -43,23 +74,12 @@ describe('API Key Management Service', () => {
       };
       const userId = 'user123';
 
-      const mockApiKey = {
-        _id: 'key123',
-        provider: 'openai',
-        keyName: 'Test Key',
-        encryptedValue: 'encrypted_value:tag_value',
-        iv: 'iv_value',
-        isActive: true,
-        save: vi.fn().mockResolvedValue(true),
-      };
-
       vi.mocked(ApiKey.findOne).mockResolvedValue(null);
-      vi.mocked(ApiKey).mockImplementation(() => mockApiKey as any);
 
       const result = await service.createApiKey(input, userId);
 
       expect(result).toBeDefined();
-      expect(mockApiKey.save).toHaveBeenCalled();
+      expect((ApiKey as any).__mockSave).toHaveBeenCalled();
     });
 
     it('should validate key format before creating', async () => {
@@ -94,15 +114,17 @@ describe('API Key Management Service', () => {
       ];
 
       vi.mocked(ApiKey.find).mockReturnValue({
-        populate: vi.fn().mockReturnValue({
-          sort: vi.fn().mockResolvedValue(mockKeys),
-        }),
+        sort: vi.fn().mockResolvedValue(
+          mockKeys.map(k => ({
+            ...k,
+            _id: { toString: () => k._id },
+          }))
+        ),
       } as any);
 
-      const keys = await service.getApiKeys();
+      const keys = await service.getAllApiKeys();
       expect(keys).toBeDefined();
       expect(Array.isArray(keys)).toBe(true);
     });
   });
 });
-

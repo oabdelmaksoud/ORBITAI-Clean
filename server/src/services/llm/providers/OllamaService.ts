@@ -46,7 +46,7 @@ export class OllamaService {
         }
       });
       return response.ok;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug(`Ollama not available at ${this.baseUrl}:`, error);
       return false;
     }
@@ -69,7 +69,7 @@ export class OllamaService {
       }
 
       const data = await response.json();
-      return (data.models || []).map((model: any) => model.name || model.model);
+      return ((data as any).models || []).map((model: any) => model.name || model.model);
     } catch (error: unknown) {
       const apiError = toApiError(error);
       logger.error('Failed to fetch Ollama models:', apiError);
@@ -131,9 +131,9 @@ export class OllamaService {
       const data = await response.json();
 
       // Ollama response format
-      const text = data.message?.content || '';
-      const promptTokens = data.prompt_eval_count || 0;
-      const completionTokens = data.eval_count || 0;
+      const text = (data as any).message?.content || '';
+      const promptTokens = (data as any).prompt_eval_count || 0;
+      const completionTokens = (data as any).eval_count || 0;
 
       return {
         text,
@@ -155,7 +155,7 @@ export class OllamaService {
    */
   async generateStructuredOutput(
     prompt: string,
-    schema: any,
+    _schema: any,
     model: string
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema.`;
@@ -171,7 +171,7 @@ export class OllamaService {
 
     try {
       return JSON.parse(result.text);
-    } catch (error) {
+    } catch (error: unknown) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

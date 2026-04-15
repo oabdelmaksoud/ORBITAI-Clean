@@ -54,7 +54,7 @@ class StandardsResearchService {
         });
       } else if (geminiKey) {
         this.llm = new ChatGoogleGenerativeAI({
-          modelName: 'gemini-3-pro-preview',
+          model: 'gemini-3-pro-preview',
           temperature: 0.7,
           apiKey: geminiKey,
         });
@@ -93,7 +93,7 @@ class StandardsResearchService {
       return this.parseResearchResult(content, query);
     } catch (error: unknown) {
       logger.error('Standards research failed:', error);
-      throw new Error(`Standards research failed: ${error.message}`);
+      throw new Error(`Standards research failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
   }
 

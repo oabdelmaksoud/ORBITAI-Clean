@@ -7,7 +7,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import projectRoutes from '../routes/project.routes.js';
-import { User } from '../models/User.model.js';
 import { Project } from '../models/Project.model.js';
 import { setupTestEnv, teardownTestEnv, cleanupTestData, createTestUser, createTestProject, getAuthHeaders } from './helpers/testHelpers.js';
 

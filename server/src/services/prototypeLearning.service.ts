@@ -34,7 +34,8 @@ class PrototypeLearningService {
             projectType,
             genre,
             issuePattern,
-            issueCategory = 'other',
+            // @ts-ignore TS6133
+            _issueCategory = 'other',
             fix,
             source = 'cua-autofix',
             projectId,
@@ -97,7 +98,7 @@ class PrototypeLearningService {
 
             return learning;
         } catch (error: unknown) {
-            logger.error(`[PrototypeLearning] Failed to record learning:`, error.message);
+            logger.error(`[PrototypeLearning] Failed to record learning:`, (error instanceof Error ? error.message : String(error)));
             throw error;
         }
     }
@@ -151,7 +152,7 @@ class PrototypeLearningService {
                 occurrences: l.occurrences
             }));
         } catch (error: unknown) {
-            logger.error(`[PrototypeLearning] Failed to retrieve learnings:`, error.message);
+            logger.error(`[PrototypeLearning] Failed to retrieve learnings:`, (error instanceof Error ? error.message : String(error)));
             return [];
         }
     }
@@ -177,7 +178,7 @@ class PrototypeLearningService {
 
             await learning.save();
         } catch (error: unknown) {
-            logger.warn(`[PrototypeLearning] Failed to update success rate:`, error.message);
+            logger.warn(`[PrototypeLearning] Failed to update success rate:`, (error instanceof Error ? error.message : String(error)));
         }
     }
 

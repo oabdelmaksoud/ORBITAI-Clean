@@ -32,10 +32,7 @@ router.get('/project/:projectId/participants', async (req: AuthRequest, res, nex
 
     const project = await Project.findOne({
       _id: projectId,
-      $or: [
-        { userId },
-        { 'collaborators.userId': userId }
-      ]
+      $or: [{ userId }, { 'collaborators.userId': userId }],
     });
 
     if (!project) {
@@ -46,22 +43,22 @@ router.get('/project/:projectId/participants', async (req: AuthRequest, res, nex
       {
         userId: project.userId,
         role: 'owner',
-        joinedAt: project.created
+        joinedAt: project.createdAt,
       },
-      ...(project.collaborators || []).map((collab: any) => ({
+      ...((project as any).collaborators || []).map((collab: any) => ({
         userId: collab.userId,
         role: collab.role || 'collaborator',
-        joinedAt: collab.joinedAt
-      }))
+        joinedAt: collab.joinedAt,
+      })),
     ];
 
     res.json({
       success: true,
       data: {
-        participants
-      }
+        participants,
+      },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -82,7 +79,7 @@ router.post('/project/:projectId/invite', async (req: AuthRequest, res, next) =>
 
     const project = await Project.findOne({
       _id: projectId,
-      userId // Only owner can invite
+      userId, // Only owner can invite
     });
 
     if (!project) {
@@ -90,28 +87,29 @@ router.post('/project/:projectId/invite', async (req: AuthRequest, res, next) =>
     }
 
     // Check if user is already a collaborator
-    const existingCollaborator = project.collaborators?.find(
+    const existingCollaborator = (project as any).collaborators?.find(
       (collab: any) => collab.email === email
     );
 
     if (existingCollaborator) {
-      return res.json({
+      res.json({
         success: false,
-        message: 'User is already a collaborator'
+        message: 'User is already a collaborator',
       });
+      return;
     }
 
     // Add collaborator
-    if (!project.collaborators) {
-      project.collaborators = [];
+    if (!(project as any).collaborators) {
+      (project as any).collaborators = [];
     }
 
-    project.collaborators.push({
+    (project as any).collaborators.push({
       email,
       role: role || 'collaborator',
       invitedBy: userId,
       invitedAt: new Date(),
-      status: 'pending'
+      status: 'pending',
     });
 
     project.lastModified = new Date();
@@ -126,11 +124,11 @@ router.post('/project/:projectId/invite', async (req: AuthRequest, res, next) =>
         collaborator: {
           email,
           role: role || 'collaborator',
-          status: 'pending'
-        }
-      }
+          status: 'pending',
+        },
+      },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -146,30 +144,32 @@ router.delete('/project/:projectId/remove/:email', async (req: AuthRequest, res,
 
     const project = await Project.findOne({
       _id: projectId,
-      userId // Only owner can remove
+      userId, // Only owner can remove
     });
 
     if (!project) {
       throw new AppError('Project not found or you do not have permission', 404);
     }
 
-    if (!project.collaborators) {
-      return res.json({
+    if (!(project as any).collaborators) {
+      res.json({
         success: true,
-        message: 'No collaborators to remove'
+        message: 'No collaborators to remove',
       });
+      return;
     }
 
-    const initialLength = project.collaborators.length;
-    project.collaborators = project.collaborators.filter(
+    const initialLength = (project as any).collaborators.length;
+    (project as any).collaborators = (project as any).collaborators.filter(
       (collab: any) => collab.email !== email
     );
 
-    if (project.collaborators.length === initialLength) {
-      return res.json({
+    if ((project as any).collaborators.length === initialLength) {
+      res.json({
         success: false,
-        message: 'Collaborator not found'
+        message: 'Collaborator not found',
       });
+      return;
     }
 
     project.lastModified = new Date();
@@ -177,9 +177,9 @@ router.delete('/project/:projectId/remove/:email', async (req: AuthRequest, res,
 
     res.json({
       success: true,
-      message: 'Collaborator removed successfully'
+      message: 'Collaborator removed successfully',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -196,10 +196,7 @@ router.get('/project/:projectId/activity', async (req: AuthRequest, res, next) =
 
     const project = await Project.findOne({
       _id: projectId,
-      $or: [
-        { userId },
-        { 'collaborators.userId': userId }
-      ]
+      $or: [{ userId }, { 'collaborators.userId': userId }],
     });
 
     if (!project) {
@@ -213,25 +210,25 @@ router.get('/project/:projectId/activity', async (req: AuthRequest, res, next) =
         id: '1',
         type: 'project_created',
         userId: project.userId,
-        timestamp: project.created,
-        description: 'Project created'
+        timestamp: project.createdAt,
+        description: 'Project created',
       },
       {
         id: '2',
         type: 'project_modified',
         userId: project.userId,
         timestamp: project.lastModified,
-        description: 'Project last modified'
-      }
+        description: 'Project last modified',
+      },
     ];
 
     res.json({
       success: true,
       data: {
-        activity: activity.slice(0, parseInt(limit as string))
-      }
+        activity: activity.slice(0, parseInt(limit as string)),
+      },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -252,10 +249,7 @@ router.post('/project/:projectId/comment', async (req: AuthRequest, res, next) =
 
     const project = await Project.findOne({
       _id: projectId,
-      $or: [
-        { userId },
-        { 'collaborators.userId': userId }
-      ]
+      $or: [{ userId }, { 'collaborators.userId': userId }],
     });
 
     if (!project) {
@@ -275,11 +269,11 @@ router.post('/project/:projectId/comment', async (req: AuthRequest, res, next) =
           userId,
           comment,
           taskId,
-          timestamp: new Date()
-        }
-      }
+          timestamp: new Date(),
+        },
+      },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });

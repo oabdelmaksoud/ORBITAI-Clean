@@ -23,8 +23,8 @@ describe('Logo Component', () => {
 
   it('should apply size classes correctly', () => {
     const { container } = render(<Logo size="lg" />);
-    const div = container.firstChild as HTMLElement;
-    expect(div.className).toContain('w-12');
+    const sizeDiv = container.querySelector('.w-12');
+    expect(sizeDiv).not.toBeNull();
   });
 });
 

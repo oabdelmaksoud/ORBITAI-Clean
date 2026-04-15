@@ -146,7 +146,7 @@ router.post('/generate-research', async (req: AuthRequest, res) => {
             },
             routingContext: { userId: req.user?.id },
             requestType: 'research',
-            contextType: 'analysis'
+            contextType: 'analysis' as any
         });
 
         let researchData;

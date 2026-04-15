@@ -3,7 +3,6 @@
  * Validates generated mobile code meets iOS App Store and Google Play Store 2024 guidelines
  */
 
-import { logger } from './logger.js';
 
 export interface ComplianceIssue {
   severity: 'error' | 'warning' | 'info';

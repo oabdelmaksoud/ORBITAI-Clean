@@ -174,7 +174,7 @@ export class FunctionCallProcessor {
    * Build continuation prompt with function call results
    */
   private buildContinuationPrompt(
-    originalPrompt: string,
+    _originalPrompt: string,
     previousResponse: string,
     functionCalls: FunctionCall[],
     functionResponses: FunctionCallResponse[]
@@ -248,7 +248,7 @@ export class FunctionCallProcessor {
     model: string,
     tools: any[],
     systemInstruction?: string,
-    functionResponses?: FunctionCallResponse[]
+    _functionResponses?: FunctionCallResponse[]
   ): Promise<LLMResponseWithFunctionCalls> {
     const config: any = {
       systemInstruction,
@@ -278,9 +278,9 @@ export class FunctionCallProcessor {
   private async continueOpenAIConversation(
     prompt: string,
     model: string,
-    tools: any[],
+    _tools: any[],
     systemInstruction?: string,
-    functionResponses?: FunctionCallResponse[]
+    _functionResponses?: FunctionCallResponse[]
   ): Promise<LLMResponseWithFunctionCalls> {
     // For OpenAI, we need to use the OpenAI client directly with proper message format
     // Since openAIService.generateContent doesn't support function calling yet,
@@ -313,9 +313,9 @@ export class FunctionCallProcessor {
   private async continueAnthropicConversation(
     prompt: string,
     model: string,
-    tools: any[],
+    _tools: any[],
     systemInstruction?: string,
-    functionResponses?: FunctionCallResponse[]
+    _functionResponses?: FunctionCallResponse[]
   ): Promise<LLMResponseWithFunctionCalls> {
     const result = await anthropicService.generateContent(prompt, model, {
       systemInstruction,
@@ -357,7 +357,7 @@ export class FunctionCallProcessor {
           name: 'create_mcp_server',
           args
         });
-      } catch (e) {
+      } catch (e: unknown) {
         // Try to extract key-value pairs if JSON parsing fails
         logger.debug('JSON parsing failed, trying alternative extraction');
       }
@@ -377,7 +377,7 @@ export class FunctionCallProcessor {
             });
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         // Ignore parsing errors
       }
     }
@@ -388,7 +388,8 @@ export class FunctionCallProcessor {
   /**
    * Extract function calls from OpenAI response
    */
-  private extractFunctionCallsFromOpenAIResponse(response: any): FunctionCall[] {
+  // @ts-ignore TS6133
+  private _extractFunctionCallsFromOpenAIResponse(response: any): FunctionCall[] {
     const functionCalls: FunctionCall[] = [];
     
     // OpenAI returns function calls in response.choices[0].message.tool_calls
@@ -404,7 +405,7 @@ export class FunctionCallProcessor {
               name: toolCall.function.name,
               args: args || {}
             });
-          } catch (e) {
+          } catch (e: unknown) {
             logger.warn('Failed to parse OpenAI function call:', e);
           }
         }
@@ -417,7 +418,8 @@ export class FunctionCallProcessor {
   /**
    * Convert tools to OpenAI format
    */
-  private convertToolsToOpenAIFormat(tools: any[]): any[] {
+  // @ts-ignore TS6133
+  private _convertToolsToOpenAIFormat(tools: any[]): any[] {
     const openAITools: any[] = [];
     
     for (const tool of tools) {

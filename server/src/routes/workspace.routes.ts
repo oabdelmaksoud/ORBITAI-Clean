@@ -3,6 +3,7 @@ import { Workspace } from '../models/Workspace.model';
 import { WorkspaceInvite } from '../models/WorkspaceInvite.model';
 import { authenticateToken } from '../middleware/auth';
 import { Types } from 'mongoose';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -16,14 +17,15 @@ router.use(authenticateToken);
 router.post('/', async (req, res) => {
   try {
     const { name, description, settings } = req.body;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     // Check if slug already exists
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const existing = await Workspace.findOne({ slug });
     
     if (existing) {
-      return res.status(400).json({ error: 'Workspace with this name already exists' });
+      res.status(400).json({ error: 'Workspace with this name already exists' });
+      return;
     }
 
     // Create workspace
@@ -46,7 +48,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(workspace);
   } catch (error: any) {
-    console.error('Create workspace error:', error);
+    logger.error('Create workspace error:', error);
     res.status(500).json({ error: error.message || 'Failed to create workspace' });
   }
 });
@@ -57,7 +59,7 @@ router.post('/', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspaces = await Workspace.find({
       $or: [
@@ -72,7 +74,7 @@ router.get('/', async (req, res) => {
 
     res.json(workspaces);
   } catch (error: any) {
-    console.error('List workspaces error:', error);
+    logger.error('List workspaces error:', error);
     res.status(500).json({ error: error.message || 'Failed to list workspaces' });
   }
 });
@@ -84,7 +86,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspace = await Workspace.findById(id)
       .populate('owner', 'name email avatar')
@@ -92,17 +94,19 @@ router.get('/:id', async (req, res) => {
       .populate('projects');
 
     if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      res.status(404).json({ error: 'Workspace not found' });
+      return;
     }
 
     // Check if user has access
-    if (!workspace.hasMember(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (!((workspace as any).hasMember)(userId)) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
     }
 
     res.json(workspace);
   } catch (error: any) {
-    console.error('Get workspace error:', error);
+    logger.error('Get workspace error:', error);
     res.status(500).json({ error: error.message || 'Failed to get workspace' });
   }
 });
@@ -115,18 +119,20 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, settings } = req.body;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      res.status(404).json({ error: 'Workspace not found' });
+      return;
     }
 
     // Check if user is owner or admin
-    const role = workspace.getMemberRole(userId);
+    const role = ((workspace as any).getMemberRole)(userId);
     if (role !== 'owner' && role !== 'admin') {
-      return res.status(403).json({ error: 'Only owners and admins can update workspace' });
+      res.status(403).json({ error: 'Only owners and admins can update workspace' });
+      return;
     }
 
     // Update fields
@@ -138,7 +144,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(workspace);
   } catch (error: any) {
-    console.error('Update workspace error:', error);
+    logger.error('Update workspace error:', error);
     res.status(500).json({ error: error.message || 'Failed to update workspace' });
   }
 });
@@ -150,17 +156,19 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      res.status(404).json({ error: 'Workspace not found' });
+      return;
     }
 
     // Check if user is owner
     if (!workspace.owner.equals(userId)) {
-      return res.status(403).json({ error: 'Only the owner can delete workspace' });
+      res.status(403).json({ error: 'Only the owner can delete workspace' });
+      return;
     }
 
     // Soft delete
@@ -169,7 +177,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Workspace deleted successfully' });
   } catch (error: any) {
-    console.error('Delete workspace error:', error);
+    logger.error('Delete workspace error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete workspace' });
   }
 });
@@ -182,18 +190,20 @@ router.post('/:id/members', async (req, res) => {
   try {
     const { id } = req.params;
     const { email, role, message } = req.body;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      res.status(404).json({ error: 'Workspace not found' });
+      return;
     }
 
     // Check if user can invite
-    const userRole = workspace.getMemberRole(userId);
+    const userRole = ((workspace as any).getMemberRole)(userId);
     if (userRole !== 'owner' && userRole !== 'admin') {
-      return res.status(403).json({ error: 'Only owners and admins can invite members' });
+      res.status(403).json({ error: 'Only owners and admins can invite members' });
+      return;
     }
 
     // Create invitation
@@ -203,7 +213,7 @@ router.post('/:id/members', async (req, res) => {
       role: role || 'member',
       inviter: userId,
       message,
-      expiresAt: WorkspaceInvite.generateExpirationDate()
+      expiresAt: ((WorkspaceInvite as any).generateExpirationDate)()
     });
 
     await invitation.save();
@@ -212,7 +222,7 @@ router.post('/:id/members', async (req, res) => {
 
     res.status(201).json(invitation);
   } catch (error: any) {
-    console.error('Invite member error:', error);
+    logger.error('Invite member error:', error);
     res.status(500).json({ error: error.message || 'Failed to invite member' });
   }
 });
@@ -224,30 +234,33 @@ router.post('/:id/members', async (req, res) => {
 router.delete('/:id/members/:memberId', async (req, res) => {
   try {
     const { id, memberId } = req.params;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      res.status(404).json({ error: 'Workspace not found' });
+      return;
     }
 
     // Check if user can remove members
-    const userRole = workspace.getMemberRole(userId);
+    const userRole = ((workspace as any).getMemberRole)(userId);
     if (userRole !== 'owner' && userRole !== 'admin') {
-      return res.status(403).json({ error: 'Only owners and admins can remove members' });
+      res.status(403).json({ error: 'Only owners and admins can remove members' });
+      return;
     }
 
     // Can't remove owner
     if (workspace.owner.equals(new Types.ObjectId(memberId))) {
-      return res.status(400).json({ error: 'Cannot remove workspace owner' });
+      res.status(400).json({ error: 'Cannot remove workspace owner' });
+      return;
     }
 
-    await workspace.removeMember(new Types.ObjectId(memberId));
+    await ((workspace as any).removeMember)(new Types.ObjectId(memberId));
 
     res.json({ message: 'Member removed successfully' });
   } catch (error: any) {
-    console.error('Remove member error:', error);
+    logger.error('Remove member error:', error);
     res.status(500).json({ error: error.message || 'Failed to remove member' });
   }
 });
@@ -260,29 +273,32 @@ router.put('/:id/members/:memberId', async (req, res) => {
   try {
     const { id, memberId } = req.params;
     const { role } = req.body;
-    const userId = req.user._id;
+    const userId = ((req as any).user)._id;
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      res.status(404).json({ error: 'Workspace not found' });
+      return;
     }
 
     // Check if user is owner
     if (!workspace.owner.equals(userId)) {
-      return res.status(403).json({ error: 'Only the owner can change member roles' });
+      res.status(403).json({ error: 'Only the owner can change member roles' });
+      return;
     }
 
     // Can't change owner role
     if (workspace.owner.equals(new Types.ObjectId(memberId))) {
-      return res.status(400).json({ error: 'Cannot change owner role' });
+      res.status(400).json({ error: 'Cannot change owner role' });
+      return;
     }
 
-    await workspace.updateMemberRole(new Types.ObjectId(memberId), role);
+    await ((workspace as any).updateMemberRole)(new Types.ObjectId(memberId), role);
 
     res.json({ message: 'Member role updated successfully' });
   } catch (error: any) {
-    console.error('Update member role error:', error);
+    logger.error('Update member role error:', error);
     res.status(500).json({ error: error.message || 'Failed to update member role' });
   }
 });

@@ -3,7 +3,7 @@
  * Provides intelligent analysis of ideas including clustering, relationships, gap analysis, and insights
  */
 
-import express, { Router } from 'express';
+import { Router } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
 import { llmRouter } from '../services/llm/LLMRouter.js';
@@ -98,10 +98,11 @@ router.post('/analyze', authenticateToken, routeTimeout(60000), async (req: Auth
     const { ideas, topic, projectDescription, conversationContext, currentMaturity, maturityBreakdown } = req.body;
 
     if (!ideas || !Array.isArray(ideas) || ideas.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Ideas array is required and must not be empty'
       });
+      return;
     }
 
     const userId = req.user?.id;
@@ -308,25 +309,28 @@ router.post('/suggest-connections', authenticateToken, routeTimeout(30000), asyn
     const { ideas, ideaId } = req.body;
 
     if (!ideas || !Array.isArray(ideas) || ideas.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Ideas array is required'
       });
+      return;
     }
 
     if (!ideaId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'ideaId is required'
       });
+      return;
     }
 
     const targetIdea = ideas.find((i: Idea) => i.id === ideaId);
     if (!targetIdea) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Idea not found'
       });
+      return;
     }
 
     const otherIdeas = ideas.filter((i: Idea) => i.id !== ideaId);

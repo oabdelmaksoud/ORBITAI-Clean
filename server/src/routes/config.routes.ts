@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 import express from 'express';
 import { authenticateToken, authenticateTokenOptional, AuthRequest } from '../middleware/auth.js';
 import { e2bService } from '../services/e2b.service.js';
@@ -24,7 +25,7 @@ router.get('/status', authenticateToken, async (_req: AuthRequest, res, next) =>
         }
       }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 });
@@ -57,10 +58,11 @@ router.get('/gemini-api-key', authenticateTokenOptional, async (req: AuthRequest
     }
 
     if (!apiKey) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Gemini API key not configured. Please add it via Settings → API Keys or set GEMINI_API_KEY in .env'
       });
+      return;
     }
 
     res.json({

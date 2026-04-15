@@ -5,87 +5,342 @@
 
 import { logger } from '../utils/logger.js';
 import { ComplianceChecklist, IComplianceChecklist } from '../models/ComplianceChecklist.model.js';
-import { Artifact, IArtifact } from '../models/Artifact.model.js';
-import { llmRouter } from './llm/LLMRouter.js';
-import { Type, Schema } from '@google/genai';
+import { Artifact } from '../models/Artifact.model.js';
+// import { Type, Schema } from '@google/genai';
 
 // Compliance standard templates
-const COMPLIANCE_TEMPLATES = {
+const COMPLIANCE_TEMPLATES: Record<
+  string,
+  {
+    name: string;
+    items: Array<{ id: string; category: string; requirement: string; description: string }>;
+  }
+> = {
   gdpr: {
     name: 'GDPR (General Data Protection Regulation)',
     items: [
-      { id: 'GDPR-001', category: 'Data Protection', requirement: 'Lawful basis for processing', description: 'Document lawful basis for all personal data processing' },
-      { id: 'GDPR-002', category: 'Data Protection', requirement: 'Consent management', description: 'Implement consent collection and management system' },
-      { id: 'GDPR-003', category: 'Data Subject Rights', requirement: 'Right to access', description: 'Users can request access to their personal data' },
-      { id: 'GDPR-004', category: 'Data Subject Rights', requirement: 'Right to deletion', description: 'Users can request deletion of their personal data' },
-      { id: 'GDPR-005', category: 'Data Subject Rights', requirement: 'Right to portability', description: 'Users can export their data in machine-readable format' },
-      { id: 'GDPR-006', category: 'Data Security', requirement: 'Encryption at rest', description: 'Personal data encrypted when stored' },
-      { id: 'GDPR-007', category: 'Data Security', requirement: 'Encryption in transit', description: 'Personal data encrypted during transmission' },
-      { id: 'GDPR-008', category: 'Privacy', requirement: 'Privacy policy', description: 'Clear privacy policy published and accessible' },
-      { id: 'GDPR-009', category: 'Data Breach', requirement: 'Breach notification', description: 'Process for notifying authorities within 72 hours' },
-      { id: 'GDPR-010', category: 'Data Processing', requirement: 'Data minimization', description: 'Only collect data necessary for purpose' }
-    ]
+      {
+        id: 'GDPR-001',
+        category: 'Data Protection',
+        requirement: 'Lawful basis for processing',
+        description: 'Document lawful basis for all personal data processing',
+      },
+      {
+        id: 'GDPR-002',
+        category: 'Data Protection',
+        requirement: 'Consent management',
+        description: 'Implement consent collection and management system',
+      },
+      {
+        id: 'GDPR-003',
+        category: 'Data Subject Rights',
+        requirement: 'Right to access',
+        description: 'Users can request access to their personal data',
+      },
+      {
+        id: 'GDPR-004',
+        category: 'Data Subject Rights',
+        requirement: 'Right to deletion',
+        description: 'Users can request deletion of their personal data',
+      },
+      {
+        id: 'GDPR-005',
+        category: 'Data Subject Rights',
+        requirement: 'Right to portability',
+        description: 'Users can export their data in machine-readable format',
+      },
+      {
+        id: 'GDPR-006',
+        category: 'Data Security',
+        requirement: 'Encryption at rest',
+        description: 'Personal data encrypted when stored',
+      },
+      {
+        id: 'GDPR-007',
+        category: 'Data Security',
+        requirement: 'Encryption in transit',
+        description: 'Personal data encrypted during transmission',
+      },
+      {
+        id: 'GDPR-008',
+        category: 'Privacy',
+        requirement: 'Privacy policy',
+        description: 'Clear privacy policy published and accessible',
+      },
+      {
+        id: 'GDPR-009',
+        category: 'Data Breach',
+        requirement: 'Breach notification',
+        description: 'Process for notifying authorities within 72 hours',
+      },
+      {
+        id: 'GDPR-010',
+        category: 'Data Processing',
+        requirement: 'Data minimization',
+        description: 'Only collect data necessary for purpose',
+      },
+    ],
   },
   hipaa: {
     name: 'HIPAA (Health Insurance Portability and Accountability Act)',
     items: [
-      { id: 'HIPAA-001', category: 'PHI Protection', requirement: 'Access controls', description: 'Role-based access controls for PHI' },
-      { id: 'HIPAA-002', category: 'PHI Protection', requirement: 'Encryption', description: 'PHI encrypted at rest and in transit' },
-      { id: 'HIPAA-003', category: 'PHI Protection', requirement: 'Audit logs', description: 'Comprehensive audit logs for PHI access' },
-      { id: 'HIPAA-004', category: 'PHI Protection', requirement: 'Authentication', description: 'Strong authentication for PHI access' },
-      { id: 'HIPAA-005', category: 'Administrative', requirement: 'Security officer', description: 'Designated security officer' },
-      { id: 'HIPAA-006', category: 'Administrative', requirement: 'Training', description: 'Security awareness training for staff' },
-      { id: 'HIPAA-007', category: 'Physical', requirement: 'Facility controls', description: 'Physical safeguards for PHI storage' },
-      { id: 'HIPAA-008', category: 'Technical', requirement: 'Integrity controls', description: 'Mechanisms to prevent unauthorized PHI alteration' },
-      { id: 'HIPAA-009', category: 'Technical', requirement: 'Transmission security', description: 'Secure transmission of PHI' },
-      { id: 'HIPAA-010', category: 'Business Associate', requirement: 'BAAs', description: 'Business Associate Agreements in place' }
-    ]
+      {
+        id: 'HIPAA-001',
+        category: 'PHI Protection',
+        requirement: 'Access controls',
+        description: 'Role-based access controls for PHI',
+      },
+      {
+        id: 'HIPAA-002',
+        category: 'PHI Protection',
+        requirement: 'Encryption',
+        description: 'PHI encrypted at rest and in transit',
+      },
+      {
+        id: 'HIPAA-003',
+        category: 'PHI Protection',
+        requirement: 'Audit logs',
+        description: 'Comprehensive audit logs for PHI access',
+      },
+      {
+        id: 'HIPAA-004',
+        category: 'PHI Protection',
+        requirement: 'Authentication',
+        description: 'Strong authentication for PHI access',
+      },
+      {
+        id: 'HIPAA-005',
+        category: 'Administrative',
+        requirement: 'Security officer',
+        description: 'Designated security officer',
+      },
+      {
+        id: 'HIPAA-006',
+        category: 'Administrative',
+        requirement: 'Training',
+        description: 'Security awareness training for staff',
+      },
+      {
+        id: 'HIPAA-007',
+        category: 'Physical',
+        requirement: 'Facility controls',
+        description: 'Physical safeguards for PHI storage',
+      },
+      {
+        id: 'HIPAA-008',
+        category: 'Technical',
+        requirement: 'Integrity controls',
+        description: 'Mechanisms to prevent unauthorized PHI alteration',
+      },
+      {
+        id: 'HIPAA-009',
+        category: 'Technical',
+        requirement: 'Transmission security',
+        description: 'Secure transmission of PHI',
+      },
+      {
+        id: 'HIPAA-010',
+        category: 'Business Associate',
+        requirement: 'BAAs',
+        description: 'Business Associate Agreements in place',
+      },
+    ],
   },
   soc2: {
     name: 'SOC 2 (Service Organization Control 2)',
     items: [
-      { id: 'SOC2-001', category: 'Security', requirement: 'Access controls', description: 'Logical and physical access controls' },
-      { id: 'SOC2-002', category: 'Security', requirement: 'System monitoring', description: 'Continuous monitoring and logging' },
-      { id: 'SOC2-003', category: 'Security', requirement: 'Vulnerability management', description: 'Regular vulnerability scanning and patching' },
-      { id: 'SOC2-004', category: 'Availability', requirement: 'Uptime monitoring', description: 'System availability monitoring and reporting' },
-      { id: 'SOC2-005', category: 'Availability', requirement: 'Incident response', description: 'Incident response procedures documented' },
-      { id: 'SOC2-006', category: 'Confidentiality', requirement: 'Data classification', description: 'Data classification and handling procedures' },
-      { id: 'SOC2-007', category: 'Confidentiality', requirement: 'Encryption', description: 'Encryption for sensitive data' },
-      { id: 'SOC2-008', category: 'Processing Integrity', requirement: 'Data validation', description: 'Input validation and processing controls' },
-      { id: 'SOC2-009', category: 'Processing Integrity', requirement: 'Error handling', description: 'Error detection and correction procedures' },
-      { id: 'SOC2-010', category: 'Privacy', requirement: 'Privacy notice', description: 'Privacy notice and consent management' }
-    ]
+      {
+        id: 'SOC2-001',
+        category: 'Security',
+        requirement: 'Access controls',
+        description: 'Logical and physical access controls',
+      },
+      {
+        id: 'SOC2-002',
+        category: 'Security',
+        requirement: 'System monitoring',
+        description: 'Continuous monitoring and logging',
+      },
+      {
+        id: 'SOC2-003',
+        category: 'Security',
+        requirement: 'Vulnerability management',
+        description: 'Regular vulnerability scanning and patching',
+      },
+      {
+        id: 'SOC2-004',
+        category: 'Availability',
+        requirement: 'Uptime monitoring',
+        description: 'System availability monitoring and reporting',
+      },
+      {
+        id: 'SOC2-005',
+        category: 'Availability',
+        requirement: 'Incident response',
+        description: 'Incident response procedures documented',
+      },
+      {
+        id: 'SOC2-006',
+        category: 'Confidentiality',
+        requirement: 'Data classification',
+        description: 'Data classification and handling procedures',
+      },
+      {
+        id: 'SOC2-007',
+        category: 'Confidentiality',
+        requirement: 'Encryption',
+        description: 'Encryption for sensitive data',
+      },
+      {
+        id: 'SOC2-008',
+        category: 'Processing Integrity',
+        requirement: 'Data validation',
+        description: 'Input validation and processing controls',
+      },
+      {
+        id: 'SOC2-009',
+        category: 'Processing Integrity',
+        requirement: 'Error handling',
+        description: 'Error detection and correction procedures',
+      },
+      {
+        id: 'SOC2-010',
+        category: 'Privacy',
+        requirement: 'Privacy notice',
+        description: 'Privacy notice and consent management',
+      },
+    ],
   },
   pci_dss: {
     name: 'PCI DSS (Payment Card Industry Data Security Standard)',
     items: [
-      { id: 'PCI-001', category: 'Network Security', requirement: 'Firewall configuration', description: 'Firewall rules configured and maintained' },
-      { id: 'PCI-002', category: 'Network Security', requirement: 'Default passwords', description: 'No default passwords in use' },
-      { id: 'PCI-003', category: 'Cardholder Data', requirement: 'Data protection', description: 'Cardholder data protected at rest' },
-      { id: 'PCI-004', category: 'Cardholder Data', requirement: 'Encryption in transit', description: 'Cardholder data encrypted during transmission' },
-      { id: 'PCI-005', category: 'Vulnerability Management', requirement: 'Antivirus', description: 'Antivirus software installed and updated' },
-      { id: 'PCI-006', category: 'Vulnerability Management', requirement: 'Secure systems', description: 'Systems developed and maintained securely' },
-      { id: 'PCI-007', category: 'Access Control', requirement: 'Access restriction', description: 'Cardholder data access restricted to need-to-know' },
-      { id: 'PCI-008', category: 'Access Control', requirement: 'Unique IDs', description: 'Unique user IDs for access' },
-      { id: 'PCI-009', category: 'Physical Security', requirement: 'Physical access', description: 'Physical access to cardholder data restricted' },
-      { id: 'PCI-010', category: 'Monitoring', requirement: 'Network monitoring', description: 'Network resources and cardholder data monitored' }
-    ]
+      {
+        id: 'PCI-001',
+        category: 'Network Security',
+        requirement: 'Firewall configuration',
+        description: 'Firewall rules configured and maintained',
+      },
+      {
+        id: 'PCI-002',
+        category: 'Network Security',
+        requirement: 'Default passwords',
+        description: 'No default passwords in use',
+      },
+      {
+        id: 'PCI-003',
+        category: 'Cardholder Data',
+        requirement: 'Data protection',
+        description: 'Cardholder data protected at rest',
+      },
+      {
+        id: 'PCI-004',
+        category: 'Cardholder Data',
+        requirement: 'Encryption in transit',
+        description: 'Cardholder data encrypted during transmission',
+      },
+      {
+        id: 'PCI-005',
+        category: 'Vulnerability Management',
+        requirement: 'Antivirus',
+        description: 'Antivirus software installed and updated',
+      },
+      {
+        id: 'PCI-006',
+        category: 'Vulnerability Management',
+        requirement: 'Secure systems',
+        description: 'Systems developed and maintained securely',
+      },
+      {
+        id: 'PCI-007',
+        category: 'Access Control',
+        requirement: 'Access restriction',
+        description: 'Cardholder data access restricted to need-to-know',
+      },
+      {
+        id: 'PCI-008',
+        category: 'Access Control',
+        requirement: 'Unique IDs',
+        description: 'Unique user IDs for access',
+      },
+      {
+        id: 'PCI-009',
+        category: 'Physical Security',
+        requirement: 'Physical access',
+        description: 'Physical access to cardholder data restricted',
+      },
+      {
+        id: 'PCI-010',
+        category: 'Monitoring',
+        requirement: 'Network monitoring',
+        description: 'Network resources and cardholder data monitored',
+      },
+    ],
   },
   iso27001: {
     name: 'ISO 27001 (Information Security Management)',
     items: [
-      { id: 'ISO-001', category: 'Information Security Policy', requirement: 'Policy document', description: 'Information security policy documented' },
-      { id: 'ISO-002', category: 'Organization', requirement: 'Roles and responsibilities', description: 'Security roles and responsibilities defined' },
-      { id: 'ISO-003', category: 'Human Resources', requirement: 'Background checks', description: 'Background verification for personnel' },
-      { id: 'ISO-004', category: 'Asset Management', requirement: 'Asset inventory', description: 'Information assets identified and inventoried' },
-      { id: 'ISO-005', category: 'Access Control', requirement: 'Access management', description: 'User access management procedures' },
-      { id: 'ISO-006', category: 'Cryptography', requirement: 'Encryption', description: 'Cryptographic controls implemented' },
-      { id: 'ISO-007', category: 'Operations Security', requirement: 'Malware protection', description: 'Controls against malware' },
-      { id: 'ISO-008', category: 'Communications Security', requirement: 'Network security', description: 'Network security controls' },
-      { id: 'ISO-009', category: 'Incident Management', requirement: 'Incident response', description: 'Information security incident management' },
-      { id: 'ISO-010', category: 'Business Continuity', requirement: 'Continuity planning', description: 'Information security continuity' }
-    ]
-  }
+      {
+        id: 'ISO-001',
+        category: 'Information Security Policy',
+        requirement: 'Policy document',
+        description: 'Information security policy documented',
+      },
+      {
+        id: 'ISO-002',
+        category: 'Organization',
+        requirement: 'Roles and responsibilities',
+        description: 'Security roles and responsibilities defined',
+      },
+      {
+        id: 'ISO-003',
+        category: 'Human Resources',
+        requirement: 'Background checks',
+        description: 'Background verification for personnel',
+      },
+      {
+        id: 'ISO-004',
+        category: 'Asset Management',
+        requirement: 'Asset inventory',
+        description: 'Information assets identified and inventoried',
+      },
+      {
+        id: 'ISO-005',
+        category: 'Access Control',
+        requirement: 'Access management',
+        description: 'User access management procedures',
+      },
+      {
+        id: 'ISO-006',
+        category: 'Cryptography',
+        requirement: 'Encryption',
+        description: 'Cryptographic controls implemented',
+      },
+      {
+        id: 'ISO-007',
+        category: 'Operations Security',
+        requirement: 'Malware protection',
+        description: 'Controls against malware',
+      },
+      {
+        id: 'ISO-008',
+        category: 'Communications Security',
+        requirement: 'Network security',
+        description: 'Network security controls',
+      },
+      {
+        id: 'ISO-009',
+        category: 'Incident Management',
+        requirement: 'Incident response',
+        description: 'Information security incident management',
+      },
+      {
+        id: 'ISO-010',
+        category: 'Business Continuity',
+        requirement: 'Continuity planning',
+        description: 'Information security continuity',
+      },
+    ],
+  },
 };
 
 export interface ComplianceReport {
@@ -100,7 +355,7 @@ export interface ComplianceReport {
     id: string;
     category: string;
     requirement: string;
-    status: string;
+    status: any;
     evidence: string[];
   }>;
   gaps: Array<{
@@ -130,19 +385,19 @@ class ComplianceChecklistService {
       }
 
       // Get project artifacts for evidence
-      const artifacts = await Artifact.find({ projectId }).lean();
+      const artifacts = (await Artifact.find({ projectId }).lean()) as any[];
 
       // Create checklist items
-      const checklistItems = template.items.map(item => ({
+      const checklistItems = template.items.map((item: any) => ({
         id: item.id,
         category: item.category,
         requirement: item.requirement,
         description: item.description,
-        status: 'not_assessed' as const,
+        status: 'not_assessed' as string,
         evidence: this.findEvidence(artifacts, item.requirement, standard),
-        notes: undefined,
-        assessedAt: undefined,
-        assessedBy: undefined
+        notes: undefined as any,
+        assessedAt: undefined as any,
+        assessedBy: undefined as any,
       }));
 
       // Auto-assess based on evidence
@@ -154,7 +409,7 @@ class ComplianceChecklistService {
       }
 
       // Calculate overall compliance
-      const overallCompliance = this.calculateCompliance(checklistItems);
+      const overallCompliance = this.calculateCompliance(checklistItems as any);
 
       // Create or update checklist
       const checklist = await ComplianceChecklist.findOneAndUpdate(
@@ -164,12 +419,12 @@ class ComplianceChecklistService {
           standard,
           checklistItems,
           overallCompliance,
-          lastAssessed: new Date()
+          lastAssessed: new Date(),
         },
         { upsert: true, new: true }
       );
 
-      return checklist;
+      return checklist as any;
     } catch (error: unknown) {
       logger.error('Failed to generate compliance checklist:', error);
       throw error;
@@ -179,11 +434,7 @@ class ComplianceChecklistService {
   /**
    * Find evidence for a requirement
    */
-  private findEvidence(
-    artifacts: IArtifact[],
-    requirement: string,
-    standard: string
-  ): string[] {
+  private findEvidence(artifacts: any[], requirement: string, standard: string): string[] {
     const evidence: string[] = [];
     const reqLower = requirement.toLowerCase();
     const keywords = reqLower.split(/\s+/).filter(w => w.length > 3);
@@ -193,9 +444,7 @@ class ComplianceChecklistService {
       const title = artifact.title.toLowerCase();
 
       // Check if artifact relates to requirement
-      const matches = keywords.filter(kw => 
-        content.includes(kw) || title.includes(kw)
-      );
+      const matches = keywords.filter(kw => content.includes(kw) || title.includes(kw));
 
       if (matches.length >= 2) {
         evidence.push(artifact._id.toString());
@@ -232,7 +481,7 @@ class ComplianceChecklistService {
 
     const compliant = items.filter(i => i.status === 'compliant').length;
     const partial = items.filter(i => i.status === 'partial').length;
-    const notApplicable = items.filter(i => i.status === 'not_applicable').length;
+    // const _notApplicable = items.filter(i => i.status === 'not_applicable').length;
     const assessed = items.length - items.filter(i => i.status === 'not_assessed').length;
 
     if (assessed === 0) return 0;
@@ -253,13 +502,13 @@ class ComplianceChecklistService {
       let checklist = await ComplianceChecklist.findOne({ projectId, standard });
 
       if (!checklist) {
-        checklist = await this.generateChecklist(projectId, standard);
+        checklist = (await this.generateChecklist(projectId, standard)) as any;
       }
 
       // Re-assess with current artifacts
-      const artifacts = await Artifact.find({ projectId }).lean();
+      const artifacts = (await Artifact.find({ projectId }).lean()) as any[];
 
-      for (const item of checklist.checklistItems) {
+      for (const item of checklist!.checklistItems) {
         const evidence = this.findEvidence(artifacts, item.requirement, standard);
         item.evidence = evidence;
 
@@ -273,30 +522,31 @@ class ComplianceChecklistService {
         }
       }
 
-      checklist.overallCompliance = this.calculateCompliance(checklist.checklistItems);
-      checklist.lastAssessed = new Date();
-      await checklist.save();
+      checklist!.overallCompliance = this.calculateCompliance(checklist!.checklistItems);
+      checklist!.lastAssessed = new Date();
+      await checklist!.save();
 
       // Identify gaps
-      const gaps = this.identifyGaps(checklist);
+      const gaps = this.identifyGaps(checklist as any);
 
       return {
         projectId,
         standard,
-        overallCompliance: checklist.overallCompliance,
-        compliantItems: checklist.checklistItems.filter(i => i.status === 'compliant').length,
-        nonCompliantItems: checklist.checklistItems.filter(i => i.status === 'non_compliant').length,
-        partialItems: checklist.checklistItems.filter(i => i.status === 'partial').length,
-        notAssessedItems: checklist.checklistItems.filter(i => i.status === 'not_assessed').length,
-        checklistItems: checklist.checklistItems.map(item => ({
+        overallCompliance: checklist!.overallCompliance,
+        compliantItems: checklist!.checklistItems.filter(i => i.status === 'compliant').length,
+        nonCompliantItems: checklist!.checklistItems.filter(i => i.status === 'non_compliant')
+          .length,
+        partialItems: checklist!.checklistItems.filter(i => i.status === 'partial').length,
+        notAssessedItems: checklist!.checklistItems.filter(i => i.status === 'not_assessed').length,
+        checklistItems: checklist!.checklistItems.map(item => ({
           id: item.id,
           category: item.category,
           requirement: item.requirement,
           status: item.status,
-          evidence: item.evidence
+          evidence: item.evidence,
         })),
         gaps,
-        generatedAt: new Date()
+        generatedAt: new Date(),
       };
     } catch (error: unknown) {
       logger.error('Failed to validate compliance:', error);
@@ -318,7 +568,7 @@ class ComplianceChecklistService {
           requirement: item.requirement,
           gap: `Missing or insufficient evidence for: ${item.description}`,
           severity,
-          recommendation: this.getRecommendation(item.requirement, checklist.standard)
+          recommendation: this.getRecommendation(item.requirement, checklist.standard),
         });
       }
     }
@@ -329,7 +579,7 @@ class ComplianceChecklistService {
   /**
    * Get recommendation for requirement
    */
-  private getRecommendation(requirement: string, standard: string): string {
+  private getRecommendation(requirement: string, _standard: string): string {
     const reqLower = requirement.toLowerCase();
 
     if (reqLower.includes('encryption')) {
@@ -353,6 +603,3 @@ class ComplianceChecklistService {
 }
 
 export const complianceChecklistService = new ComplianceChecklistService();
-
-
-

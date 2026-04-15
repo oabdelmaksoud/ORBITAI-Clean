@@ -6,7 +6,10 @@
 import { logger } from '../utils/logger.js';
 import { ASPICECompliance, IASPICECompliance } from '../models/ASPICECompliance.model.js';
 import { Artifact, IArtifact } from '../models/Artifact.model.js';
-import { requirementsValidationService, ParsedRequirement } from './requirementsValidation.service.js';
+import {
+  requirementsValidationService,
+  ParsedRequirement,
+} from './requirementsValidation.service.js';
 
 // ASPICE Process Areas (Level 3 focus)
 export const ASPICE_PROCESS_AREAS = {
@@ -17,15 +20,15 @@ export const ASPICE_PROCESS_AREAS = {
     workProducts: [
       'System Requirements Specification',
       'Stakeholder Requirements',
-      'Requirements Traceability Record'
+      'Requirements Traceability Record',
     ],
     practices: [
       'BP.1: Elicit stakeholder requirements',
       'BP.2: Analyze stakeholder requirements',
       'BP.3: Define system requirements',
       'BP.4: Analyze system requirements',
-      'BP.5: Agree on system requirements'
-    ]
+      'BP.5: Agree on system requirements',
+    ],
   },
   'SYS.2': {
     name: 'System Requirements Analysis',
@@ -34,30 +37,26 @@ export const ASPICE_PROCESS_AREAS = {
     workProducts: [
       'System Requirements Specification',
       'System Architecture',
-      'Requirements Traceability Record'
+      'Requirements Traceability Record',
     ],
     practices: [
       'BP.1: Analyze system requirements',
       'BP.2: Define system architecture',
       'BP.3: Allocate system requirements',
-      'BP.4: Analyze system architecture'
-    ]
+      'BP.4: Analyze system architecture',
+    ],
   },
   'SYS.3': {
     name: 'System Architectural Design',
     level: 3,
     description: 'System architecture is designed',
-    workProducts: [
-      'System Architecture',
-      'System Design Specification',
-      'Interface Specification'
-    ],
+    workProducts: ['System Architecture', 'System Design Specification', 'Interface Specification'],
     practices: [
       'BP.1: Design system architecture',
       'BP.2: Define interfaces',
       'BP.3: Analyze system architecture',
-      'BP.4: Verify system architecture'
-    ]
+      'BP.4: Verify system architecture',
+    ],
   },
   'SYS.4': {
     name: 'System Integration and Testing',
@@ -67,14 +66,14 @@ export const ASPICE_PROCESS_AREAS = {
       'Integration Test Plan',
       'Integration Test Cases',
       'Integration Test Report',
-      'System Test Report'
+      'System Test Report',
     ],
     practices: [
       'BP.1: Prepare system integration',
       'BP.2: Perform system integration',
       'BP.3: Verify integrated system',
-      'BP.4: Perform system testing'
-    ]
+      'BP.4: Perform system testing',
+    ],
   },
   'SWE.1': {
     name: 'Software Requirements Analysis',
@@ -83,14 +82,14 @@ export const ASPICE_PROCESS_AREAS = {
     workProducts: [
       'Software Requirements Specification',
       'Software Interface Specification',
-      'Requirements Traceability Record'
+      'Requirements Traceability Record',
     ],
     practices: [
       'BP.1: Analyze software requirements',
       'BP.2: Define software architecture',
       'BP.3: Allocate software requirements',
-      'BP.4: Analyze software architecture'
-    ]
+      'BP.4: Analyze software architecture',
+    ],
   },
   'SWE.2': {
     name: 'Software Architectural Design',
@@ -99,86 +98,70 @@ export const ASPICE_PROCESS_AREAS = {
     workProducts: [
       'Software Architecture',
       'Software Design Specification',
-      'Interface Specification'
+      'Interface Specification',
     ],
     practices: [
       'BP.1: Design software architecture',
       'BP.2: Define interfaces',
       'BP.3: Analyze software architecture',
-      'BP.4: Verify software architecture'
-    ]
+      'BP.4: Verify software architecture',
+    ],
   },
   'SWE.3': {
     name: 'Software Detailed Design',
     level: 3,
     description: 'Software detailed design is created',
-    workProducts: [
-      'Software Detailed Design',
-      'Software Unit Design',
-      'Interface Specification'
-    ],
+    workProducts: ['Software Detailed Design', 'Software Unit Design', 'Interface Specification'],
     practices: [
       'BP.1: Design software units',
       'BP.2: Define interfaces',
       'BP.3: Analyze software design',
-      'BP.4: Verify software design'
-    ]
+      'BP.4: Verify software design',
+    ],
   },
   'SWE.4': {
     name: 'Software Unit Implementation',
     level: 3,
     description: 'Software units are implemented',
-    workProducts: [
-      'Software Unit Code',
-      'Software Unit Documentation',
-      'Code Review Report'
-    ],
+    workProducts: ['Software Unit Code', 'Software Unit Documentation', 'Code Review Report'],
     practices: [
       'BP.1: Implement software units',
       'BP.2: Verify software units',
-      'BP.3: Integrate software units'
-    ]
+      'BP.3: Integrate software units',
+    ],
   },
   'SWE.5': {
     name: 'Software Unit Testing',
     level: 3,
     description: 'Software units are tested',
-    workProducts: [
-      'Unit Test Plan',
-      'Unit Test Cases',
-      'Unit Test Report'
-    ],
+    workProducts: ['Unit Test Plan', 'Unit Test Cases', 'Unit Test Report'],
     practices: [
       'BP.1: Prepare unit testing',
       'BP.2: Perform unit testing',
-      'BP.3: Verify unit test results'
-    ]
+      'BP.3: Verify unit test results',
+    ],
   },
   'SWE.6': {
     name: 'Software Integration Testing',
     level: 3,
     description: 'Software integration testing is performed',
-    workProducts: [
-      'Integration Test Plan',
-      'Integration Test Cases',
-      'Integration Test Report'
-    ],
+    workProducts: ['Integration Test Plan', 'Integration Test Cases', 'Integration Test Report'],
     practices: [
       'BP.1: Prepare software integration',
       'BP.2: Perform software integration',
       'BP.3: Verify integrated software',
-      'BP.4: Perform integration testing'
-    ]
-  }
+      'BP.4: Perform integration testing',
+    ],
+  },
 };
 
 // V-Model phase to ASPICE mapping
 export const VMODEL_TO_ASPICE = {
-  'requirements': ['SYS.1', 'SYS.2', 'SWE.1'],
-  'architecture': ['SYS.3', 'SWE.2', 'SWE.3'],
-  'implementation': ['SWE.4'],
-  'testing': ['SWE.5', 'SWE.6', 'SYS.4'],
-  'deployment': ['SYS.4']
+  requirements: ['SYS.1', 'SYS.2', 'SWE.1'],
+  architecture: ['SYS.3', 'SWE.2', 'SWE.3'],
+  implementation: ['SWE.4'],
+  testing: ['SWE.5', 'SWE.6', 'SYS.4'],
+  deployment: ['SYS.4'],
 };
 
 export interface ASPICEComplianceReport {
@@ -221,10 +204,10 @@ class ASPICEComplianceService {
       logger.info(`Mapping requirements to ASPICE Level ${targetLevel} for project ${projectId}`);
 
       // Get all requirements
-      const reqArtifacts = await Artifact.find({
+      const reqArtifacts = (await Artifact.find({
         projectId,
-        type: 'requirement'
-      }).lean();
+        type: 'requirement',
+      }).lean()) as any[];
 
       if (reqArtifacts.length === 0) {
         logger.warn(`No requirements found for project ${projectId}`);
@@ -232,7 +215,7 @@ class ASPICEComplianceService {
       }
 
       const requirements = requirementsValidationService.extractRequirements(reqArtifacts);
-      const allArtifacts = await Artifact.find({ projectId }).lean();
+      const allArtifacts = (await Artifact.find({ projectId }).lean()) as any[];
 
       // Get project phase (from project metadata or artifacts)
       const projectPhase = this.detectProjectPhase(allArtifacts);
@@ -243,7 +226,8 @@ class ASPICEComplianceService {
       const complianceRecords: IASPICECompliance[] = [];
 
       for (const processArea of relevantProcessAreas) {
-        const processAreaDef = ASPICE_PROCESS_AREAS[processArea as keyof typeof ASPICE_PROCESS_AREAS];
+        const processAreaDef =
+          ASPICE_PROCESS_AREAS[processArea as keyof typeof ASPICE_PROCESS_AREAS];
         if (!processAreaDef) continue;
 
         // Map requirements to this process area
@@ -254,16 +238,10 @@ class ASPICEComplianceService {
         );
 
         // Check work products
-        const workProducts = this.checkWorkProducts(
-          processAreaDef.workProducts,
-          allArtifacts
-        );
+        const workProducts = this.checkWorkProducts(processAreaDef.workProducts, allArtifacts);
 
         // Check practices
-        const practices = this.checkPractices(
-          processAreaDef.practices,
-          allArtifacts
-        );
+        const practices = this.checkPractices(processAreaDef.practices, allArtifacts);
 
         // Calculate compliance score
         const complianceScore = this.calculateProcessAreaScore(
@@ -285,21 +263,21 @@ class ASPICEComplianceService {
               requirementId: req.id,
               requirementTitle: req.description.substring(0, 100),
               mapped: true,
-              evidence: [...req.linkedCode, ...req.linkedTests, ...req.linkedDesigns]
+              evidence: [...req.linkedCode, ...req.linkedTests, ...req.linkedDesigns],
             })),
             workProducts: workProducts.map(wp => ({
               workProductId: wp.id,
               workProductType: wp.type,
               status: wp.status,
-              evidence: wp.evidence
+              evidence: wp.evidence,
             })),
             practices: practices.map(p => ({
               practiceId: p.id,
               practiceName: p.name,
               implemented: p.implemented,
-              evidence: p.evidence
+              evidence: p.evidence,
             })),
-            lastAssessed: new Date()
+            lastAssessed: new Date(),
           },
           { upsert: true, new: true }
         );
@@ -307,7 +285,9 @@ class ASPICEComplianceService {
         complianceRecords.push(compliance);
       }
 
-      logger.info(`Mapped ${requirements.length} requirements to ${complianceRecords.length} ASPICE process areas`);
+      logger.info(
+        `Mapped ${requirements.length} requirements to ${complianceRecords.length} ASPICE process areas`
+      );
       return complianceRecords;
     } catch (error: unknown) {
       logger.error('Failed to map requirements to ASPICE:', error);
@@ -323,7 +303,9 @@ class ASPICEComplianceService {
     targetLevel: number = 3
   ): Promise<ASPICEComplianceReport> {
     try {
-      logger.info(`Generating ASPICE Level ${targetLevel} compliance report for project ${projectId}`);
+      logger.info(
+        `Generating ASPICE Level ${targetLevel} compliance report for project ${projectId}`
+      );
 
       // Map requirements
       const complianceRecords = await this.mapRequirementsToASPICE(projectId, targetLevel);
@@ -335,7 +317,7 @@ class ASPICEComplianceService {
           processAreas: [],
           vModelMapping: [],
           gaps: [],
-          generatedAt: new Date()
+          generatedAt: new Date(),
         };
       }
 
@@ -349,16 +331,17 @@ class ASPICEComplianceService {
         workProductsComplete: record.workProducts.filter(wp => wp.status === 'complete').length,
         totalWorkProducts: record.workProducts.length,
         practicesImplemented: record.practices.filter(p => p.implemented).length,
-        totalPractices: record.practices.length
+        totalPractices: record.practices.length,
       }));
 
       // Calculate overall score (weighted average)
-      const overallScore = processAreas.length > 0
-        ? processAreas.reduce((sum, pa) => sum + pa.complianceScore, 0) / processAreas.length
-        : 0;
+      const overallScore =
+        processAreas.length > 0
+          ? processAreas.reduce((sum, pa) => sum + pa.complianceScore, 0) / processAreas.length
+          : 0;
 
       // V-Model phase mapping
-      const allArtifacts = await Artifact.find({ projectId }).lean();
+      const allArtifacts = (await Artifact.find({ projectId }).lean()) as any[];
       const projectPhase = this.detectProjectPhase(allArtifacts);
       const vModelMapping = this.generateVModelMapping(complianceRecords, projectPhase);
 
@@ -371,7 +354,7 @@ class ASPICEComplianceService {
         processAreas,
         vModelMapping,
         gaps,
-        generatedAt: new Date()
+        generatedAt: new Date(),
       };
     } catch (error: unknown) {
       logger.error('Failed to generate ASPICE compliance report:', error);
@@ -385,7 +368,7 @@ class ASPICEComplianceService {
   private mapRequirementsToProcessArea(
     requirements: ParsedRequirement[],
     processArea: string,
-    artifacts: IArtifact[]
+    _artifacts: IArtifact[]
   ): ParsedRequirement[] {
     const processAreaDef = ASPICE_PROCESS_AREAS[processArea as keyof typeof ASPICE_PROCESS_AREAS];
     if (!processAreaDef) return [];
@@ -398,7 +381,8 @@ class ASPICEComplianceService {
 
       // SYS.1, SYS.2, SWE.1: Requirements analysis
       if (['SYS.1', 'SYS.2', 'SWE.1'].includes(processArea)) {
-        shouldMap = req.type === 'functional' || req.type === 'non-functional' || req.type === 'use-case';
+        shouldMap =
+          req.type === 'functional' || req.type === 'non-functional' || req.type === 'use-case';
       }
       // SYS.3, SWE.2, SWE.3: Architecture design
       else if (['SYS.3', 'SWE.2', 'SWE.3'].includes(processArea)) {
@@ -430,9 +414,19 @@ class ASPICEComplianceService {
    */
   private checkWorkProducts(
     workProductTypes: string[],
-    artifacts: IArtifact[]
-  ): Array<{ id: string; type: string; status: 'complete' | 'partial' | 'missing'; evidence: string[] }> {
-    const results: Array<{ id: string; type: string; status: 'complete' | 'partial' | 'missing'; evidence: string[] }> = [];
+    artifacts: any[]
+  ): Array<{
+    id: string;
+    type: string;
+    status: 'complete' | 'partial' | 'missing';
+    evidence: string[];
+  }> {
+    const results: Array<{
+      id: string;
+      type: string;
+      status: 'complete' | 'partial' | 'missing';
+      evidence: string[];
+    }> = [];
 
     for (const wpType of workProductTypes) {
       const matchingArtifacts = artifacts.filter(artifact => {
@@ -440,9 +434,11 @@ class ASPICEComplianceService {
         const content = artifact.content?.toLowerCase() || '';
         const wpTypeLower = wpType.toLowerCase();
 
-        return title.includes(wpTypeLower) ||
-               content.includes(wpTypeLower) ||
-               artifact.type === this.inferArtifactTypeFromWorkProduct(wpType);
+        return (
+          title.includes(wpTypeLower) ||
+          content.includes(wpTypeLower) ||
+          artifact.type === this.inferArtifactTypeFromWorkProduct(wpType)
+        );
       });
 
       let status: 'complete' | 'partial' | 'missing' = 'missing';
@@ -454,7 +450,7 @@ class ASPICEComplianceService {
         id: wpType.replace(/\s+/g, '-').toLowerCase(),
         type: wpType,
         status,
-        evidence: matchingArtifacts.map(a => a._id.toString())
+        evidence: matchingArtifacts.map(a => a._id.toString()),
       });
     }
 
@@ -466,9 +462,10 @@ class ASPICEComplianceService {
    */
   private checkPractices(
     practices: string[],
-    artifacts: IArtifact[]
+    artifacts: any[]
   ): Array<{ id: string; name: string; implemented: boolean; evidence: string[] }> {
-    const results: Array<{ id: string; name: string; implemented: boolean; evidence: string[] }> = [];
+    const results: Array<{ id: string; name: string; implemented: boolean; evidence: string[] }> =
+      [];
 
     for (const practice of practices) {
       // Check if there's evidence of this practice
@@ -479,8 +476,8 @@ class ASPICEComplianceService {
         const combined = `${title} ${content}`;
 
         // Check if practice keywords appear
-        const keywordMatches = practiceKeywords.filter(kw => 
-          kw.length > 3 && combined.includes(kw)
+        const keywordMatches = practiceKeywords.filter(
+          kw => kw.length > 3 && combined.includes(kw)
         );
 
         return keywordMatches.length >= 2;
@@ -490,7 +487,7 @@ class ASPICEComplianceService {
         id: practice.replace(/\s+/g, '-').toLowerCase(),
         name: practice,
         implemented: matchingArtifacts.length > 0,
-        evidence: matchingArtifacts.map(a => a._id.toString())
+        evidence: matchingArtifacts.map(a => a._id.toString()),
       });
     }
 
@@ -507,13 +504,16 @@ class ASPICEComplianceService {
   ): number {
     // Weight: Requirements 40%, Work Products 30%, Practices 30%
     const reqScore = requirements.length > 0 ? 100 : 0; // Simplified - all mapped requirements count
-    const wpScore = workProducts.length > 0
-      ? (workProducts.filter(wp => wp.status === 'complete').length * 100 +
-         workProducts.filter(wp => wp.status === 'partial').length * 50) / workProducts.length
-      : 0;
-    const practiceScore = practices.length > 0
-      ? (practices.filter(p => p.implemented).length / practices.length) * 100
-      : 0;
+    const wpScore =
+      workProducts.length > 0
+        ? (workProducts.filter(wp => wp.status === 'complete').length * 100 +
+            workProducts.filter(wp => wp.status === 'partial').length * 50) /
+          workProducts.length
+        : 0;
+    const practiceScore =
+      practices.length > 0
+        ? (practices.filter(p => p.implemented).length / practices.length) * 100
+        : 0;
 
     return Math.round((reqScore * 0.4 + wpScore * 0.3 + practiceScore * 0.3) * 100) / 100;
   }
@@ -521,7 +521,7 @@ class ASPICEComplianceService {
   /**
    * Detect project phase from artifacts
    */
-  private detectProjectPhase(artifacts: IArtifact[]): string {
+  private detectProjectPhase(artifacts: any[]): string {
     const hasRequirements = artifacts.some(a => a.type === 'requirement');
     const hasDesigns = artifacts.some(a => a.type === 'design' || a.type === 'image');
     const hasCode = artifacts.some(a => a.type === 'code' || a.type === 'build');
@@ -539,7 +539,7 @@ class ASPICEComplianceService {
    */
   private getRelevantProcessAreas(phase: string, level: number): string[] {
     const phaseMapping = VMODEL_TO_ASPICE[phase as keyof typeof VMODEL_TO_ASPICE] || [];
-    
+
     // Filter by level (Level 3 includes all listed areas)
     return phaseMapping.filter(pa => {
       const def = ASPICE_PROCESS_AREAS[pa as keyof typeof ASPICE_PROCESS_AREAS];
@@ -552,20 +552,21 @@ class ASPICEComplianceService {
    */
   private generateVModelMapping(
     complianceRecords: IASPICECompliance[],
-    currentPhase: string
+    _currentPhase: string
   ): Array<{ phase: string; processAreas: string[]; complianceScore: number }> {
     const mapping: Array<{ phase: string; processAreas: string[]; complianceScore: number }> = [];
 
     for (const [phase, processAreas] of Object.entries(VMODEL_TO_ASPICE)) {
       const relevantRecords = complianceRecords.filter(cr => processAreas.includes(cr.processArea));
-      const avgScore = relevantRecords.length > 0
-        ? relevantRecords.reduce((sum, r) => sum + r.complianceScore, 0) / relevantRecords.length
-        : 0;
+      const avgScore =
+        relevantRecords.length > 0
+          ? relevantRecords.reduce((sum, r) => sum + r.complianceScore, 0) / relevantRecords.length
+          : 0;
 
       mapping.push({
         phase,
         processAreas,
-        complianceScore: Math.round(avgScore * 100) / 100
+        complianceScore: Math.round(avgScore * 100) / 100,
       });
     }
 
@@ -596,7 +597,7 @@ class ASPICEComplianceService {
           processArea: record.processArea,
           gapType: 'missing_workproduct',
           description: `Missing work product: ${wp.workProductType}`,
-          severity: 'high'
+          severity: 'high',
         });
       }
 
@@ -607,7 +608,7 @@ class ASPICEComplianceService {
           processArea: record.processArea,
           gapType: 'missing_practice',
           description: `Practice not implemented: ${practice.practiceName}`,
-          severity: 'medium'
+          severity: 'medium',
         });
       }
 
@@ -617,7 +618,7 @@ class ASPICEComplianceService {
           processArea: record.processArea,
           gapType: 'missing_requirement',
           description: `Low compliance score (${record.complianceScore}%) for ${record.processAreaName}`,
-          severity: 'high'
+          severity: 'high',
         });
       }
     }
@@ -639,6 +640,3 @@ class ASPICEComplianceService {
 }
 
 export const aspiceComplianceService = new ASPICEComplianceService();
-
-
-

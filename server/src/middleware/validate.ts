@@ -11,12 +11,12 @@ import { AppError } from './errorHandler.js';
  * Middleware factory to validate request body against a Zod schema
  */
 export function validate(schema: z.ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       // Validate and transform the request body
       req.body = schema.parse(req.body);
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         // Format Zod validation errors
         const errors = error.errors.map(err => ({
@@ -38,11 +38,11 @@ export function validate(schema: z.ZodSchema) {
  * Middleware to validate query parameters
  */
 export function validateQuery(schema: z.ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       req.query = schema.parse(req.query) as any;
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         const errors = error.errors.map(err => ({
           field: err.path.join('.'),
@@ -63,11 +63,11 @@ export function validateQuery(schema: z.ZodSchema) {
  * Middleware to validate URL parameters
  */
 export function validateParams(schema: z.ZodSchema) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       req.params = schema.parse(req.params) as any;
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         const errors = error.errors.map(err => ({
           field: err.path.join('.'),

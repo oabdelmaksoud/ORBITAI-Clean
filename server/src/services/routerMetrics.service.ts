@@ -4,7 +4,7 @@
  */
 
 import mongoose from 'mongoose';
-import { LLMUsage, ILLMUsage } from '../models/LLMUsage.model.js';
+import { LLMUsage} from '../models/LLMUsage.model.js';
 import { modelRegistry } from './llm/models/ModelRegistry.js';
 import { logger } from '../utils/logger.js';
 import { EventEmitter } from 'events';
@@ -91,7 +91,7 @@ class RouterMetricsService extends EventEmitter {
       try {
         await this.updateModelHealth();
         this.emit('healthUpdate', Array.from(this.modelHealthCache.values()));
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('[RouterMetrics] Health monitoring error:', error);
       }
     }, 30000);
@@ -152,7 +152,7 @@ class RouterMetricsService extends EventEmitter {
 
       this.metricsCache.set(cacheKey, { data: result, timestamp: Date.now() });
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[RouterMetrics] Failed to get real-time metrics:', error);
       throw error;
     }

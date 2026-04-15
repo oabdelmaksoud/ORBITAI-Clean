@@ -48,8 +48,9 @@ const AgentHealthMonitoring: React.FC<AgentHealthMonitoringProps> = ({ projectId
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
+      // TODO(#44): Implement GET /api/agents/:agentId/health when backend is ready
       setMetrics(null);
+      setError('Agent health metrics are not yet available. The backend endpoint is pending implementation.');
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load agent health metrics');
     } finally {

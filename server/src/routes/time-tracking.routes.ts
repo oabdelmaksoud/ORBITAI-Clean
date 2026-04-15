@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { TimeEntry } from '../models/TimeEntry.model';
 import { authenticateToken } from '../middleware/auth';
-import { Types } from 'mongoose';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -15,16 +15,17 @@ router.use(authenticateToken);
 router.post('/start', async (req, res) => {
   try {
     const { workspace, project, task, description, tags, isBillable } = req.body;
-    const userId = req.user._id;
+    const userId = (req as any).user._id;
 
     // Check if there's already an active timer
-    const activeTimer = await TimeEntry.getActiveTimer(userId);
-    
+    const activeTimer = await (TimeEntry as any).getActiveTimer(userId);
+
     if (activeTimer) {
-      return res.status(400).json({ 
+      res.status(400).json({
         error: 'You already have an active timer',
-        activeTimer 
+        activeTimer,
       });
+      return;
     }
 
     // Create new time entry
@@ -37,7 +38,7 @@ router.post('/start', async (req, res) => {
       tags: tags || [],
       isBillable: isBillable !== undefined ? isBillable : true,
       startTime: new Date(),
-      isRunning: true
+      isRunning: true,
     });
 
     await timeEntry.save();
@@ -46,7 +47,7 @@ router.post('/start', async (req, res) => {
 
     res.status(201).json(timeEntry);
   } catch (error: any) {
-    console.error('Start timer error:', error);
+    logger.error('Start timer error:', error);
     res.status(500).json({ error: error.message || 'Failed to start timer' });
   }
 });
@@ -58,26 +59,28 @@ router.post('/start', async (req, res) => {
 router.post('/stop/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = (req as any).user._id;
 
     const timeEntry = await TimeEntry.findById(id);
 
     if (!timeEntry) {
-      return res.status(404).json({ error: 'Time entry not found' });
+      res.status(404).json({ error: 'Time entry not found' });
+      return;
     }
 
     // Check if time entry belongs to user
     if (!timeEntry.user.equals(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
+      res.status(403).json({ error: 'Access denied' });
+      return;
     }
 
-    await timeEntry.stopTimer();
+    await (timeEntry as any).stopTimer();
     await timeEntry.populate('project', 'name');
     if (timeEntry.task) await timeEntry.populate('task', 'title');
 
     res.json(timeEntry);
   } catch (error: any) {
-    console.error('Stop timer error:', error);
+    logger.error('Stop timer error:', error);
     res.status(500).json({ error: error.message || 'Failed to stop timer' });
   }
 });
@@ -97,9 +100,9 @@ router.post('/manual', async (req, res) => {
       endTime,
       duration,
       tags,
-      isBillable
+      isBillable,
     } = req.body;
-    const userId = req.user._id;
+    const userId = (req as any).user._id;
 
     // Create time entry
     const timeEntry = new TimeEntry({
@@ -113,7 +116,7 @@ router.post('/manual', async (req, res) => {
       startTime: new Date(startTime),
       endTime: endTime ? new Date(endTime) : undefined,
       duration: duration || 0,
-      isRunning: false
+      isRunning: false,
     });
 
     await timeEntry.save();
@@ -122,7 +125,7 @@ router.post('/manual', async (req, res) => {
 
     res.status(201).json(timeEntry);
   } catch (error: any) {
-    console.error('Create manual entry error:', error);
+    logger.error('Create manual entry error:', error);
     res.status(500).json({ error: error.message || 'Failed to create manual entry' });
   }
 });
@@ -133,17 +136,17 @@ router.post('/manual', async (req, res) => {
  */
 router.get('/entries', async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = (req as any).user._id;
     const { startDate, endDate, project, workspace, limit, page } = req.query;
 
     const query: any = { user: userId };
-    
+
     if (startDate || endDate) {
       query.startTime = {};
       if (startDate) query.startTime.$gte = new Date(startDate as string);
       if (endDate) query.startTime.$lte = new Date(endDate as string);
     }
-    
+
     if (project) query.project = project;
     if (workspace) query.workspace = workspace;
 
@@ -163,10 +166,10 @@ router.get('/entries', async (req, res) => {
       entries,
       totalCount,
       page: pageNum,
-      limit: limitNum
+      limit: limitNum,
     });
   } catch (error: any) {
-    console.error('Get entries error:', error);
+    logger.error('Get entries error:', error);
     res.status(500).json({ error: error.message || 'Failed to get entries' });
   }
 });
@@ -177,11 +180,12 @@ router.get('/entries', async (req, res) => {
  */
 router.get('/active', async (req, res) => {
   try {
-    const userId = req.user._id;
-    const activeTimer = await TimeEntry.getActiveTimer(userId);
+    const userId = (req as any).user._id;
+    const activeTimer = await (TimeEntry as any).getActiveTimer(userId);
 
     if (!activeTimer) {
-      return res.json({ activeTimer: null });
+      res.json({ activeTimer: null });
+      return;
     }
 
     // Update duration for active timer
@@ -189,7 +193,7 @@ router.get('/active', async (req, res) => {
 
     res.json({ activeTimer });
   } catch (error: any) {
-    console.error('Get active timer error:', error);
+    logger.error('Get active timer error:', error);
     res.status(500).json({ error: error.message || 'Failed to get active timer' });
   }
 });
@@ -201,29 +205,26 @@ router.get('/active', async (req, res) => {
 router.put('/entries/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      description,
-      startTime,
-      endTime,
-      tags,
-      isBillable
-    } = req.body;
-    const userId = req.user._id;
+    const { description, startTime, endTime, tags, isBillable } = req.body;
+    const userId = (req as any).user._id;
 
     const timeEntry = await TimeEntry.findById(id);
 
     if (!timeEntry) {
-      return res.status(404).json({ error: 'Time entry not found' });
+      res.status(404).json({ error: 'Time entry not found' });
+      return;
     }
 
     // Check if time entry belongs to user
     if (!timeEntry.user.equals(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
+      res.status(403).json({ error: 'Access denied' });
+      return;
     }
 
     // Can't update running timer
     if (timeEntry.isRunning) {
-      return res.status(400).json({ error: 'Stop the timer before updating' });
+      res.status(400).json({ error: 'Stop the timer before updating' });
+      return;
     }
 
     // Update fields
@@ -237,7 +238,7 @@ router.put('/entries/:id', async (req, res) => {
 
     res.json(timeEntry);
   } catch (error: any) {
-    console.error('Update entry error:', error);
+    logger.error('Update entry error:', error);
     res.status(500).json({ error: error.message || 'Failed to update entry' });
   }
 });
@@ -249,24 +250,26 @@ router.put('/entries/:id', async (req, res) => {
 router.delete('/entries/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = (req as any).user._id;
 
     const timeEntry = await TimeEntry.findById(id);
 
     if (!timeEntry) {
-      return res.status(404).json({ error: 'Time entry not found' });
+      res.status(404).json({ error: 'Time entry not found' });
+      return;
     }
 
     // Check if time entry belongs to user
     if (!timeEntry.user.equals(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
+      res.status(403).json({ error: 'Access denied' });
+      return;
     }
 
     await timeEntry.deleteOne();
 
     res.json({ message: 'Time entry deleted successfully' });
   } catch (error: any) {
-    console.error('Delete entry error:', error);
+    logger.error('Delete entry error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete entry' });
   }
 });
@@ -277,15 +280,16 @@ router.delete('/entries/:id', async (req, res) => {
  */
 router.get('/summary', async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { startDate, endDate, groupBy, project } = req.query;
+    const userId = (req as any).user._id;
+    // @ts-ignore TS6133
+    const { startDate, endDate, _groupBy, project } = req.query;
 
     const start = new Date(startDate as string);
     const end = new Date(endDate as string);
 
     const query: any = {
       user: userId,
-      startTime: { $gte: start, $lte: end }
+      startTime: { $gte: start, $lte: end },
     };
 
     if (project) query.project = project;
@@ -294,19 +298,21 @@ router.get('/summary', async (req, res) => {
 
     // Calculate totals
     const totalSeconds = entries.reduce((sum, entry) => sum + entry.duration, 0);
-    const billableSeconds = entries.filter(e => e.isBillable).reduce((sum, entry) => sum + entry.duration, 0);
+    const billableSeconds = entries
+      .filter(e => e.isBillable)
+      .reduce((sum, entry) => sum + entry.duration, 0);
 
     const summary = {
-      totalHours: Math.round(totalSeconds / 3600 * 100) / 100,
-      billableHours: Math.round(billableSeconds / 3600 * 100) / 100,
-      nonBillableHours: Math.round((totalSeconds - billableSeconds) / 3600 * 100) / 100,
+      totalHours: Math.round((totalSeconds / 3600) * 100) / 100,
+      billableHours: Math.round((billableSeconds / 3600) * 100) / 100,
+      nonBillableHours: Math.round(((totalSeconds - billableSeconds) / 3600) * 100) / 100,
       totalEntries: entries.length,
-      dateRange: { start, end }
+      dateRange: { start, end },
     };
 
     res.json(summary);
   } catch (error: any) {
-    console.error('Get summary error:', error);
+    logger.error('Get summary error:', error);
     res.status(500).json({ error: error.message || 'Failed to get summary' });
   }
 });

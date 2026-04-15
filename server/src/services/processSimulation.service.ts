@@ -5,7 +5,6 @@
  */
 
 import { ProcessImprovement } from '../models/ProcessImprovement.model.js';
-import { Workflow } from '../models/Workflow.model.js';
 import { logger } from '../utils/logger.js';
 
 export interface SimulationScenario {
@@ -201,7 +200,7 @@ class ProcessSimulationService {
   /**
    * Simulate step success
    */
-  private simulateStepSuccess(step: any, scenario: SimulationScenario): boolean {
+  private simulateStepSuccess(_step: any, scenario: SimulationScenario): boolean {
     // Base success rate
     let successRate = 0.8;
 
@@ -224,7 +223,7 @@ class ProcessSimulationService {
    */
   private identifyRisks(
     improvement: any,
-    scenario: SimulationScenario,
+    _scenario: SimulationScenario,
     steps: SimulationResult['steps']
   ): Risk[] {
     const risks: Risk[] = [];
@@ -297,7 +296,7 @@ class ProcessSimulationService {
 
       // Baseline metrics
       const baseline = {
-        duration: improvement.statistics?.averageDuration || 1000,
+        duration: ((improvement as any).statistics)?.averageDuration || 1000,
         successRate: improvement.usage.successRate || 70,
         cost: 100, // Base cost
         quality: (
@@ -390,7 +389,7 @@ class ProcessSimulationService {
       }
 
       // Base predictions from historical data
-      let predictedDuration = improvement.statistics?.averageDuration || 1000;
+      let predictedDuration = ((improvement as any).statistics)?.averageDuration || 1000;
       let predictedSuccessRate = improvement.usage.successRate || 70;
       const factors: string[] = [];
 

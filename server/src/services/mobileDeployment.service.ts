@@ -5,7 +5,6 @@
  */
 
 import { logger } from '../utils/logger.js';
-import { projectPackagerService } from './projectPackager.service.js';
 import { Project } from '../models/Project.model.js';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
@@ -124,8 +123,8 @@ class MobileDeploymentService {
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Mobile] Error: ${error.message}`]
+        error: (error instanceof Error ? error.message : String(error)),
+        logs: [`[Mobile] Error: ${(error instanceof Error ? error.message : String(error))}`]
       };
     }
   }
@@ -175,8 +174,8 @@ class MobileDeploymentService {
       return {
         success: false,
         deploymentId: '',
-        error: error.message,
-        logs: [`[Flutter] Error: ${error.message}`]
+        error: (error instanceof Error ? error.message : String(error)),
+        logs: [`[Flutter] Error: ${(error instanceof Error ? error.message : String(error))}`]
       };
     }
   }
@@ -212,21 +211,21 @@ class MobileDeploymentService {
 
       if (!buildResponse.ok) {
         const error = await buildResponse.json();
-        throw new Error(`EAS Build failed: ${error.message || buildResponse.statusText}`);
+        throw new Error(`EAS Build failed: ${(error instanceof Error ? error.message : String(error)) || buildResponse.statusText}`);
       }
 
       const buildData = await buildResponse.json();
-      const buildId = buildData.id;
+      const buildId = (buildData as any).id;
 
       // Poll for build status
-      const buildUrl = `https://api.eas.build/v1/builds/${buildId}`;
+      // const _buildUrl = `https://api.eas.build/v1/builds/${buildId}`;
       
       return {
         buildId: buildId,
-        testflightUrl: `https://expo.dev/accounts/${buildData.account?.slug}/builds/${buildId}`,
+        testflightUrl: `https://expo.dev/accounts/${(buildData as any).account?.slug}/builds/${buildId}`,
         status: 'building',
         appStoreUrl: config.environment === 'production' 
-          ? `https://apps.apple.com/app/id${buildData.appStoreId || ''}` 
+          ? `https://apps.apple.com/app/id${(buildData as any).appStoreId || ''}` 
           : undefined
       };
     } catch (error: unknown) {
@@ -272,15 +271,15 @@ class MobileDeploymentService {
 
       if (!buildResponse.ok) {
         const error = await buildResponse.json();
-        throw new Error(`EAS Build failed: ${error.message || buildResponse.statusText}`);
+        throw new Error(`EAS Build failed: ${(error instanceof Error ? error.message : String(error)) || buildResponse.statusText}`);
       }
 
       const buildData = await buildResponse.json();
-      const buildId = buildData.id;
+      const buildId = (buildData as any).id;
 
       return {
         buildId: buildId,
-        playConsoleUrl: `https://play.google.com/console/u/0/developers/${buildData.developerId}/app/${buildData.packageName}/track/production`,
+        playConsoleUrl: `https://play.google.com/console/u/0/developers/${(buildData as any).developerId}/app/${(buildData as any).packageName}/track/production`,
         status: 'building'
       };
     } catch (error: unknown) {
@@ -326,11 +325,11 @@ class MobileDeploymentService {
 
       if (!buildResponse.ok) {
         const error = await buildResponse.json();
-        throw new Error(`App Store Connect API failed: ${error.message || buildResponse.statusText}`);
+        throw new Error(`App Store Connect API failed: ${(error instanceof Error ? error.message : String(error)) || buildResponse.statusText}`);
       }
 
       const appData = await buildResponse.json();
-      const appId = appData.data?.[0]?.id;
+      const appId = (appData as any).data?.[0]?.id;
 
       if (!appId) {
         throw new Error('App not found in App Store Connect');
@@ -355,7 +354,7 @@ class MobileDeploymentService {
    * Deploy bare React Native Android app
    */
   private async deployBareReactNativeAndroid(
-    project: any,
+    _project: any,
     config: MobileDeploymentConfig
   ): Promise<MobileDeploymentResult['android']> {
     const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH;
@@ -407,8 +406,8 @@ class MobileDeploymentService {
    * Deploy Flutter iOS app
    */
   private async deployFlutterIOS(
-    project: any,
-    config: MobileDeploymentConfig
+    _project: any,
+    _config: MobileDeploymentConfig
   ): Promise<MobileDeploymentResult['ios']> {
     // Flutter iOS build and App Store Connect upload
     // Would use fastlane or App Store Connect API
@@ -424,8 +423,8 @@ class MobileDeploymentService {
    * Deploy Flutter Android app
    */
   private async deployFlutterAndroid(
-    project: any,
-    config: MobileDeploymentConfig
+    _project: any,
+    _config: MobileDeploymentConfig
   ): Promise<MobileDeploymentResult['android']> {
     // Flutter Android build and Google Play upload
     // Would use fastlane or Google Play Console API
@@ -512,7 +511,7 @@ class MobileDeploymentService {
     }, null, 2);
   }
 
-  private generateEASConfig(project: any): string {
+  private generateEASConfig(_project: any): string {
     return JSON.stringify({
       build: {
         production: {
@@ -676,7 +675,7 @@ dev_dependencies:
       });
     } catch (error: unknown) {
       logger.error('Failed to generate App Store Connect JWT:', error);
-      throw new Error(`JWT generation failed: ${error.message}`);
+      throw new Error(`JWT generation failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
   }
 }

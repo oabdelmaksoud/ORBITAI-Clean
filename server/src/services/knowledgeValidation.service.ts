@@ -6,8 +6,7 @@
 import { logger } from '../utils/logger.js';
 import { KnowledgeBase, IKnowledgeBase } from '../models/KnowledgeBase.model.js';
 import { Project } from '../models/Project.model.js';
-import { llmRouter } from './llm/LLMRouter.js';
-import { Type, Schema } from '@google/genai';
+// import { Type, Schema } from '@google/genai';
 
 export interface ValidationResult {
   knowledgeId: string;
@@ -46,7 +45,7 @@ class KnowledgeValidationService {
         issues.push({
           type: 'negative_learning',
           severity: 'high',
-          description: negativeLearning
+          description: negativeLearning,
         });
       }
 
@@ -55,7 +54,7 @@ class KnowledgeValidationService {
         issues.push({
           type: 'outdated',
           severity: 'high',
-          description: 'Knowledge has been deprecated'
+          description: 'Knowledge has been deprecated',
         });
       }
 
@@ -65,7 +64,7 @@ class KnowledgeValidationService {
         issues.push({
           type: 'low_confidence',
           severity: 'medium',
-          description: `Low confidence score: ${avgConfidence}%`
+          description: `Low confidence score: ${avgConfidence}%`,
         });
       }
 
@@ -79,7 +78,7 @@ class KnowledgeValidationService {
           issues.push({
             type: 'context_mismatch',
             severity: 'medium',
-            description: `Low success rate on similar projects: ${testResult.successRate}%`
+            description: `Low success rate on similar projects: ${testResult.successRate}%`,
           });
         }
       }
@@ -92,7 +91,7 @@ class KnowledgeValidationService {
         confidence: avgConfidence,
         issues,
         testedOnProjects,
-        successRate
+        successRate,
       };
     } catch (error: unknown) {
       logger.error('Knowledge validation failed:', error);
@@ -147,16 +146,18 @@ class KnowledgeValidationService {
     const similarProjects = await Project.find({
       $or: [
         { methodology: targetProject.methodology },
-        { 'standards': { $in: targetProject.standards || [] } }
+        { standards: { $in: (targetProject as any).standards || [] } },
       ],
-      _id: { $ne: targetProjectId }
-    }).limit(5).lean();
+      _id: { $ne: targetProjectId },
+    })
+      .limit(5)
+      .lean();
 
     let tested = 0;
     let successful = 0;
 
     // Test knowledge application (simplified)
-    for (const project of similarProjects) {
+    for (const _project of similarProjects) {
       tested++;
       // Would actually test knowledge application
       // For now, assume 80% success rate if knowledge is high quality
@@ -173,16 +174,10 @@ class KnowledgeValidationService {
   /**
    * Validate before applying to project
    */
-  async validateBeforeApplying(
-    knowledgeId: string,
-    projectId: string
-  ): Promise<boolean> {
+  async validateBeforeApplying(knowledgeId: string, projectId: string): Promise<boolean> {
     const validation = await this.validateKnowledge(knowledgeId, projectId);
     return validation.valid && validation.confidence >= 60;
   }
 }
 
 export const knowledgeValidationService = new KnowledgeValidationService();
-
-
-

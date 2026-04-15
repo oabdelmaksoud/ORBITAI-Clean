@@ -28,7 +28,7 @@ export async function maintenanceModeMiddleware(
     }
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     // If check fails, allow request through (fail open)
     next();
   }

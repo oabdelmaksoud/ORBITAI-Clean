@@ -43,8 +43,8 @@ router.post(
       // Validate all files
       const results = await Promise.all(
         files.map(async (file: any) => {
-          const lang = file.language || language || codeValidationService.detectLanguage(file.path);
-          const validation = await codeValidationService.validateCode(
+          const lang = file.language || language || ((codeValidationService as any).detectLanguage)(file.path);
+          const validation = await ((codeValidationService as any).validateCode)(
             file.content,
             lang,
             file.path
@@ -94,8 +94,8 @@ router.post(
 
       if (!code) throw new AppError('Code is required', 400);
 
-      const lang = language || codeValidationService.detectLanguage(fileName || 'file.ts');
-      const validation = await codeValidationService.validateCode(code, lang, fileName);
+      const lang = language || ((codeValidationService as any).detectLanguage)(fileName || 'file.ts');
+      const validation = await ((codeValidationService as any).validateCode)(code, lang, fileName);
 
       res.json({
         success: true,
@@ -124,7 +124,7 @@ router.post(
 
       if (!code) throw new AppError('Code is required', 400);
 
-      const lintResults = await codeValidationService.lintCode(code, language, rules);
+      const lintResults = await ((codeValidationService as any).lintCode)(code, language, rules);
 
       res.json({
         success: true,
@@ -149,7 +149,7 @@ router.post(
 
       if (!code) throw new AppError('Code is required', 400);
 
-      const practiceCheck = await codeValidationService.checkBestPractices(code, language, framework);
+      const practiceCheck = await ((codeValidationService as any).checkBestPractices)(code, language, framework);
 
       res.json({
         success: true,
@@ -182,9 +182,9 @@ router.post(
         // Scan multiple files
         securityResults = await Promise.all(
           files.map(async (file: any) => {
-            const scan = await codeValidationService.securityScan(
+            const scan = await ((codeValidationService as any).securityScan)(
               file.content,
-              file.language || codeValidationService.detectLanguage(file.path)
+              file.language || ((codeValidationService as any).detectLanguage)(file.path)
             );
             return {
               path: file.path,
@@ -194,7 +194,7 @@ router.post(
         );
       } else {
         // Single code scan
-        securityResults = await codeValidationService.securityScan(code, language);
+        securityResults = await ((codeValidationService as any).securityScan)(code, language);
       }
 
       res.json({

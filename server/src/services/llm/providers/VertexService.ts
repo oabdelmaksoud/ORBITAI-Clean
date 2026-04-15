@@ -36,14 +36,16 @@ export interface LLMResponse {
 }
 
 class VertexService {
-  private projectId: string;
-  private location: string;
+  // @ts-ignore TS6133
+  private _projectId: string;
+  // @ts-ignore TS6133
+  private _location: string;
 
   constructor() {
     // Vertex AI requires Google Cloud credentials
     // Can use service account key or default credentials
-    this.projectId = config.vertexProjectId || '';
-    this.location = config.vertexLocation || 'us-central1';
+    this._projectId = config.vertexProjectId || '';
+    this._location = config.vertexLocation || 'us-central1';
   }
 
   // Get AI instance dynamically with current API key
@@ -105,7 +107,7 @@ class VertexService {
       // Extract function calls if present
       const functionCalls: Array<{ name: string; args: Record<string, any> }> = [];
       if (response.functionCalls && response.functionCalls.length > 0) {
-        for (const fc of response.functionCalls) {
+        for (const fc of (response.functionCalls as any)) {
           functionCalls.push({
             name: fc.name,
             args: fc.args || {}

@@ -28,10 +28,11 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
     
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Google Drive integration not configured. Please set GOOGLE_CLIENT_ID environment variable.'
       });
+      return;
     }
 
     const scopes = [
@@ -60,7 +61,7 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
     logger.error('Failed to initiate Google Drive OAuth:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to initiate Google Drive OAuth'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to initiate Google Drive OAuth'
     });
   }
 });
@@ -71,13 +72,15 @@ router.get('/auth', authenticateToken, async (req: AuthRequest, res) => {
  */
 router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { code, state } = req.query;
+    // @ts-ignore TS6133
+    const { code, _state } = req.query;
 
     if (!code) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Authorization code is required'
       });
+      return;
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -85,10 +88,11 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
     const redirectUri = `${process.env.APP_URL || 'http://localhost:5173'}/integrations/google-drive/callback`;
 
     if (!clientId || !clientSecret) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Google Drive integration not configured'
       });
+      return;
     }
 
     // Exchange code for token
@@ -108,8 +112,8 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
 
     const tokenData = await tokenResponse.json();
 
-    if (tokenData.error) {
-      throw new Error(tokenData.error_description || 'Failed to exchange code for token');
+    if ((tokenData as any).error) {
+      throw new Error((tokenData as any).error_description || 'Failed to exchange code for token');
     }
 
     // Store token (in production, save to database)
@@ -119,15 +123,15 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
       success: true,
       message: 'Google Drive integration connected successfully',
       data: {
-        accessToken: tokenData.access_token ? '***' : undefined, // Don't expose token
-        refreshToken: tokenData.refresh_token ? '***' : undefined
+        accessToken: (tokenData as any).access_token ? '***' : undefined, // Don't expose token
+        refreshToken: (tokenData as any).refresh_token ? '***' : undefined
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to handle Google Drive OAuth callback:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to complete Google Drive OAuth'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to complete Google Drive OAuth'
     });
   }
 });
@@ -136,16 +140,17 @@ router.get('/callback', authenticateToken, async (req: AuthRequest, res) => {
  * GET /api/integrations/google-drive/files
  * List files from Google Drive
  */
-router.get('/files', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/files', authenticateToken, async (_req: AuthRequest, res) => {
   try {
     // In production, retrieve stored token from database
     const accessToken = process.env.GOOGLE_DRIVE_ACCESS_TOKEN;
 
     if (!accessToken) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Google Drive not connected. Please authenticate first.'
       });
+      return;
     }
 
     const response = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=10', {
@@ -156,21 +161,21 @@ router.get('/files', authenticateToken, async (req: AuthRequest, res) => {
 
     const data = await response.json();
 
-    if (data.error) {
-      throw new Error(data.error.message || 'Failed to list files');
+    if ((data as any).error) {
+      throw new Error((data as any).error.message || 'Failed to list files');
     }
 
     res.json({
       success: true,
       data: {
-        files: data.files || []
+        files: (data as any).files || []
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to list Google Drive files:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to list files'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to list files'
     });
   }
 });
@@ -184,20 +189,22 @@ router.post('/upload', authenticateToken, async (req: AuthRequest, res) => {
     const { fileName, fileContent, mimeType } = req.body;
 
     if (!fileName || !fileContent) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'fileName and fileContent are required'
       });
+      return;
     }
 
     // In production, retrieve stored token from database
     const accessToken = process.env.GOOGLE_DRIVE_ACCESS_TOKEN;
 
     if (!accessToken) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Google Drive not connected'
       });
+      return;
     }
 
     // Upload file metadata
@@ -217,22 +224,22 @@ router.post('/upload', authenticateToken, async (req: AuthRequest, res) => {
 
     const data = await response.json();
 
-    if (data.error) {
-      throw new Error(data.error.message || 'Failed to upload file');
+    if ((data as any).error) {
+      throw new Error((data as any).error.message || 'Failed to upload file');
     }
 
     res.json({
       success: true,
       data: {
-        fileId: data.id,
-        fileName: data.name
+        fileId: (data as any).id,
+        fileName: (data as any).name
       }
     });
   } catch (error: unknown) {
     logger.error('Failed to upload file to Google Drive:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to upload file'
+      message: (error instanceof Error ? error.message : String(error)) || 'Failed to upload file'
     });
   }
 });
