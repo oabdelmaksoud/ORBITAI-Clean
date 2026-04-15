@@ -51,6 +51,7 @@ jobs:
         continue-on-error: true  # TODO: Remove after fixing existing warnings
 
       - name: Run TypeScript type check
+        working-directory: ./client
         run: npx tsc --noEmit
 
       - name: Install backend dependencies
