@@ -1337,13 +1337,13 @@ export async function generateQuickSuggestions(input: string, history: ChatMessa
         // New endpoint returns structured data directly - no parsing needed!
         if (response.success && Array.isArray(response.data)) {
             const filtered = response.data.filter((s: any) => s && s.label && s.prompt);
-            if ((import.meta as any).env?.DEV) {
+            if (import.meta.env?.DEV) {
                 console.log('[Quick Suggestions] Received', filtered.length, 'suggestions');
             }
             return filtered;
         }
 
-        if ((import.meta as any).env?.DEV) {
+        if (import.meta.env?.DEV) {
             console.warn('[Quick Suggestions] Invalid response format:', response);
         }
         return [];

@@ -170,7 +170,7 @@ export const useProjectOperations = (
       }
     } catch (e) {
       const isConnectionError = (e as any)?.message?.includes('Failed to fetch') || (e as any)?.message?.includes('ERR_CONNECTION_REFUSED');
-      if (!isConnectionError && (import.meta as any).env?.DEV) {
+      if (!isConnectionError && import.meta.env?.DEV) {
         console.debug("Failed to load project", e);
       }
       toast.error("Failed to load project file.");
