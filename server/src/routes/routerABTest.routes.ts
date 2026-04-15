@@ -74,7 +74,7 @@ router.get('/ab-tests', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: docs.map(d => toWireFormat(d as IABTest))
+      data: docs.map(d => toWireFormat(d as unknown as IABTest))
     });
   } catch (error: unknown) {
     logger.error('Failed to get A/B tests:', error);
@@ -104,7 +104,7 @@ router.get('/ab-tests/:testId', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: toWireFormat(doc as IABTest)
+      data: toWireFormat(doc as unknown as IABTest)
     });
   } catch (error: unknown) {
     logger.error(`Failed to get A/B test ${req.params.testId}:`, error);

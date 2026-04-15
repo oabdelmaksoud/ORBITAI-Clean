@@ -320,7 +320,6 @@ export class SystemCostTrackingService {
   > {
     try {
       let dateGroup: any;
-      // @ts-expect-error TS6133 - assigned for MongoDB date formatting
       let _dateFormat: string;
 
       switch (groupBy) {

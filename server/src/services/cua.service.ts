@@ -1395,7 +1395,6 @@ Generate 8-15 tests with CORRECT dependencies. Setup tests MUST come first!`;
       // This ensures "Waiting for live feed" disappears as soon as the browser is ready
       this.startFrameStreaming(page, sessionId);
 
-      // @ts-expect-error TS6133 - assigned for cleanup tracking
       let _serverCleanup: (() => void) | null = null;
 
       try {

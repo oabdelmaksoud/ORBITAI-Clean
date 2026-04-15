@@ -357,7 +357,6 @@ class SDLCMatchingService {
 
       // Methodology selection logic
       let methodology: Methodology = 'V-Model';
-      // @ts-expect-error TS6133 - score assigned for methodology scoring
       let _score = 0;
       const matchFactors: SDLCRecommendation['matchFactors'] = {};
 

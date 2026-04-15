@@ -480,7 +480,7 @@ class Neo4jService {
         { projectId }
       );
 
-      const nodes: GraphNode[] = nodeResult.records.map(record => {
+      const nodes: GraphNode[] = nodeResult.records.map((record: any) => {
         const node = record.get('n');
         return {
           id: node.properties.id || node.identity.toString(),
@@ -501,7 +501,7 @@ class Neo4jService {
         { projectId }
       );
 
-      const relationships: GraphRelationship[] = relResult.records.map(record => {
+      const relationships: GraphRelationship[] = relResult.records.map((record: any) => {
         const rel = record.get('r');
         return {
           id: rel.identity.toString(),
@@ -543,7 +543,7 @@ class Neo4jService {
       const nodeMap = new Map<string, GraphNode>();
       const relationships: GraphRelationship[] = [];
 
-      result.records.forEach(record => {
+      result.records.forEach((record: any) => {
         const nodeA = record.get('a');
         const nodeB = record.get('b');
         const rel = record.get('r');

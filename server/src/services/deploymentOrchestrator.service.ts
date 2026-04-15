@@ -7,7 +7,6 @@
 import { infrastructureAsCodeService } from './infrastructureAsCode.service.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
-import fetch from 'node-fetch';
 
 export interface DeploymentConfig {
   projectId: string;
@@ -258,8 +257,8 @@ class DeploymentOrchestratorService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`GitHub API error: ${error.message}`);
+        const errorBody = await response.json() as { message?: string };
+        throw new Error(`GitHub API error: ${errorBody.message ?? 'Unknown error'}`);
       }
 
       const repo = (await response.json()) as any;
@@ -601,7 +600,7 @@ class DeploymentOrchestratorService {
       const url = liveUrl.startsWith('http') ? liveUrl : `https://${liveUrl}`;
 
       // Check health endpoint
-      const response = await fetch(`${url}/health`, { timeout: 5000 });
+      const response = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
 
       if (!response.ok) {
         throw new Error(`Health check failed: ${response.status}`);

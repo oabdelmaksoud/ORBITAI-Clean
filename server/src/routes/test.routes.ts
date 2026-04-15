@@ -366,7 +366,6 @@ router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
 
     // Test Google Search tool execution
     let searchResult: any = null;
-    // @ts-expect-error TS6133 - assigned in catch for debug
     let _error: any = null;
 
     try {
