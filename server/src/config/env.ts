@@ -165,9 +165,9 @@ export const config = {
         process.exit(1);
       }
       console.warn(
-        '⚠️  WARNING: SHARE_LINK_SECRET and JWT_SECRET are not set. Share links will not work properly.'
+        '⚠️  WARNING: SHARE_LINK_SECRET and JWT_SECRET are not set. Using dev-only fallback — do NOT use in production.'
       );
-      return '';
+      return 'dev-secret-do-not-use-in-production';
     }
     return secret;
   })(),
