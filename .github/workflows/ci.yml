@@ -62,6 +62,8 @@ jobs:
       - name: Run backend TypeScript check
         working-directory: ./server
         run: npx tsc --noEmit
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
   # Run tests with coverage
   test:

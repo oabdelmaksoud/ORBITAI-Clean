@@ -158,10 +158,16 @@ export const config = {
       process.exit(1);
     }
     if (!secret) {
-      console.error(
-        '❌ CRITICAL: SHARE_LINK_SECRET or JWT_SECRET must be set. No fallback allowed.'
+      if (process.env.NODE_ENV === 'production') {
+        console.error(
+          '❌ CRITICAL: SHARE_LINK_SECRET or JWT_SECRET must be set in production.'
+        );
+        process.exit(1);
+      }
+      console.warn(
+        '⚠️  WARNING: SHARE_LINK_SECRET and JWT_SECRET are not set. Using dev-only fallback — do NOT use in production.'
       );
-      process.exit(1);
+      return 'dev-secret-do-not-use-in-production';
     }
     return secret;
   })(),
