@@ -15,7 +15,7 @@ export interface Mention {
  * Matches: @username, @username123, @user_name
  * Does not match: @@username, @username@domain
  */
-const MENTION_REGEX = /@([a-zA-Z0-9_-]{1,30})(?=\s|$|[^a-zA-Z0-9_-])/g;
+const MENTION_REGEX = /(?<![@a-zA-Z0-9_-])@([a-zA-Z0-9_-]{1,30})(?=\s|$|[^a-zA-Z0-9_-])/g;
 
 /**
  * Parse all mentions from text
@@ -101,18 +101,24 @@ export function validateMentionSyntax(text: string): {
   valid: boolean;
   error?: string;
 } {
-  const mentions = parseMentions(text);
+  // If the text is just '@' or ends with '@' without a username
+  if (text === '@' || text.endsWith(' @')) {
+    return {
+      valid: false,
+      error: 'Username must be at least 1 character long'
+    };
+  }
   
-  for (const mention of mentions) {
-    // Check username length
-    if (mention.username.length < 1) {
-      return {
-        valid: false,
-        error: 'Username must be at least 1 character long'
-      };
-    }
+  // Extract potential mentions that aren't matched by the regex due to length or invalid chars
+  const allPotentialMentions = text.match(/@[^\s]*/g) || [];
+
+  for (const potential of allPotentialMentions) {
+    const username = potential.substring(1);
     
-    if (mention.username.length > 30) {
+    // Skip if empty, handled above
+    if (username.length === 0) continue;
+
+    if (username.length > 30) {
       return {
         valid: false,
         error: 'Username cannot exceed 30 characters'
@@ -120,14 +126,14 @@ export function validateMentionSyntax(text: string): {
     }
     
     // Check for invalid characters
-    if (!/^[a-zA-Z0-9_-]+$/.test(mention.username)) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       return {
         valid: false,
         error: 'Username can only contain letters, numbers, underscores, and hyphens'
       };
     }
   }
-  
+
   return { valid: true };
 }
 
