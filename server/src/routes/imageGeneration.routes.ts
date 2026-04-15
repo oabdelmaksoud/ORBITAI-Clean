@@ -71,21 +71,19 @@ router.post('/generate', authenticateToken, async (req: Request, res: Response) 
     const userId = (req as any).user?.id;
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'Prompt is required and must be a non-empty string'
       });
-      return;
     }
 
     // Check if service is available
     const isAvailable = await imageGenerationService.isAvailable(provider || 'dalle');
     if (!isAvailable) {
-      res.status(503).json({
+      return res.status(503).json({
         success: false,
         error: 'Image generation service is not available. Please configure the API key in Admin Console.'
       });
-      return;
     }
 
     logger.info(`[ImageGeneration] User ${userId} requesting image generation: "${prompt.substring(0, 50)}..."`);
@@ -102,8 +100,7 @@ router.post('/generate', authenticateToken, async (req: Request, res: Response) 
     });
 
     if (!result.success) {
-      res.status(400).json(result);
-      return;
+      return res.status(400).json(result);
     }
 
     res.json(result);
@@ -111,7 +108,7 @@ router.post('/generate', authenticateToken, async (req: Request, res: Response) 
     logger.error('Image generation route error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to generate image'
+      error: error.message || 'Failed to generate image'
     });
   }
 });
@@ -139,7 +136,7 @@ router.get('/models', authenticateToken, async (_req: Request, res: Response) =>
     logger.error('Get models error:', error);
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get models'
+      error: error.message || 'Failed to get models'
     });
   }
 });
@@ -166,7 +163,7 @@ router.get('/pricing', (_req: Request, res: Response) => {
   } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get pricing'
+      error: error.message || 'Failed to get pricing'
     });
   }
 });
@@ -204,7 +201,7 @@ router.get('/status', async (_req: Request, res: Response) => {
   } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: (error instanceof Error ? error.message : String(error)) || 'Failed to get status'
+      error: error.message || 'Failed to get status'
     });
   }
 });

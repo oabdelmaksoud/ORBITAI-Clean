@@ -14,7 +14,7 @@ const router = express.Router();
  * Initialize Autogen service
  * POST /api/autogen/initialize
  */
-router.post('/initialize', async (_req, res, _next) => {
+router.post('/initialize', async (req, res, _next) => {
   try {
     await autogenService.initialize();
     res.json({
@@ -26,7 +26,7 @@ router.post('/initialize', async (_req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize Autogen service',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -67,7 +67,7 @@ router.post('/agents', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to register agent',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -98,7 +98,7 @@ router.get('/agents/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get agent',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -144,7 +144,7 @@ router.post('/conversations', routeTimeout(300000), async (req: any, res, _next)
     res.status(500).json({
       success: false,
       message: 'Conversation initiation failed',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -190,7 +190,7 @@ router.post('/conversations/:id/continue', routeTimeout(180000), async (req: any
     res.status(500).json({
       success: false,
       message: 'Conversation continuation failed',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -213,7 +213,7 @@ router.get('/conversations/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get conversation',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -222,7 +222,7 @@ router.get('/conversations/:id', async (req, res, _next) => {
  * List all conversations
  * GET /api/autogen/conversations
  */
-router.get('/conversations', async (_req, res, _next) => {
+router.get('/conversations', async (req, res, _next) => {
   try {
     const conversations = autogenService.listConversations();
     res.json({
@@ -234,7 +234,7 @@ router.get('/conversations', async (_req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to list conversations',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -257,7 +257,7 @@ router.delete('/conversations/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to clear conversation',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });
@@ -294,7 +294,7 @@ router.post('/conversations/two-agent', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create two-agent conversation',
-      error: (error instanceof Error ? error.message : String(error)),
+      error: error.message,
     });
   }
 });

@@ -3,7 +3,6 @@
  * Periodically aggregates learning from all platform activities
  */
 
-import { agentDiscovery } from './agentDiscovery.service.js';
 import { agentKnowledgeLearning } from './agentKnowledgeLearning.js';
 import { logger } from '../utils/logger.js';
 import { Project } from '../models/Project.model.js';
@@ -79,16 +78,19 @@ export class AgentKnowledgeAggregator {
 
       // 3. Update metadata
       const { AgentKnowledge } = await import('../models/AgentKnowledge.model.js');
+      const agents = await AgentKnowledge.find({}).lean();
       
-      await AgentKnowledge.updateMany(
-        {},
-        {
-          $set: {
-            'metadata.lastTrained': new Date(),
-            'metrics.lastActiveDate': new Date()
+      for (const agent of agents) {
+        await AgentKnowledge.updateOne(
+          { _id: agent._id },
+          {
+            $set: {
+              'metadata.lastTrained': new Date(),
+              'metrics.lastActiveDate': new Date()
+            }
           }
-        }
-      );
+        );
+      }
 
       logger.info('Agent knowledge aggregation completed successfully');
     } catch (error: unknown) {

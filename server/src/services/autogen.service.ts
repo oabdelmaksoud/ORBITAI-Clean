@@ -212,7 +212,7 @@ class AutogenService {
               return { agentId: agent.id, agentName: agent.name, reply, success: true };
             } catch (error: unknown) {
               logger.error(`Agent ${agent.id} failed in parallel round:`, error);
-              return { agentId: agent.id, agentName: agent.name, reply: `Error: ${(error instanceof Error ? error.message : String(error))}`, success: false };
+              return { agentId: agent.id, agentName: agent.name, reply: `Error: ${error.message}`, success: false };
             }
           })
         );
@@ -242,7 +242,7 @@ class AutogenService {
 
         // Enhanced early termination: Stop after first round if agents provide sufficient value
         const allReplies = parallelReplies.map(r => r.reply.toLowerCase()).join(' ');
-        // const _allRepliesText = parallelReplies.map(r => r.reply).join(' ');
+        const allRepliesText = parallelReplies.map(r => r.reply).join(' ');
 
         // Check explicit termination signals
         if (allReplies.includes('terminate') ||
@@ -362,7 +362,7 @@ class AutogenService {
         }
       } catch (error: unknown) {
         // Handle timeout or other errors
-        const errorMessage = (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+        const errorMessage = error.message || 'Unknown error';
         logger.warn(`[Autogen] Agent ${currentAgent.name} error: ${errorMessage}`);
 
         // Add error message to conversation

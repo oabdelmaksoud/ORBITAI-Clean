@@ -1,29 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import type { Request, Response, NextFunction } from 'express';
 import featureFlagsRoutes from '../../routes/featureFlags.routes.js';
 import { createTestAdmin, getAuthHeaders } from '../helpers/testHelpers.js';
 import { FeatureFlag } from '../../models/FeatureFlag.model.js';
 import { User } from '../../models/User.model.js';
 
-// Import shared MongoDB setup (connect/disconnect/cleanup)
-import '../setup/mongoSetup.js';
-
 const app = express();
 app.use(express.json());
 app.use('/api/admin/feature-flags', featureFlagsRoutes);
-
-// Error handler so AppError from auth middleware returns proper JSON
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    error: {
-      message: err.message,
-    },
-  });
-});
 
 describe('Feature Flags Routes', () => {
   let adminUser: Awaited<ReturnType<typeof createTestAdmin>>;
@@ -79,6 +64,7 @@ describe('Feature Flags Routes', () => {
         .expect(200);
 
       expect(response.body.data.enabled).toBe(true);
+      expect(response.body.data.hasRoleAccess).toBe(true);
     });
 
     it('should return disabled for inactive feature', async () => {
@@ -96,7 +82,7 @@ describe('Feature Flags Routes', () => {
         .expect(200);
 
       expect(response.body.data.enabled).toBe(false);
-      expect(response.body.data.reason).toContain('inactive');
+      expect(response.body.data.reason).toContain('disabled system-wide');
     });
   });
 

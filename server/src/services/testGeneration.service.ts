@@ -89,7 +89,7 @@ class TestGenerationService {
       }
 
       // Generate security tests
-      if (options.testTypes?.includes('security' as any) || options.testTypes === undefined) {
+      if (options.testTypes?.includes('security') || options.testTypes === undefined) {
         try {
           const securityTests = await securityTestGenerationService.generateTestSuite(
             code,
@@ -99,15 +99,15 @@ class TestGenerationService {
           // Add security tests to test suite (can be integrated into unit/integration tests)
           logger.debug(`Generated ${securityTests.testCases.length} security test cases`);
         } catch (error: unknown) {
-          logger.warn('Security test generation failed:', (error instanceof Error ? error.message : String(error)));
+          logger.warn('Security test generation failed:', error.message);
         }
       }
 
       // Generate performance tests
-      if (options.testTypes?.includes('performance' as any) || options.testTypes === undefined) {
+      if (options.testTypes?.includes('performance') || options.testTypes === undefined) {
         try {
           // Extract endpoints from code
-          const endpoints = ((this as any).extractEndpoints)(code, language);
+          const endpoints = this.extractEndpoints(code, language);
           const performanceTests = await performanceTestGenerationService.generateTestSuite(
             code,
             language,
@@ -116,7 +116,7 @@ class TestGenerationService {
           testSuite.performanceTests = performanceTests.tests;
           logger.debug(`Generated ${performanceTests.tests.length} performance test cases`);
         } catch (error: unknown) {
-          logger.warn('Performance test generation failed:', (error instanceof Error ? error.message : String(error)));
+          logger.warn('Performance test generation failed:', error.message);
         }
       }
 
@@ -199,7 +199,7 @@ Return as JSON array with:
         required: ['tests']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -226,7 +226,7 @@ Return as JSON array with:
     code: string,
     language: string,
     framework: string,
-    _options: TestGenerationOptions
+    options: TestGenerationOptions
   ): Promise<TestCase[]> {
     try {
       const prompt = `Generate comprehensive integration tests for the following ${language} code using ${framework}. Target 100% coverage of integration points.
@@ -268,7 +268,7 @@ Return as JSON array with test cases.`;
         required: ['tests']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -294,7 +294,7 @@ Return as JSON array with test cases.`;
   private async generateE2ETests(
     code: string,
     language: string,
-    _framework: string,
+    framework: string,
     options: TestGenerationOptions
   ): Promise<E2ETestCase[]> {
     try {
@@ -345,7 +345,7 @@ Return as JSON array with:
         required: ['tests']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -388,7 +388,7 @@ Return as JSON array with:
    */
   private estimateCoverage(
     testSuite: TestSuite,
-    _code: string
+    code: string
   ): { estimated: number; files: string[] } {
     // Simple heuristic: more tests = higher coverage
     const totalTests = testSuite.unitTests.length + testSuite.integrationTests.length + testSuite.e2eTests.length;
@@ -445,7 +445,7 @@ ${testCase.code}
    */
   async generateTestConfig(
     framework: string,
-    _language: string
+    language: string
   ): Promise<Record<string, string>> {
     const configs: Record<string, string> = {};
 

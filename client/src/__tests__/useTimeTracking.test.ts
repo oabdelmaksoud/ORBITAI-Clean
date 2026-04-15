@@ -1,9 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import { useTimeTracking } from '../useTimeTracking';
 
 // Mock fetch
-global.fetch = vi.fn() as unknown as typeof fetch;
+global.fetch = jest.fn();
 
 describe('useTimeTracking', () => {
   const mockTimeEntries = [
@@ -33,38 +32,32 @@ describe('useTimeTracking', () => {
     }
   ];
 
-  let mockActiveTimer: Record<string, unknown>;
+  const mockActiveTimer = {
+    _id: '3',
+    user: 'user1',
+    project: 'project1',
+    description: 'Current task',
+    startTime: new Date(Date.now() - 3600000).toISOString(), // Started 1 hour ago
+    endTime: null,
+    duration: null,
+    billable: true,
+    isRunning: true,
+    createdAt: new Date(Date.now() - 3600000).toISOString()
+  };
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.resetAllMocks();
-    (global.fetch as ReturnType<typeof vi.fn>).mockReset();
-    mockActiveTimer = {
-      _id: '3',
-      user: 'user1',
-      project: 'project1',
-      description: 'Current task',
-      startTime: new Date(Date.now() - 3600000).toISOString(), // Started 1 hour ago
-      endTime: null,
-      duration: null,
-      billable: true,
-      isRunning: true,
-      createdAt: new Date(Date.now() - 3600000).toISOString()
-    };
+    jest.clearAllMocks();
+    (global.fetch as jest.Mock).mockClear();
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    // cleanup() from testing-library is called in setup.ts afterEach,
-    // but we need to restore real timers AFTER cleanup unmounts hooks.
-    // Since setup.ts afterEach runs after this one, we delay real timer restore.
-    // Instead, just clear all pending timers before restoring.
-    vi.clearAllTimers();
-    vi.useRealTimers();
+    jest.useRealTimers();
   });
 
   describe('fetchEntries', () => {
     it('should fetch time entries successfully', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockTimeEntries
       });
@@ -80,7 +73,7 @@ describe('useTimeTracking', () => {
     });
 
     it('should fetch entries with date range', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockTimeEntries
       });
@@ -101,7 +94,7 @@ describe('useTimeTracking', () => {
     });
 
     it('should fetch entries by project', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockTimeEntries
       });
@@ -121,7 +114,7 @@ describe('useTimeTracking', () => {
 
   describe('startTimer', () => {
     it('should start timer successfully', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockActiveTimer
       });
@@ -141,7 +134,7 @@ describe('useTimeTracking', () => {
     });
 
     it('should not start timer if one is already running', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockActiveTimer
@@ -176,7 +169,7 @@ describe('useTimeTracking', () => {
     });
 
     it('should update duration in real-time', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockActiveTimer
       });
@@ -192,7 +185,7 @@ describe('useTimeTracking', () => {
 
       // Advance time by 1 second
       act(() => {
-        vi.advanceTimersByTime(1000);
+        jest.advanceTimersByTime(1000);
       });
 
       // Duration should update
@@ -209,7 +202,7 @@ describe('useTimeTracking', () => {
         isRunning: false
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockActiveTimer
@@ -245,7 +238,7 @@ describe('useTimeTracking', () => {
         isRunning: false
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockActiveTimer
@@ -272,7 +265,7 @@ describe('useTimeTracking', () => {
 
       // Advance time
       act(() => {
-        vi.advanceTimersByTime(5000);
+        jest.advanceTimersByTime(5000);
       });
 
       // Duration should not change after stopping
@@ -282,17 +275,13 @@ describe('useTimeTracking', () => {
 
   describe('pauseTimer', () => {
     it('should pause timer', async () => {
-      // Ensure clean fake timer state
-      vi.useRealTimers();
-      vi.useFakeTimers();
-
       const pausedTimer = {
         ...mockActiveTimer,
         isPaused: true,
         pausedAt: new Date().toISOString()
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockActiveTimer
@@ -319,17 +308,13 @@ describe('useTimeTracking', () => {
     });
 
     it('should not update duration while paused', async () => {
-      // Ensure clean fake timer state
-      vi.useRealTimers();
-      vi.useFakeTimers();
-
       const pausedTimer = {
         ...mockActiveTimer,
         isPaused: true,
         pausedAt: new Date().toISOString()
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockActiveTimer
@@ -355,7 +340,7 @@ describe('useTimeTracking', () => {
       const durationWhenPaused = result.current.currentDuration;
 
       act(() => {
-        vi.advanceTimersByTime(5000);
+        jest.advanceTimersByTime(5000);
       });
 
       expect(result.current.currentDuration).toBe(durationWhenPaused);
@@ -376,7 +361,7 @@ describe('useTimeTracking', () => {
         pausedAt: null
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => pausedTimer
@@ -423,7 +408,7 @@ describe('useTimeTracking', () => {
         createdAt: '2026-01-03T09:00:00.000Z'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => manualEntry
       });
@@ -470,7 +455,7 @@ describe('useTimeTracking', () => {
         description: 'Updated description'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockTimeEntries
@@ -497,7 +482,7 @@ describe('useTimeTracking', () => {
 
   describe('deleteEntry', () => {
     it('should delete time entry', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockTimeEntries
@@ -534,7 +519,7 @@ describe('useTimeTracking', () => {
         ]
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => summary
       });
@@ -580,7 +565,7 @@ describe('useTimeTracking', () => {
 
   describe('error handling', () => {
     it('should handle fetch error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       const { result } = renderHook(() => useTimeTracking());
 
@@ -593,7 +578,7 @@ describe('useTimeTracking', () => {
     });
 
     it('should handle unauthorized error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 401,
         json: async () => ({ message: 'Unauthorized' })
@@ -610,22 +595,22 @@ describe('useTimeTracking', () => {
   });
 
   describe('cleanup', () => {
-    it('should cleanup interval on unmount', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    it('should cleanup interval on unmount', () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockActiveTimer
       });
 
       const { result, unmount } = renderHook(() => useTimeTracking());
 
-      await act(async () => {
+      act(async () => {
         await result.current.startTimer({
           projectId: 'project1',
           description: 'Test task'
         });
       });
 
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+      const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
 
       unmount();
 

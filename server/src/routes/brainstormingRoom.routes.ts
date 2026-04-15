@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { BrainstormingRoom } from '../models/BrainstormingRoom.model.js';
+import { BrainstormingRoom, IBrainstormingRoom } from '../models/BrainstormingRoom.model.js';
+import { ChatConversation } from '../models/ChatConversation.model.js';
 import { Project } from '../models/Project.model.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
@@ -17,7 +18,10 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
     const { status, search } = req.query;
 
     const query: any = {
-      $or: [{ createdBy: userId }, { 'participants.userId': userId }],
+      $or: [
+        { createdBy: userId },
+        { 'participants.userId': userId }
+      ]
     };
 
     if (status) {
@@ -30,12 +34,14 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
       query.$text = { $search: search as string };
     }
 
-    const rooms = await BrainstormingRoom.find(query).sort({ createdAt: -1 }).limit(100);
+    const rooms = await BrainstormingRoom.find(query)
+      .sort({ createdAt: -1 })
+      .limit(100);
 
     res.json({ rooms });
   } catch (error: unknown) {
     logger.error('Error fetching brainstorming rooms:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -47,22 +53,21 @@ router.get('/:roomId', authenticateToken, async (req: Request, res: Response) =>
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     // Check access
-    const hasAccess = room.createdBy === userId || room.participants.some(p => p.userId === userId);
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
 
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     res.json({ room });
   } catch (error: unknown) {
     logger.error('Error fetching room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -80,15 +85,13 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
 
       // Prefer maxBrainstormingAttendees, fallback to maxTeamMembers, then plan defaults
       if (userPackage?.limits?.maxBrainstormingAttendees !== undefined) {
-        defaultMaxAttendees =
-          userPackage.limits.maxBrainstormingAttendees === -1
-            ? null
-            : userPackage.limits.maxBrainstormingAttendees;
+        defaultMaxAttendees = userPackage.limits.maxBrainstormingAttendees === -1
+          ? null
+          : userPackage.limits.maxBrainstormingAttendees;
       } else if (userPackage?.limits?.maxTeamMembers) {
         // Use maxTeamMembers from package as attendee limit
         // -1 means unlimited
-        defaultMaxAttendees =
-          userPackage.limits.maxTeamMembers === -1 ? null : userPackage.limits.maxTeamMembers;
+        defaultMaxAttendees = userPackage.limits.maxTeamMembers === -1 ? null : userPackage.limits.maxTeamMembers;
       } else {
         // Default limits based on plan (Free: 5, Pro: 100, Enterprise: unlimited)
         const { User } = await import('../models/User.model.js');
@@ -121,30 +124,26 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
       ownerName: userName,
       sessionTemplate: sessionTemplate || 'brainstorm',
       maxAttendees: maxAttendees !== undefined ? maxAttendees : defaultMaxAttendees,
-      participants: [
-        {
-          userId,
-          userName,
-          role: 'facilitator',
-          joinedAt: new Date(),
-        },
-      ],
+      participants: [{
+        userId,
+        userName,
+        role: 'facilitator',
+        joinedAt: new Date()
+      }],
       status: 'active',
       currentVersion: 1,
-      versions: [
-        {
-          version: 1,
-          snapshot: { topic, ideas: [], hmwQuestions: [] },
-          changedBy: userId,
-          changeDate: new Date(),
-          changeSummary: 'Initial room creation',
-        },
-      ],
+      versions: [{
+        version: 1,
+        snapshot: { topic, ideas: [], hmwQuestions: [] },
+        changedBy: userId,
+        changeDate: new Date(),
+        changeSummary: 'Initial room creation'
+      }],
       statistics: {
         totalIdeas: 0,
         totalParticipants: 1,
-        lastActivity: new Date(),
-      },
+        lastActivity: new Date()
+      }
     });
 
     await room.save();
@@ -152,7 +151,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
     res.status(201).json({ room });
   } catch (error: unknown) {
     logger.error('Error creating room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -165,18 +164,15 @@ router.put('/:roomId', authenticateToken, async (req: Request, res: Response) =>
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     // Check if user is facilitator or owner
-    const isFacilitator =
-      room.createdBy === userId ||
-      room.participants.find(p => p.userId === userId && p.role === 'facilitator');
+    const isFacilitator = room.createdBy === userId ||
+                         room.participants.find(p => p.userId === userId && p.role === 'facilitator');
 
     if (!isFacilitator) {
-      res.status(403).json({ error: 'Only facilitators can update the room' });
-      return;
+      return res.status(403).json({ error: 'Only facilitators can update the room' });
     }
 
     // Handle version snapshot if ideas/topic changed
@@ -187,11 +183,11 @@ router.put('/:roomId', authenticateToken, async (req: Request, res: Response) =>
         snapshot: {
           topic: updates.topic || room.topic,
           ideas: updates.ideas || room.ideas || [],
-          hmwQuestions: updates.hmwQuestions || room.hmwQuestions || [],
+          hmwQuestions: updates.hmwQuestions || room.hmwQuestions || []
         },
         changedBy: userId,
         changeDate: new Date(),
-        changeSummary: updates.changeSummary || 'Room updated',
+        changeSummary: updates.changeSummary || 'Room updated'
       });
       room.currentVersion = newVersion;
     }
@@ -215,7 +211,7 @@ router.put('/:roomId', authenticateToken, async (req: Request, res: Response) =>
     res.json({ room });
   } catch (error: unknown) {
     logger.error('Error updating room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -229,34 +225,30 @@ router.post('/:roomId/join', authenticateToken, async (req: Request, res: Respon
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     // Check attendee limit (check both room limit and user's package limit)
     if (room.maxAttendees && room.participants.length >= room.maxAttendees) {
-      res.status(403).json({
+      return res.status(403).json({
         error: 'Room is full',
         maxAttendees: room.maxAttendees,
-        currentAttendees: room.participants.length,
+        currentAttendees: room.participants.length
       });
-      return;
     }
 
     // Also check if room owner's package allows more attendees
     const roomOwnerPackage = await getUserPackage(room.createdBy);
-    const packageMaxAttendees =
-      roomOwnerPackage?.limits?.maxBrainstormingAttendees ||
-      roomOwnerPackage?.limits?.maxTeamMembers;
+    const packageMaxAttendees = roomOwnerPackage?.limits?.maxBrainstormingAttendees ||
+                                roomOwnerPackage?.limits?.maxTeamMembers;
     if (packageMaxAttendees && packageMaxAttendees !== -1) {
       if (room.participants.length >= packageMaxAttendees) {
-        res.status(403).json({
+        return res.status(403).json({
           error: 'Room has reached the maximum number of attendees for this plan',
           maxAttendees: packageMaxAttendees,
           currentAttendees: room.participants.length,
-          upgradeRequired: true,
+          upgradeRequired: true
         });
-        return;
       }
     }
 
@@ -265,8 +257,7 @@ router.post('/:roomId/join', authenticateToken, async (req: Request, res: Respon
     if (existingParticipant) {
       existingParticipant.lastSeen = new Date();
       await room.save();
-      res.json({ room, joined: true });
-      return;
+      return res.json({ room, joined: true });
     }
 
     // Add participant
@@ -274,7 +265,7 @@ router.post('/:roomId/join', authenticateToken, async (req: Request, res: Respon
       userId,
       userName,
       role: role || 'contributor',
-      joinedAt: new Date(),
+      joinedAt: new Date()
     });
 
     room.statistics.totalParticipants = room.participants.length;
@@ -284,7 +275,7 @@ router.post('/:roomId/join', authenticateToken, async (req: Request, res: Respon
     res.json({ room, joined: true });
   } catch (error: unknown) {
     logger.error('Error joining room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -296,14 +287,12 @@ router.post('/:roomId/leave', authenticateToken, async (req: Request, res: Respo
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     // Cannot leave if you're the owner (must delete room instead)
     if (room.createdBy === userId) {
-      res.status(400).json({ error: 'Room owner cannot leave. Delete the room instead.' });
-      return;
+      return res.status(400).json({ error: 'Room owner cannot leave. Delete the room instead.' });
     }
 
     room.participants = room.participants.filter(p => p.userId !== userId);
@@ -313,7 +302,7 @@ router.post('/:roomId/leave', authenticateToken, async (req: Request, res: Respo
     res.json({ success: true });
   } catch (error: unknown) {
     logger.error('Error leaving room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -326,15 +315,13 @@ router.post('/:roomId/ideas', authenticateToken, async (req: Request, res: Respo
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     // Check access
     const hasAccess = room.participants.some(p => p.userId === userId);
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     if (!room.ideas) room.ideas = [];
@@ -353,7 +340,7 @@ router.post('/:roomId/ideas', authenticateToken, async (req: Request, res: Respo
       createdAt: Date.now(),
       updatedAt: Date.now(),
       createdBy: userId,
-      votes: [],
+      votes: []
     };
 
     room.ideas.push(newIdea);
@@ -367,11 +354,11 @@ router.post('/:roomId/ideas', authenticateToken, async (req: Request, res: Respo
       snapshot: {
         topic: room.topic,
         ideas: room.ideas,
-        hmwQuestions: room.hmwQuestions || [],
+        hmwQuestions: room.hmwQuestions || []
       },
       changedBy: userId,
       changeDate: new Date(),
-      changeSummary: `Added idea: ${idea.label}`,
+      changeSummary: `Added idea: ${idea.label}`
     });
     room.currentVersion = newVersion;
 
@@ -380,7 +367,7 @@ router.post('/:roomId/ideas', authenticateToken, async (req: Request, res: Respo
     res.json({ idea: newIdea, room });
   } catch (error: unknown) {
     logger.error('Error adding idea:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -393,14 +380,12 @@ router.post('/:roomId/hmw-questions', authenticateToken, async (req: Request, re
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     const hasAccess = room.participants.some(p => p.userId === userId);
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     if (!room.hmwQuestions) room.hmwQuestions = [];
@@ -411,7 +396,7 @@ router.post('/:roomId/hmw-questions', authenticateToken, async (req: Request, re
       description,
       createdBy: userId,
       createdAt: new Date(),
-      linkedIdeas: linkedIdeas || [],
+      linkedIdeas: linkedIdeas || []
     };
 
     room.hmwQuestions.push(newQuestion);
@@ -421,7 +406,7 @@ router.post('/:roomId/hmw-questions', authenticateToken, async (req: Request, re
     res.json({ question: newQuestion, room });
   } catch (error: unknown) {
     logger.error('Error adding HMW question:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -433,146 +418,129 @@ router.get('/:roomId/versions', authenticateToken, async (req: Request, res: Res
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     const hasAccess = room.participants.some(p => p.userId === userId);
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     res.json({ versions: room.versions });
   } catch (error: unknown) {
     logger.error('Error fetching versions:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Restore version
-router.post(
-  '/:roomId/versions/:versionNumber/restore',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId, versionNumber } = req.params;
+router.post('/:roomId/versions/:versionNumber/restore', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId, versionNumber } = req.params;
 
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const isFacilitator =
-        room.createdBy === userId ||
-        room.participants.find(p => p.userId === userId && p.role === 'facilitator');
-
-      if (!isFacilitator) {
-        res.status(403).json({ error: 'Only facilitators can restore versions' });
-        return;
-      }
-
-      const version = room.versions.find(v => v.version === parseInt(versionNumber));
-      if (!version) {
-        res.status(404).json({ error: 'Version not found' });
-        return;
-      }
-
-      // Restore from snapshot
-      room.topic = version.snapshot.topic || room.topic;
-      room.ideas = version.snapshot.ideas || [];
-      room.hmwQuestions = version.snapshot.hmwQuestions || [];
-
-      // Create new version for restore action
-      const newVersion = room.currentVersion + 1;
-      room.versions.push({
-        version: newVersion,
-        snapshot: {
-          topic: room.topic,
-          ideas: room.ideas,
-          hmwQuestions: room.hmwQuestions,
-        },
-        changedBy: userId,
-        changeDate: new Date(),
-        changeSummary: `Restored from version ${versionNumber}`,
-      });
-      room.currentVersion = newVersion;
-
-      await room.save();
-
-      res.json({ room });
-    } catch (error: unknown) {
-      logger.error('Error restoring version:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const isFacilitator = room.createdBy === userId ||
+                         room.participants.find(p => p.userId === userId && p.role === 'facilitator');
+
+    if (!isFacilitator) {
+      return res.status(403).json({ error: 'Only facilitators can restore versions' });
+    }
+
+    const version = room.versions.find(v => v.version === parseInt(versionNumber));
+    if (!version) {
+      return res.status(404).json({ error: 'Version not found' });
+    }
+
+    // Restore from snapshot
+    room.topic = version.snapshot.topic || room.topic;
+    room.ideas = version.snapshot.ideas || [];
+    room.hmwQuestions = version.snapshot.hmwQuestions || [];
+
+    // Create new version for restore action
+    const newVersion = room.currentVersion + 1;
+    room.versions.push({
+      version: newVersion,
+      snapshot: {
+        topic: room.topic,
+        ideas: room.ideas,
+        hmwQuestions: room.hmwQuestions
+      },
+      changedBy: userId,
+      changeDate: new Date(),
+      changeSummary: `Restored from version ${versionNumber}`
+    });
+    room.currentVersion = newVersion;
+
+    await room.save();
+
+    res.json({ room });
+  } catch (error: unknown) {
+    logger.error('Error restoring version:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 // Convert room to project
-router.post(
-  '/:roomId/convert-to-project',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId } = req.params;
+router.post('/:roomId/convert-to-project', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId } = req.params;
 
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      if (room.createdBy !== userId) {
-        res.status(403).json({ error: 'Only room owner can convert to project' });
-        return;
-      }
-
-      // Create project from room
-      const projectId = uuidv4();
-      const project = new Project({
-        userId,
-        name: room.name,
-        description: room.description || room.topic || '',
-        currentPhase: 'Initiation',
-        currentSprint: 1,
-        methodology: 'Agile',
-        agents: [],
-        tasks:
-          room.ideas?.map(idea => ({
-            id: uuidv4(),
-            title: idea.label,
-            description: idea.description || '',
-            phase: 'Requirements',
-            status: 'pending',
-            assignedAgent: null,
-          })) || [],
-        artifacts: [],
-        logs: [],
-        selectedStandards: [],
-        useInternet: false,
-        budget: { cap: 1000, spent: 0 },
-        mcpServers: [],
-        status: 'draft',
-      });
-
-      await project.save();
-
-      // Update room
-      room.convertedToProject = projectId;
-      room.convertedAt = new Date();
-      room.status = 'converted';
-      await room.save();
-
-      res.json({ project, room });
-    } catch (error: unknown) {
-      logger.error('Error converting room to project:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    if (room.createdBy !== userId) {
+      return res.status(403).json({ error: 'Only room owner can convert to project' });
+    }
+
+    // Create project from room
+    const projectId = uuidv4();
+    const project = new Project({
+      userId,
+      name: room.name,
+      description: room.description || room.topic || '',
+      currentPhase: 'Initiation',
+      currentSprint: 1,
+      methodology: 'Agile',
+      agents: [],
+      tasks: room.ideas?.map(idea => ({
+        id: uuidv4(),
+        title: idea.label,
+        description: idea.description || '',
+        phase: 'Requirements',
+        status: 'pending',
+        assignedAgent: null
+      })) || [],
+      artifacts: [],
+      logs: [],
+      selectedStandards: [],
+      useInternet: false,
+      budget: { cap: 1000, spent: 0 },
+      mcpServers: [],
+      status: 'draft'
+    });
+
+    await project.save();
+
+    // Update room
+    room.convertedToProject = projectId;
+    room.convertedAt = new Date();
+    room.status = 'converted';
+    await room.save();
+
+    res.json({ project, room });
+  } catch (error: unknown) {
+    logger.error('Error converting room to project:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 // Delete room
 router.delete('/:roomId', authenticateToken, async (req: Request, res: Response) => {
@@ -582,13 +550,11 @@ router.delete('/:roomId', authenticateToken, async (req: Request, res: Response)
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
     if (room.createdBy !== userId) {
-      res.status(403).json({ error: 'Only room owner can delete' });
-      return;
+      return res.status(403).json({ error: 'Only room owner can delete' });
     }
 
     // Archive instead of delete
@@ -598,7 +564,7 @@ router.delete('/:roomId', authenticateToken, async (req: Request, res: Response)
     res.json({ success: true });
   } catch (error: unknown) {
     logger.error('Error deleting room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -613,10 +579,7 @@ router.post('/auto-create', authenticateToken, async (req: Request, res: Respons
     let defaultMaxAttendees: number | null = null;
     const userPackage = await getUserPackage(userId);
     if (userPackage?.limits?.maxBrainstormingAttendees !== undefined) {
-      defaultMaxAttendees =
-        userPackage.limits.maxBrainstormingAttendees === -1
-          ? null
-          : userPackage.limits.maxBrainstormingAttendees;
+      defaultMaxAttendees = userPackage.limits.maxBrainstormingAttendees === -1 ? null : userPackage.limits.maxBrainstormingAttendees;
     }
 
     const room = new BrainstormingRoom({
@@ -627,9 +590,7 @@ router.post('/auto-create', authenticateToken, async (req: Request, res: Respons
       ownerName: userName,
       topic: topic || '',
       ideas: [],
-      participants: [
-        { userId, userName, role: 'facilitator', joinedAt: new Date(), lastSeen: new Date() },
-      ],
+      participants: [{ userId, userName, role: 'facilitator', joinedAt: new Date(), lastSeen: new Date() }],
       hmwQuestions: [],
       facilitatorTools: {
         timerActive: false,
@@ -637,23 +598,21 @@ router.post('/auto-create', authenticateToken, async (req: Request, res: Respons
         votingEnabled: false,
       },
       currentVersion: 1,
-      versions: [
-        {
-          version: 1,
-          snapshot: {
-            topic: topic || '',
-            ideas: [],
-            hmwQuestions: [],
-          },
-          changedBy: userId,
-          changeDate: new Date(),
-          changeSummary: 'Initial room creation',
+      versions: [{
+        version: 1,
+        snapshot: {
+          topic: topic || '',
+          ideas: [],
+          hmwQuestions: []
         },
-      ],
+        changedBy: userId,
+        changeDate: new Date(),
+        changeSummary: 'Initial room creation'
+      }],
       statistics: {
         totalIdeas: 0,
         totalParticipants: 1,
-        lastActivity: new Date(),
+        lastActivity: new Date()
       },
       maxAttendees: defaultMaxAttendees,
       currentPhase: 0,
@@ -666,43 +625,37 @@ router.post('/auto-create', authenticateToken, async (req: Request, res: Respons
     res.status(201).json({ room });
   } catch (error: unknown) {
     logger.error('Error auto-creating room:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Detect sub-projects from ideas
-router.post(
-  '/:roomId/detect-sub-projects',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId } = req.params;
+router.post('/:roomId/detect-sub-projects', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId } = req.params;
 
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const hasAccess = room.participants.some(p => p.userId === userId);
-      if (!hasAccess) {
-        res.status(403).json({ error: 'Access denied' });
-        return;
-      }
-
-      const detected = subProjectDetector.detectSubProjects({
-        ideas: room.ideas || [],
-        topic: room.topic || '',
-      });
-
-      res.json({ subProjects: detected });
-    } catch (error: unknown) {
-      logger.error('Error detecting sub-projects:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const hasAccess = room.participants.some(p => p.userId === userId);
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const detected = subProjectDetector.detectSubProjects({
+      ideas: room.ideas || [],
+      topic: room.topic || '',
+    });
+
+    res.json({ subProjects: detected });
+  } catch (error: unknown) {
+    logger.error('Error detecting sub-projects:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 // Create sub-project
 router.post('/:roomId/sub-projects', authenticateToken, async (req: Request, res: Response) => {
@@ -713,17 +666,14 @@ router.post('/:roomId/sub-projects', authenticateToken, async (req: Request, res
 
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    const isFacilitator =
-      room.createdBy === userId ||
-      room.participants.find(p => p.userId === userId && p.role === 'facilitator');
+    const isFacilitator = room.createdBy === userId ||
+                         room.participants.find(p => p.userId === userId && p.role === 'facilitator');
 
     if (!isFacilitator) {
-      res.status(403).json({ error: 'Only facilitators can create sub-projects' });
-      return;
+      return res.status(403).json({ error: 'Only facilitators can create sub-projects' });
     }
 
     const subProject = {
@@ -740,7 +690,7 @@ router.post('/:roomId/sub-projects', authenticateToken, async (req: Request, res
     if (!room.subProjects) {
       room.subProjects = [];
     }
-    room.subProjects.push(subProject as any);
+    room.subProjects.push(subProject);
     room.activeSubProjectId = subProject.id;
     room.currentPhase = 1;
 
@@ -749,168 +699,144 @@ router.post('/:roomId/sub-projects', authenticateToken, async (req: Request, res
     res.json({ subProject, room });
   } catch (error: unknown) {
     logger.error('Error creating sub-project:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Update sub-project
-router.put(
-  '/:roomId/sub-projects/:subProjectId',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId, subProjectId } = req.params;
-      const updates = req.body;
+router.put('/:roomId/sub-projects/:subProjectId', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId, subProjectId } = req.params;
+    const updates = req.body;
 
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const isFacilitator =
-        room.createdBy === userId ||
-        room.participants.find(p => p.userId === userId && p.role === 'facilitator');
-
-      if (!isFacilitator) {
-        res.status(403).json({ error: 'Only facilitators can update sub-projects' });
-        return;
-      }
-
-      const subProject = room.subProjects?.find(sp => sp.id === subProjectId);
-      if (!subProject) {
-        res.status(404).json({ error: 'Sub-project not found' });
-        return;
-      }
-
-      Object.assign(subProject, updates, { updatedAt: new Date() });
-
-      // Update room phase if sub-project phase changes
-      if (updates.currentPhase !== undefined) {
-        room.currentPhase = updates.currentPhase;
-      }
-
-      await room.save();
-
-      res.json({ subProject, room });
-    } catch (error: unknown) {
-      logger.error('Error updating sub-project:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const isFacilitator = room.createdBy === userId ||
+                         room.participants.find(p => p.userId === userId && p.role === 'facilitator');
+
+    if (!isFacilitator) {
+      return res.status(403).json({ error: 'Only facilitators can update sub-projects' });
+    }
+
+    const subProject = room.subProjects?.find(sp => sp.id === subProjectId);
+    if (!subProject) {
+      return res.status(404).json({ error: 'Sub-project not found' });
+    }
+
+    Object.assign(subProject, updates, { updatedAt: new Date() });
+
+    // Update room phase if sub-project phase changes
+    if (updates.currentPhase !== undefined) {
+      room.currentPhase = updates.currentPhase;
+    }
+
+    await room.save();
+
+    res.json({ subProject, room });
+  } catch (error: unknown) {
+    logger.error('Error updating sub-project:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 // Convert sub-project to prototype (Phase 2 → 3)
-router.post(
-  '/:roomId/sub-projects/:subProjectId/convert-to-prototype',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId, subProjectId } = req.params;
+router.post('/:roomId/sub-projects/:subProjectId/convert-to-prototype', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId, subProjectId } = req.params;
 
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const isFacilitator =
-        room.createdBy === userId ||
-        room.participants.find(p => p.userId === userId && p.role === 'facilitator');
-
-      if (!isFacilitator) {
-        res.status(403).json({ error: 'Only facilitators can convert sub-projects' });
-        return;
-      }
-
-      const subProject = room.subProjects?.find(sp => sp.id === subProjectId);
-      if (!subProject) {
-        res.status(404).json({ error: 'Sub-project not found' });
-        return;
-      }
-
-      subProject.status = 'prototyping';
-      subProject.currentPhase = 3;
-      room.currentPhase = 3;
-      subProject.updatedAt = new Date();
-
-      await room.save();
-
-      res.json({ subProject, room });
-    } catch (error: unknown) {
-      logger.error('Error converting sub-project to prototype:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const isFacilitator = room.createdBy === userId ||
+                         room.participants.find(p => p.userId === userId && p.role === 'facilitator');
+
+    if (!isFacilitator) {
+      return res.status(403).json({ error: 'Only facilitators can convert sub-projects' });
+    }
+
+    const subProject = room.subProjects?.find(sp => sp.id === subProjectId);
+    if (!subProject) {
+      return res.status(404).json({ error: 'Sub-project not found' });
+    }
+
+    subProject.status = 'prototyping';
+    subProject.currentPhase = 3;
+    room.currentPhase = 3;
+    subProject.updatedAt = new Date();
+
+    await room.save();
+
+    res.json({ subProject, room });
+  } catch (error: unknown) {
+    logger.error('Error converting sub-project to prototype:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 // Launch sub-project to workspace (Phase 3 → 4)
-router.post(
-  '/:roomId/sub-projects/:subProjectId/launch-to-workspace',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId, subProjectId } = req.params;
+router.post('/:roomId/sub-projects/:subProjectId/launch-to-workspace', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId, subProjectId } = req.params;
 
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const isFacilitator =
-        room.createdBy === userId ||
-        room.participants.find(p => p.userId === userId && p.role === 'facilitator');
-
-      if (!isFacilitator) {
-        res.status(403).json({ error: 'Only facilitators can launch sub-projects' });
-        return;
-      }
-
-      const subProject = room.subProjects?.find(sp => sp.id === subProjectId);
-      if (!subProject) {
-        res.status(404).json({ error: 'Sub-project not found' });
-        return;
-      }
-
-      // Get ideas for this sub-project
-      // const _subProjectIdeas = room.ideas?.filter(idea => subProject.ideas?.includes(idea.id)) || [];
-
-      // Create project from sub-project
-      const project = new Project({
-        userId,
-        name: subProject.name,
-        description: room.topic || `${subProject.name} from brainstorming room`,
-        architecture: {
-          needsBackend: subProject.type === 'webapp' || subProject.type === 'api',
-          needsMobileApp: subProject.type === 'mobile-app',
-          needsAdminPanel: subProject.type === 'webapp',
-        },
-        brainstormingRoomId: roomId,
-        brainstormingSubProjectId: subProjectId,
-      });
-
-      await project.save();
-
-      // Update sub-project
-      subProject.status = 'production';
-      subProject.currentPhase = 4;
-      subProject.projectId = project._id.toString();
-      room.currentPhase = 4;
-      subProject.updatedAt = new Date();
-
-      await room.save();
-
-      res.json({ project, subProject, room });
-    } catch (error: unknown) {
-      logger.error('Error launching sub-project to workspace:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const isFacilitator = room.createdBy === userId ||
+                         room.participants.find(p => p.userId === userId && p.role === 'facilitator');
+
+    if (!isFacilitator) {
+      return res.status(403).json({ error: 'Only facilitators can launch sub-projects' });
+    }
+
+    const subProject = room.subProjects?.find(sp => sp.id === subProjectId);
+    if (!subProject) {
+      return res.status(404).json({ error: 'Sub-project not found' });
+    }
+
+    // Get ideas for this sub-project
+    const subProjectIdeas = room.ideas?.filter(idea => subProject.ideas?.includes(idea.id)) || [];
+
+    // Create project from sub-project
+    const project = new Project({
+      userId,
+      name: subProject.name,
+      description: room.topic || `${subProject.name} from brainstorming room`,
+      architecture: {
+        needsBackend: subProject.type === 'webapp' || subProject.type === 'api',
+        needsMobileApp: subProject.type === 'mobile-app',
+        needsAdminPanel: subProject.type === 'webapp',
+      },
+      brainstormingRoomId: roomId,
+      brainstormingSubProjectId: subProjectId,
+    });
+
+    await project.save();
+
+    // Update sub-project
+    subProject.status = 'production';
+    subProject.currentPhase = 4;
+    subProject.projectId = project._id.toString();
+    room.currentPhase = 4;
+    subProject.updatedAt = new Date();
+
+    await room.save();
+
+    res.json({ project, subProject, room });
+  } catch (error: unknown) {
+    logger.error('Error launching sub-project to workspace:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 // ============ Brainstorming Agent Routes ============
 
@@ -918,96 +844,83 @@ router.post(
  * POST /api/brainstorming-rooms/:roomId/agent/generate-ideas
  * Generate ideas using brainstorming agent
  */
-router.post(
-  '/:roomId/agent/generate-ideas',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId } = req.params;
-      const { framework, count } = req.body;
+router.post('/:roomId/agent/generate-ideas', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId } = req.params;
+    const { framework, count } = req.body;
 
-      // Check access
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const hasAccess =
-        room.createdBy === userId || room.participants.some(p => p.userId === userId);
-
-      if (!hasAccess) {
-        res.status(403).json({ error: 'Access denied' });
-        return;
-      }
-
-      const result = await brainstormingAgentService.generateIdeas(
-        roomId,
-        framework || 'auto',
-        count || 5,
-        userId
-      );
-
-      res.json(result);
-    } catch (error: unknown) {
-      logger.error('Error generating ideas with agent:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    // Check access
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await brainstormingAgentService.generateIdeas(
+      roomId,
+      framework || 'auto',
+      count || 5,
+      userId
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    logger.error('Error generating ideas with agent:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 /**
  * POST /api/brainstorming-rooms/:roomId/agent/evaluate-ideas
  * Evaluate specific ideas
  */
-router.post(
-  '/:roomId/agent/evaluate-ideas',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId } = req.params;
-      const { ideaIds } = req.body; // Array of idea IDs to evaluate
+router.post('/:roomId/agent/evaluate-ideas', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId } = req.params;
+    const { ideaIds } = req.body; // Array of idea IDs to evaluate
 
-      if (!ideaIds || !Array.isArray(ideaIds)) {
-        res.status(400).json({ error: 'ideaIds array is required' });
-        return;
-      }
-
-      // Check access
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const hasAccess =
-        room.createdBy === userId || room.participants.some(p => p.userId === userId);
-
-      if (!hasAccess) {
-        res.status(403).json({ error: 'Access denied' });
-        return;
-      }
-
-      // Evaluate each idea
-      const evaluations = await Promise.all(
-        ideaIds.map((ideaId: string) => brainstormingAgentService.evaluateIdea(roomId, ideaId))
-      );
-
-      // Update room agent activity
-      await BrainstormingRoom.updateOne(
-        { id: roomId },
-        { $set: { 'agentActivity.lastEvaluation': new Date() } }
-      );
-
-      res.json({ evaluations });
-    } catch (error: unknown) {
-      logger.error('Error evaluating ideas:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    if (!ideaIds || !Array.isArray(ideaIds)) {
+      return res.status(400).json({ error: 'ideaIds array is required' });
     }
+
+    // Check access
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Evaluate each idea
+    const evaluations = await Promise.all(
+      ideaIds.map((ideaId: string) => brainstormingAgentService.evaluateIdea(roomId, ideaId))
+    );
+
+    // Update room agent activity
+    await BrainstormingRoom.updateOne(
+      { id: roomId },
+      { $set: { 'agentActivity.lastEvaluation': new Date() } }
+    );
+
+    res.json({ evaluations });
+  } catch (error: unknown) {
+    logger.error('Error evaluating ideas:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 /**
  * POST /api/brainstorming-rooms/:roomId/agent/cluster
@@ -1021,15 +934,14 @@ router.post('/:roomId/agent/cluster', authenticateToken, async (req: Request, re
     // Check access
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    const hasAccess = room.createdBy === userId || room.participants.some(p => p.userId === userId);
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
 
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const result = await brainstormingAgentService.clusterIdeas(roomId);
@@ -1043,7 +955,7 @@ router.post('/:roomId/agent/cluster', authenticateToken, async (req: Request, re
     res.json(result);
   } catch (error: unknown) {
     logger.error('Error clustering ideas:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1051,45 +963,39 @@ router.post('/:roomId/agent/cluster', authenticateToken, async (req: Request, re
  * POST /api/brainstorming-rooms/:roomId/agent/generate-hmw
  * Generate HMW questions
  */
-router.post(
-  '/:roomId/agent/generate-hmw',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId } = req.params;
-      const { count } = req.body;
+router.post('/:roomId/agent/generate-hmw', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId } = req.params;
+    const { count } = req.body;
 
-      // Check access
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const hasAccess =
-        room.createdBy === userId || room.participants.some(p => p.userId === userId);
-
-      if (!hasAccess) {
-        res.status(403).json({ error: 'Access denied' });
-        return;
-      }
-
-      const result = await brainstormingAgentService.generateHMWQuestions(roomId, count || 5);
-
-      // Update room agent activity
-      await BrainstormingRoom.updateOne(
-        { id: roomId },
-        { $set: { 'agentActivity.lastHMWGeneration': new Date() } }
-      );
-
-      res.json(result);
-    } catch (error: unknown) {
-      logger.error('Error generating HMW questions:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    // Check access
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await brainstormingAgentService.generateHMWQuestions(roomId, count || 5);
+
+    // Update room agent activity
+    await BrainstormingRoom.updateOne(
+      { id: roomId },
+      { $set: { 'agentActivity.lastHMWGeneration': new Date() } }
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    logger.error('Error generating HMW questions:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 /**
  * POST /api/brainstorming-rooms/:roomId/agent/facilitate
@@ -1103,15 +1009,14 @@ router.post('/:roomId/agent/facilitate', authenticateToken, async (req: Request,
     // Check access
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    const hasAccess = room.createdBy === userId || room.participants.some(p => p.userId === userId);
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
 
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const prompt = await brainstormingAgentService.facilitateSession(roomId);
@@ -1119,7 +1024,7 @@ router.post('/:roomId/agent/facilitate', authenticateToken, async (req: Request,
     res.json(prompt);
   } catch (error: unknown) {
     logger.error('Error generating facilitation prompt:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1127,46 +1032,39 @@ router.post('/:roomId/agent/facilitate', authenticateToken, async (req: Request,
  * POST /api/brainstorming-rooms/:roomId/agent/auto-facilitate
  * Start auto-facilitation (generates ideas automatically)
  */
-router.post(
-  '/:roomId/agent/auto-facilitate',
-  authenticateToken,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id || (req as any).user?.userId;
-      const { roomId } = req.params;
-      // @ts-ignore TS6133
-      const { _iterations, framework } = req.body;
+router.post('/:roomId/agent/auto-facilitate', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { roomId } = req.params;
+    const { iterations, framework } = req.body;
 
-      // Check access
-      const room = await BrainstormingRoom.findOne({ id: roomId });
-      if (!room) {
-        res.status(404).json({ error: 'Room not found' });
-        return;
-      }
-
-      const hasAccess =
-        room.createdBy === userId || room.participants.some(p => p.userId === userId);
-
-      if (!hasAccess) {
-        res.status(403).json({ error: 'Access denied' });
-        return;
-      }
-
-      // Generate ideas (this will be called repeatedly from frontend)
-      const result = await brainstormingAgentService.generateIdeas(
-        roomId,
-        framework || 'auto',
-        3, // Generate 3 ideas per iteration
-        userId
-      );
-
-      res.json(result);
-    } catch (error: unknown) {
-      logger.error('Error in auto-facilitation:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    // Check access
+    const room = await BrainstormingRoom.findOne({ id: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
     }
+
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Generate ideas (this will be called repeatedly from frontend)
+    const result = await brainstormingAgentService.generateIdeas(
+      roomId,
+      framework || 'auto',
+      3, // Generate 3 ideas per iteration
+      userId
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    logger.error('Error in auto-facilitation:', error);
+    res.status(500).json({ error: error.message });
   }
-);
+});
 
 /**
  * POST /api/brainstorming-rooms/:roomId/export/project
@@ -1181,34 +1079,32 @@ router.post('/:roomId/export/project', authenticateToken, async (req: Request, r
     // Check access
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    const hasAccess = room.createdBy === userId || room.participants.some(p => p.userId === userId);
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
 
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
-    const { brainstormingExportService } =
-      await import('../services/brainstormingExport.service.js');
+    const { brainstormingExportService } = await import('../services/brainstormingExport.service.js');
 
     const result = await brainstormingExportService.exportToProject(roomId, projectName, {
       includeEvaluated: includeEvaluated !== false,
       minScore: minScore || 0,
       maxTasks: maxTasks || 20,
-      groupByCategory: groupByCategory !== false,
+      groupByCategory: groupByCategory !== false
     });
 
     res.json({
       success: true,
-      data: result,
+      data: result
     });
   } catch (error: unknown) {
     logger.error('Error exporting to project:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1223,44 +1119,36 @@ router.post('/:roomId/export/ideas', authenticateToken, async (req: Request, res
     const { projectId, ideaIds, includeEvaluated, minScore } = req.body;
 
     if (!ideaIds || !Array.isArray(ideaIds) || ideaIds.length === 0) {
-      res.status(400).json({ error: 'ideaIds array is required' });
-      return;
+      return res.status(400).json({ error: 'ideaIds array is required' });
     }
 
     // Check access
     const room = await BrainstormingRoom.findOne({ id: roomId });
     if (!room) {
-      res.status(404).json({ error: 'Room not found' });
-      return;
+      return res.status(404).json({ error: 'Room not found' });
     }
 
-    const hasAccess = room.createdBy === userId || room.participants.some(p => p.userId === userId);
+    const hasAccess = room.createdBy === userId ||
+                     room.participants.some(p => p.userId === userId);
 
     if (!hasAccess) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
-    const { brainstormingExportService } =
-      await import('../services/brainstormingExport.service.js');
+    const { brainstormingExportService } = await import('../services/brainstormingExport.service.js');
 
-    const result = await brainstormingExportService.exportIdeasToProject(
-      roomId,
-      projectId,
-      ideaIds,
-      {
-        includeEvaluated: includeEvaluated !== false,
-        minScore: minScore || 0,
-      }
-    );
+    const result = await brainstormingExportService.exportIdeasToProject(roomId, projectId, ideaIds, {
+      includeEvaluated: includeEvaluated !== false,
+      minScore: minScore || 0
+    });
 
     res.json({
       success: true,
-      data: result,
+      data: result
     });
   } catch (error: unknown) {
     logger.error('Error exporting ideas:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: error.message });
   }
 });
 

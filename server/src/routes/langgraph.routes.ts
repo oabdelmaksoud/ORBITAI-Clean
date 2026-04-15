@@ -15,7 +15,7 @@ const router = express.Router();
  * Initialize LangGraph service
  * POST /api/langgraph/initialize
  */
-router.post('/initialize', async (_req, res, _next) => {
+router.post('/initialize', async (req, res, _next) => {
   try {
     await langgraphService.initialize();
     res.json({
@@ -27,7 +27,7 @@ router.post('/initialize', async (_req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to initialize LangGraph service',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -66,7 +66,7 @@ router.post('/workflows', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create workflow',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -116,7 +116,7 @@ router.post('/workflows/:id/execute', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Workflow execution failed',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -149,7 +149,7 @@ router.post('/workflows/agent', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create agent workflow',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -187,7 +187,7 @@ router.post('/workflows/multi-agent', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create multi-agent workflow',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -242,7 +242,7 @@ router.post('/workflows/rag', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create RAG workflow',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -273,7 +273,7 @@ router.get('/workflows/:id', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get workflow',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });
@@ -294,7 +294,7 @@ router.get('/workflows', async (req, res, _next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to list workflows',
-      error: error instanceof Error ? error.message : String(error),
+      error: error.message,
     });
   }
 });

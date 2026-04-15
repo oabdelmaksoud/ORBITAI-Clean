@@ -61,7 +61,7 @@ class AgentCommunicationService {
       try {
         const { webSocketService } = await import('./websocket.service.js');
         if (payload.toAgentId) {
-          (webSocketService as any).broadcast(payload.toAgentId, {
+          webSocketService.broadcast(payload.toAgentId, {
             type: 'agent_message',
             message: {
               id: message._id.toString(),
@@ -208,7 +208,7 @@ class AgentCommunicationService {
     const messages = await AgentMessage.find(query)
       .sort({ timestamp: -1 })
       .limit(100)
-      .lean() as any;
+      .lean();
 
     return messages;
   }
@@ -216,7 +216,7 @@ class AgentCommunicationService {
   /**
    * Mark message as read
    */
-  async markAsRead(messageId: string, _agentId: string): Promise<void> {
+  async markAsRead(messageId: string, agentId: string): Promise<void> {
     await AgentMessage.findByIdAndUpdate(messageId, {
       read: true,
       readAt: new Date()
@@ -233,7 +233,7 @@ class AgentCommunicationService {
     return await AgentMessage.find({ projectId })
       .sort({ timestamp: -1 })
       .limit(limit)
-      .lean() as any;
+      .lean();
   }
 }
 

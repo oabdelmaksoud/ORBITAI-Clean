@@ -120,7 +120,7 @@ class ArchitectureValidationService {
   /**
    * Analyze code structure
    */
-  private analyzeStructure(code: string, _language: string): {
+  private analyzeStructure(code: string, language: string): {
     files: number;
     classes: number;
     functions: number;
@@ -229,7 +229,7 @@ class ArchitectureValidationService {
    */
   private checkLayerSeparation(
     code: string,
-    _language: string,
+    language: string,
     pattern: ArchitecturalPattern
   ): {
     valid: boolean;
@@ -328,7 +328,7 @@ Return a JSON object with violations array.`;
         required: ['violations', 'score']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'code_analysis',
         agentRole: 'QA/Audit Agent',
@@ -351,7 +351,7 @@ Return a JSON object with violations array.`;
 
       return { score: Math.round(score), violations };
     } catch (error: unknown) {
-      logger.warn('Failed to validate SOLID principles with LLM, using fallback:', (error instanceof Error ? error.message : String(error)));
+      logger.warn('Failed to validate SOLID principles with LLM, using fallback:', error.message);
       // Fallback: simple heuristic
       return {
         score: 80,
@@ -363,7 +363,7 @@ Return a JSON object with violations array.`;
   /**
    * Detect DRY violations
    */
-  private detectDRYViolations(code: string, _language: string): Array<{
+  private detectDRYViolations(code: string, language: string): Array<{
     description: string;
     locations: string[];
     suggestion: string;
@@ -391,7 +391,7 @@ Return a JSON object with violations array.`;
     }
 
     // Find repeated blocks
-    for (const [_block, locations] of codeBlocks.entries()) {
+    for (const [block, locations] of codeBlocks.entries()) {
       if (locations.length > 2) {
         violations.push({
           description: `Repeated code block found ${locations.length} times`,
@@ -407,7 +407,7 @@ Return a JSON object with violations array.`;
   /**
    * Calculate complexity metrics
    */
-  private calculateComplexity(code: string, _language: string): {
+  private calculateComplexity(code: string, language: string): {
     cyclomatic: number;
     cognitive: number;
     maintainability: number;

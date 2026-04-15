@@ -90,10 +90,7 @@ class CodeQualityAssuranceService {
           securityIssues = [...securityIssues, ...aggregated.issues];
         }
       } catch (error: unknown) {
-        logger.debug(
-          'External security tools not available, using LLM only:',
-          error instanceof Error ? error.message : String(error)
-        );
+        logger.debug('External security tools not available, using LLM only:', error.message);
       }
 
       // Stage 3: Performance Analysis
@@ -121,7 +118,7 @@ class CodeQualityAssuranceService {
         securityIssues,
         performanceMetrics,
         codeStyle,
-        architectureValidation,
+        architectureValidation
       });
 
       // Generate suggestions
@@ -130,7 +127,7 @@ class CodeQualityAssuranceService {
         securityIssues,
         performanceMetrics,
         codeStyle,
-        architectureValidation,
+        architectureValidation
       });
 
       const result: CodeReviewResult = {
@@ -141,19 +138,14 @@ class CodeQualityAssuranceService {
         codeStyle,
         suggestions,
         reasoning: this.generateReasoning(overallScore, bestPractices, securityIssues),
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
 
       logger.info(`Code review complete. Score: ${overallScore}/100`);
 
       // Auto-create tasks for critical/high severity issues
       // This happens asynchronously and doesn't block the review result
-      this.createTasksForIssuesAsync(
-        result,
-        context?.projectId,
-        context?.userId,
-        context?.artifactId
-      );
+      this.createTasksForIssuesAsync(result, context?.projectId, context?.userId, context?.artifactId);
 
       return result;
     } catch (error: unknown) {
@@ -167,17 +159,17 @@ class CodeQualityAssuranceService {
           complexity: 'medium',
           estimatedComplexity: 0,
           potentialBottlenecks: [],
-          optimizationSuggestions: [],
+          optimizationSuggestions: []
         },
         codeStyle: {
           consistency: 'needs-improvement',
           formatting: [],
           naming: [],
-          structure: [],
+          structure: []
         },
         suggestions: ['Code review failed. Please review manually.'],
-        reasoning: `Code review encountered an error: ${error instanceof Error ? error.message : String(error)}`,
-        timestamp: Date.now(),
+        reasoning: `Code review encountered an error: ${error.message}`,
+        timestamp: Date.now()
       };
     }
   }
@@ -251,25 +243,25 @@ Return as JSON array.`;
                 principle: { type: Type.STRING },
                 status: { type: Type.STRING, enum: ['pass', 'warning', 'fail'] },
                 description: { type: Type.STRING },
-                location: { type: Type.STRING },
+                location: { type: Type.STRING }
               },
-              required: ['principle', 'status', 'description'],
-            },
-          },
+              required: ['principle', 'status', 'description']
+            }
+          }
         },
-        required: ['checks'],
+        required: ['checks']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'code_review',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
+          tools: []
         },
         requiredOutputFormat: 'json',
-        schema,
+        schema
       });
 
       const parsed = JSON.parse(response.content);
@@ -337,25 +329,25 @@ Return as JSON array.`;
                 type: { type: Type.STRING },
                 description: { type: Type.STRING },
                 location: { type: Type.STRING },
-                recommendation: { type: Type.STRING },
+                recommendation: { type: Type.STRING }
               },
-              required: ['severity', 'type', 'description', 'recommendation'],
-            },
-          },
+              required: ['severity', 'type', 'description', 'recommendation']
+            }
+          }
         },
-        required: ['issues'],
+        required: ['issues']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'security_audit',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
+          tools: []
         },
         requiredOutputFormat: 'json',
-        schema,
+        schema
       });
 
       const parsed = JSON.parse(response.content);
@@ -369,7 +361,10 @@ Return as JSON array.`;
   /**
    * Assess code performance
    */
-  async assessPerformance(code: string, language: string): Promise<PerformanceMetrics> {
+  async assessPerformance(
+    code: string,
+    language: string
+  ): Promise<PerformanceMetrics> {
     try {
       const prompt = `Analyze the performance characteristics of the following ${language} code.
 
@@ -397,26 +392,26 @@ Return as JSON object.`;
           estimatedComplexity: { type: Type.NUMBER },
           potentialBottlenecks: {
             type: Type.ARRAY,
-            items: { type: Type.STRING },
+            items: { type: Type.STRING }
           },
           optimizationSuggestions: {
             type: Type.ARRAY,
-            items: { type: Type.STRING },
-          },
+            items: { type: Type.STRING }
+          }
         },
-        required: ['complexity', 'potentialBottlenecks', 'optimizationSuggestions'],
+        required: ['complexity', 'potentialBottlenecks', 'optimizationSuggestions']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'performance_analysis',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
+          tools: []
         },
         requiredOutputFormat: 'json',
-        schema,
+        schema
       });
 
       const parsed = JSON.parse(response.content);
@@ -424,7 +419,7 @@ Return as JSON object.`;
         complexity: parsed.complexity || 'medium',
         estimatedComplexity: parsed.estimatedComplexity || 0,
         potentialBottlenecks: parsed.potentialBottlenecks || [],
-        optimizationSuggestions: parsed.optimizationSuggestions || [],
+        optimizationSuggestions: parsed.optimizationSuggestions || []
       };
     } catch (error: unknown) {
       logger.error('Performance assessment failed:', error);
@@ -432,7 +427,7 @@ Return as JSON object.`;
         complexity: 'medium',
         estimatedComplexity: 0,
         potentialBottlenecks: [],
-        optimizationSuggestions: [],
+        optimizationSuggestions: []
       };
     }
   }
@@ -440,7 +435,10 @@ Return as JSON object.`;
   /**
    * Check code style and consistency
    */
-  async checkCodeStyle(code: string, language: string): Promise<CodeStyleIssues> {
+  async checkCodeStyle(
+    code: string,
+    language: string
+  ): Promise<CodeStyleIssues> {
     try {
       const prompt = `Review the code style and consistency of the following ${language} code.
 
@@ -463,21 +461,21 @@ Return as JSON object.`;
           consistency: { type: Type.STRING, enum: ['good', 'needs-improvement', 'poor'] },
           formatting: { type: Type.ARRAY, items: { type: Type.STRING } },
           naming: { type: Type.ARRAY, items: { type: Type.STRING } },
-          structure: { type: Type.ARRAY, items: { type: Type.STRING } },
+          structure: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
-        required: ['consistency', 'formatting', 'naming', 'structure'],
+        required: ['consistency', 'formatting', 'naming', 'structure']
       };
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'code_style',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
+          tools: []
         },
         requiredOutputFormat: 'json',
-        schema,
+        schema
       });
 
       const parsed = JSON.parse(response.content);
@@ -485,7 +483,7 @@ Return as JSON object.`;
         consistency: parsed.consistency || 'needs-improvement',
         formatting: parsed.formatting || [],
         naming: parsed.naming || [],
-        structure: parsed.structure || [],
+        structure: parsed.structure || []
       };
     } catch (error: unknown) {
       logger.error('Code style check failed:', error);
@@ -493,7 +491,7 @@ Return as JSON object.`;
         consistency: 'needs-improvement',
         formatting: [],
         naming: [],
-        structure: [],
+        structure: []
       };
     }
   }
@@ -501,7 +499,7 @@ Return as JSON object.`;
   /**
    * Calculate overall quality score (0-100)
    */
-  calculateQualityScore(review: {
+  private calculateQualityScore(review: {
     bestPractices: BestPracticeCheck[];
     securityIssues: SecurityIssue[];
     performanceMetrics: PerformanceMetrics;
@@ -519,25 +517,17 @@ Return as JSON object.`;
     // Deduct for security issues (weighted by severity)
     review.securityIssues.forEach(issue => {
       switch (issue.severity) {
-        case 'critical':
-          score -= 20;
-          break;
-        case 'high':
-          score -= 15;
-          break;
-        case 'medium':
-          score -= 10;
-          break;
-        case 'low':
-          score -= 5;
-          break;
+        case 'critical': score -= 20; break;
+        case 'high': score -= 15; break;
+        case 'medium': score -= 10; break;
+        case 'low': score -= 5; break;
       }
     });
 
     // Consider architecture validation score
     if (review.architectureValidation) {
       const archScore = review.architectureValidation.overallScore;
-      score = score * 0.8 + archScore * 0.2; // 20% weight for architecture
+      score = (score * 0.8) + (archScore * 0.2); // 20% weight for architecture
     }
 
     // Deduct for performance issues
@@ -599,10 +589,8 @@ Return as JSON object.`;
 
     // Architecture validation suggestions
     if (review.architectureValidation) {
-      review.architectureValidation.violations.forEach((violation: any) => {
-        suggestions.push(
-          `[${violation.severity.toUpperCase()}] ${violation.principle}: ${violation.description}`
-        );
+      review.architectureValidation.violations.forEach(violation => {
+        suggestions.push(`[${violation.severity.toUpperCase()}] ${violation.principle}: ${violation.description}`);
       });
     }
 
@@ -612,15 +600,12 @@ Return as JSON object.`;
   /**
    * Infer architecture pattern from framework
    */
-  private inferArchitecturePattern(
-    framework: string
-  ): import('./architectureValidation.service.js').ArchitecturalPattern | null {
+  private inferArchitecturePattern(framework: string): import('./architectureValidation.service.js').ArchitecturalPattern | null {
     const fw = framework.toLowerCase();
     if (fw.includes('express') || fw.includes('django') || fw.includes('rails')) return 'mvc';
     if (fw.includes('microservice') || fw.includes('service')) return 'microservices';
     if (fw.includes('clean') || fw.includes('hexagonal')) return 'clean-architecture';
-    if (fw.includes('event') || fw.includes('kafka') || fw.includes('rabbitmq'))
-      return 'event-driven';
+    if (fw.includes('event') || fw.includes('kafka') || fw.includes('rabbitmq')) return 'event-driven';
     return null;
   }
 
@@ -634,9 +619,7 @@ Return as JSON object.`;
   ): string {
     const passedChecks = bestPractices.filter(c => c.status === 'pass').length;
     const totalChecks = bestPractices.length;
-    const criticalIssues = securityIssues.filter(
-      i => i.severity === 'critical' || i.severity === 'high'
-    ).length;
+    const criticalIssues = securityIssues.filter(i => i.severity === 'critical' || i.severity === 'high').length;
 
     let reasoning = `Quality Score: ${score}/100. `;
 
@@ -668,7 +651,7 @@ Return as JSON object.`;
   /**
    * Quick quality score calculation (faster, less detailed)
    */
-  async calculateQuickQualityScore(code: string, language: string): Promise<number> {
+  async calculateQualityScore(code: string, language: string): Promise<number> {
     try {
       const prompt = `Quickly assess the quality of this ${language} code and provide a score from 0-100.
 
@@ -681,14 +664,14 @@ Consider: code quality, best practices, security, performance, style.
 
 Return only a number between 0-100.`;
 
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'quality_assessment',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
-        },
+          tools: []
+        }
       });
 
       // Extract number from response
@@ -724,7 +707,7 @@ Return only a number between 0-100.`;
           securityIssues: reviewResult.securityIssues,
           bestPractices: reviewResult.bestPractices.filter(bp => bp.status === 'fail'),
           performanceMetrics: reviewResult.performanceMetrics,
-          codeStyle: reviewResult.codeStyle,
+          codeStyle: reviewResult.codeStyle
         },
         artifactId || '',
         userId

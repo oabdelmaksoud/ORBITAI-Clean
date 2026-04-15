@@ -1,24 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
-import mongoose, { Types } from 'mongoose';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Project } from '../../models/Project.model.js';
-
-beforeAll(async () => {
-  const uri = process.env.TEST_MONGODB_URI || process.env.MONGODB_URI;
-  if (!uri) throw new Error('TEST_MONGODB_URI not set');
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri);
-  }
-});
-
-afterEach(async () => {
-  await Project.deleteMany({});
-});
-
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+import { Types } from 'mongoose';
 
 describe('Project Model', () => {
+  beforeEach(async () => {
+    await Project.deleteMany({});
+  });
+
   describe('Project Creation', () => {
     it('should create a project with valid data', async () => {
       const projectData = {

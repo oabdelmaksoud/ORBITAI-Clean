@@ -42,9 +42,9 @@ export function cache(options: CacheOptions = {}) {
       const cached = await redisService.get(cacheKey);
       if (cached) {
         logger.debug(`Cache hit: ${cacheKey}`);
-        res.json(cached); return;
+        return res.json(cached);
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.warn('Cache read error:', error);
     }
 

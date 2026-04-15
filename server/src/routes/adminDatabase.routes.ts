@@ -22,7 +22,7 @@ router.get('/collections', async (_req: AdminRequest, res, next) => {
       success: true,
       data: { collections }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -39,7 +39,7 @@ router.get('/stats/:collection', async (req: AdminRequest, res, next) => {
       success: true,
       data: stats
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -56,7 +56,7 @@ router.get('/schema/:collection', async (req: AdminRequest, res, next) => {
       success: true,
       data: schema
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -70,11 +70,10 @@ router.post('/query', async (req: AdminRequest, res, next) => {
     const { collection, query, projection, limit, skip, sort, readOnly } = req.body;
 
     if (!collection) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'Collection name is required'
       });
-      return;
     }
 
     const result = await adminDatabaseService.executeQuery(
@@ -95,7 +94,7 @@ router.post('/query', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -109,11 +108,10 @@ router.post('/update', async (req: AdminRequest, res, next) => {
     const { collection, filter, update, options } = req.body;
 
     if (!collection || !filter || !update) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'Collection, filter, and update are required'
       });
-      return;
     }
 
     const result = await adminDatabaseService.updateRecords(
@@ -131,7 +129,7 @@ router.post('/update', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -145,11 +143,10 @@ router.post('/delete', async (req: AdminRequest, res, next) => {
     const { collection, filter, limit } = req.body;
 
     if (!collection || !filter) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'Collection and filter are required'
       });
-      return;
     }
 
     const result = await adminDatabaseService.deleteRecords(
@@ -166,7 +163,7 @@ router.post('/delete', async (req: AdminRequest, res, next) => {
       success: true,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -180,11 +177,10 @@ router.post('/backup-collection', async (req: AdminRequest, res, next) => {
     const { collection } = req.body;
 
     if (!collection) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         error: 'Collection name is required'
       });
-      return;
     }
 
     const backup = await adminDatabaseService.backupCollection(
@@ -196,7 +192,7 @@ router.post('/backup-collection', async (req: AdminRequest, res, next) => {
       success: true,
       data: backup
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

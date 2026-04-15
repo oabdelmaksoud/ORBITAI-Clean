@@ -134,7 +134,7 @@ class SecurityTestGenerationService {
     };
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -161,7 +161,7 @@ class SecurityTestGenerationService {
         targetParameter: test.targetParameter
       }));
     } catch (error: unknown) {
-      logger.warn(`Failed to generate ${vulnType} tests:`, (error instanceof Error ? error.message : String(error)));
+      logger.warn(`Failed to generate ${vulnType} tests:`, error.message);
       return [];
     }
   }

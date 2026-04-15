@@ -12,6 +12,7 @@
 
 import { logger } from '../utils/logger.js';
 import { MCPServer } from '../models/MCPServer.model.js';
+import { agentMCPServerCreator } from './agentMCPServerCreator.js';
 
 export interface DynamicTool {
   id: string;
@@ -256,7 +257,7 @@ class DynamicToolingService {
   async discoverTools(): Promise<DynamicTool[]> {
     const discoveredTools: DynamicTool[] = [];
 
-    for (const [_id, source] of this.discoverySources) {
+    for (const [id, source] of this.discoverySources) {
       if (!source.enabled) continue;
 
       try {
@@ -264,7 +265,7 @@ class DynamicToolingService {
         discoveredTools.push(...tools);
         logger.info(`[DynamicTooling] Discovered ${tools.length} tools from ${source.name}`);
       } catch (error: unknown) {
-        logger.warn(`[DynamicTooling] Failed to discover tools from ${source.name}: ${(error instanceof Error ? error.message : String(error))}`);
+        logger.warn(`[DynamicTooling] Failed to discover tools from ${source.name}: ${error.message}`);
       }
     }
 

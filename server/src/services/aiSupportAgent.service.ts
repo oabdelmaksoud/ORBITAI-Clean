@@ -123,7 +123,7 @@ User Context:
 - Recent tickets: ${recentTickets.length > 0 ? recentTickets.map(t => `${t.subject} (${t.status})`).join(', ') : 'None'}
 - Previous chat ratings: ${avgRating ? `${avgRating.toFixed(1)}/5` : 'No ratings yet'}
 `;
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('[AI Support] Error getting user context:', error);
     return 'Unable to fetch user context.';
   }
@@ -207,7 +207,7 @@ Respond with the JSON object as specified. Remember to be helpful and empathetic
     }
 
     return aiResponse;
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('[AI Support] Error generating AI response:', error);
     return {
       message: "I'm experiencing some technical difficulties. Let me connect you with a human agent who can help you better.",
@@ -336,7 +336,7 @@ export async function processAIResponse(
     });
 
     return result;
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('[AI Support] Error processing AI response:', error);
     return { success: false };
   }

@@ -3,7 +3,7 @@
  * Advanced brainstorming agent with multiple frameworks and techniques
  */
 
-import { BrainstormingRoom} from '../models/BrainstormingRoom.model.js';
+import { BrainstormingRoom, IBrainstormingRoom } from '../models/BrainstormingRoom.model.js';
 import { llmRouter } from './llm/LLMRouter.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -89,7 +89,7 @@ class BrainstormingAgentService {
     roomId: string,
     framework: BrainstormingFramework = 'auto',
     count: number = 5,
-    _userId?: string
+    userId?: string
   ): Promise<IdeaGenerationResult> {
     try {
       const room = await BrainstormingRoom.findOne({ id: roomId });
@@ -1220,7 +1220,7 @@ Return only valid JSON, no additional text.`;
           overall: evaluation.overall || ((evaluation.feasibility + evaluation.impact + evaluation.innovation + evaluation.alignment) / 4) || 5
         };
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.warn('[BrainstormingAgent] Failed to evaluate idea:', error);
     }
 
@@ -1288,7 +1288,7 @@ Return only valid JSON, no additional text.`;
           recommendations: details.recommendations || []
         };
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.warn('[BrainstormingAgent] Failed to get detailed evaluation:', error);
     }
 
@@ -1338,7 +1338,7 @@ Return only valid JSON, no additional text.`;
     }));
   }
 
-  private fallbackHMWQuestions(topic: string, _ideas: any[]): any[] {
+  private fallbackHMWQuestions(topic: string, ideas: any[]): any[] {
     const templates = [
       `How might we improve ${topic}?`,
       `How might we make ${topic} more user-friendly?`,

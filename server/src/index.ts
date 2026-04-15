@@ -22,7 +22,7 @@ import { swaggerSpec } from './config/swagger.js';
 import { apiVersioning } from './middleware/apiVersioning.js';
 import { redisService } from './services/redis.service.js';
 import { queueService } from './services/queue.service.js';
-import { securityHeaders, generateNonce } from './middleware/securityHeaders.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
 import { requestTimeout } from './middleware/timeout.js';
 import { webSocketService } from './services/websocket.service.js';
 import { forceJsonResponse } from './middleware/forceJsonResponse.js';
@@ -49,14 +49,13 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = config.port;
 
-// Trust only the first proxy hop to get correct IP addresses (important for rate limiting)
-// Using numeric value 1 instead of true prevents IP spoofing via X-Forwarded-For
-app.set('trust proxy', 1);
+// Trust proxy to get correct IP addresses (important for rate limiting)
+// In development, this helps detect localhost correctly
+app.set('trust proxy', true);
 
 // Middleware
 app.use(helmet());
-app.use(generateNonce); // Generate per-request CSP nonce (must run before securityHeaders)
-app.use(securityHeaders); // Additional security headers (uses nonce from res.locals)
+app.use(securityHeaders); // Additional security headers
 
 // Security Headers for WebContainer Support (SharedArrayBuffer)
 // app.use((req, res, next) => {
@@ -66,55 +65,44 @@ app.use(securityHeaders); // Additional security headers (uses nonce from res.lo
 // });
 
 // CORS Configuration - configurable per environment
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, Postman, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
 
-      // Check if origin is in allowed list
-      if (origin) {
-        logger.debug(
-          `[CORS DEBUG] Request Origin: ${origin}, Is Allowed: ${config.corsOrigins.includes(origin)}`
-        );
-      }
+    // Check if origin is in allowed list
+    if (origin) {
+      logger.info(`[CORS DEBUG] Request Origin: ${origin}, Is Allowed: ${config.corsOrigins.includes(origin)}`);
+    }
 
-      if (config.corsOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // In development, restrict to localhost only
-        if (config.nodeEnv === 'development') {
-          const isLocalhost =
-            origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/);
-          if (isLocalhost) {
-            logger.warn(`CORS: Origin ${origin} not in allowed list, but allowing (localhost)`);
-            callback(null, true);
-          } else {
-            logger.warn(`CORS: Blocked external request in dev: ${origin}`);
-            callback(new Error('Not allowed by CORS (Dev Mode Restricted)'));
-          }
+    if (config.corsOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // In development, restrict to localhost only
+      if (config.nodeEnv === 'development') {
+        const isLocalhost = origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/);
+        if (isLocalhost) {
+          logger.warn(`CORS: Origin ${origin} not in allowed list, but allowing (localhost)`);
+          callback(null, true);
         } else {
-          // In production, reject unauthorized origins
-          logger.warn(`CORS: Blocked request from unauthorized origin: ${origin}`);
-          callback(new Error('Not allowed by CORS'));
+          logger.warn(`CORS: Blocked external request in dev: ${origin}`);
+          callback(new Error('Not allowed by CORS (Dev Mode Restricted)'));
         }
+      } else {
+        // In production, reject unauthorized origins
+        logger.warn(`CORS: Blocked request from unauthorized origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
       }
-    },
-    credentials: config.corsCredentials,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'x-user-id',
-      'bypass-tunnel-reminder',
-      'ngrok-skip-browser-warning',
-    ],
-    exposedHeaders: ['Content-Range', 'X-Total-Count'],
-    maxAge: 86400, // 24 hours
-  })
-);
+    }
+  },
+  credentials: config.corsCredentials,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'bypass-tunnel-reminder', 'ngrok-skip-browser-warning'],
+  exposedHeaders: ['Content-Range', 'X-Total-Count'],
+  maxAge: 86400 // 24 hours
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -142,37 +130,18 @@ app.use(apiVersioning);
 // Performance monitoring middleware (track all requests)
 app.use(performanceMonitor);
 
-// Swagger/OpenAPI documentation — dev/staging only, never exposed in production
-if (config.nodeEnv !== 'production') {
-  app.use(
-    '/api-docs',
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec, {
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'ORBITAI API Documentation',
-    })
-  );
-}
+// Swagger/OpenAPI documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'ORBITAI API Documentation',
+}));
 
 // Maintenance mode middleware (before routes)
 app.use(maintenanceModeMiddleware);
 
-// Health check (before rate limiting) — checks real dependency state
-app.get('/health', async (_req, res) => {
-  const mongoState = mongoose.connection.readyState; // 1 = connected
-  let redisOk = false;
-  try {
-    redisOk = await redisService.checkConnection();
-  } catch {
-    // redis unavailable
-  }
-  const healthy = mongoState === 1 && redisOk;
-  res.status(healthy ? 200 : 503).json({
-    status: healthy ? 'ok' : 'degraded',
-    mongodb: mongoState === 1 ? 'connected' : 'disconnected',
-    redis: redisOk ? 'connected' : 'disconnected',
-    timestamp: new Date().toISOString(),
-  });
+// Health check (before rate limiting)
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Register routes via auto-loader
@@ -184,8 +153,8 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
     error: {
-      message: `API endpoint not found: ${req.method} ${req.originalUrl}`,
-    },
+      message: `API endpoint not found: ${req.method} ${req.originalUrl}`
+    }
   });
 });
 
@@ -194,7 +163,7 @@ app.use(errorHandler);
 
 // Startup timing helper
 const startupTimings: { name: string; duration: number }[] = [];
-// const _startupStart = Date.now();
+const startupStart = Date.now();
 
 function trackTiming(name: string, startTime: number) {
   const duration = Date.now() - startTime;
@@ -214,21 +183,20 @@ async function startServer() {
     trackTiming('Database connection', dbStart);
     logger.info('Database connected successfully');
 
-    // PHASE 2: Core Services (Depends on Database)
-    logger.info('[PHASE 2] Initializing WebSocket updates...');
+    // PHASE 2: Start HTTP server IMMEDIATELY after DB (accept connections early)
+    // Initialize WebSocket service
     webSocketService.initialize(httpServer);
 
-    // Dynamic service loading
-    const [{ generationStatusService }, { voiceWebSocketService }] = await Promise.all([
-      import('./services/GenerationStatus.service.js'),
-      import('./services/voiceWebSocket.service.js'),
-    ]);
-
+    // Connect GenerationStatus service to WebSocket for real-time Mission Control updates
+    const { generationStatusService } = await import('./services/GenerationStatus.service.js');
     generationStatusService.setSocketEmitter(webSocketService.getGenerationStatusEmitter());
-    voiceWebSocketService.initialize(httpServer);
-    logger.info('[PHASE 2] Core services active');
+    logger.info('[GenerationStatus] Real-time generation status enabled');
 
-    logger.info(`[PHASE 2] Finalizing startup on port ${PORT}...`);
+    // Initialize Voice WebSocket service (must be before httpServer.listen)
+    const { voiceWebSocketService } = await import('./services/voiceWebSocket.service.js');
+    voiceWebSocketService.initialize(httpServer);
+    logger.info('[VoiceWebSocket] Voice WebSocket service initialized on /ws/voice');
+
     httpServer.listen(PORT, () => {
       const listenTime = Date.now() - serverStartTime;
       logger.info(`🚀 OrbitAI Backend Server running on port ${PORT} (${listenTime}ms)`);
@@ -240,17 +208,11 @@ async function startServer() {
 
     // Redis & Queue - non-blocking
     redisService.connect().catch((error: unknown) => {
-      logger.warn(
-        'Redis initialization failed, continuing without cache:',
-        toApiError(error).message
-      );
+      logger.warn('Redis initialization failed, continuing without cache:', toApiError(error).message);
     });
 
     queueService.initialize().catch((error: unknown) => {
-      logger.warn(
-        'Queue service initialization failed, continuing without queues:',
-        toApiError(error).message
-      );
+      logger.warn('Queue service initialization failed, continuing without queues:', toApiError(error).message);
     });
 
     // PHASE 4: Parallel service initialization (all independent services at once)
@@ -261,15 +223,13 @@ async function startServer() {
       import('./services/featureFlagAdapter.js')
         .then(({ initializeFeatureFlags }) => initializeFeatureFlags())
         .then(() => logger.info('✅ Feature Flag Service initialized'))
-        .catch(error => logger.warn('Failed to initialize feature flag service:', error.message)),
+        .catch((error) => logger.warn('Failed to initialize feature flag service:', error.message)),
 
       // LLM Router Settings
       import('./services/llmRouterSettings.service.js')
-        .then(({ llmRouterSettingsService }) =>
-          llmRouterSettingsService.initializeDefaultSettings()
-        )
+        .then(({ llmRouterSettingsService }) => llmRouterSettingsService.initializeDefaultSettings())
         .then(() => logger.info('✅ LLM Router Settings initialized'))
-        .catch(error => logger.warn('Failed to initialize LLM router settings:', error.message)),
+        .catch((error) => logger.warn('Failed to initialize LLM router settings:', error.message)),
 
       // Model Registry - Load models from database (including synced models)
       import('./services/llm/models/ModelRegistry.js')
@@ -278,19 +238,13 @@ async function startServer() {
           logger.info('✅ Model Registry initialized from database');
 
           // Migrate environment keys to database AFTER ModelRegistry is initialized
-          return import('./services/apiKeyManagement.service.js').then(
-            async ({ apiKeyManagement }) => {
+          return import('./services/apiKeyManagement.service.js')
+            .then(async ({ apiKeyManagement }) => {
               await apiKeyManagement.migrateEnvKeysToDb();
               logger.info('✅ Environment API keys migrated to database');
-            }
-          );
+            });
         })
-        .catch((error: unknown) =>
-          logger.warn(
-            'Failed to initialize model registry or migrate API keys:',
-            toApiError(error).message
-          )
-        ),
+        .catch((error: unknown) => logger.warn('Failed to initialize model registry or migrate API keys:', toApiError(error).message)),
 
       // Model Sync Service - Load sync status and start monthly scheduler
       import('./services/modelSync.service.js')
@@ -301,46 +255,44 @@ async function startServer() {
           modelSyncService.startMonthlySync();
           logger.info('✅ Model Sync monthly scheduler started');
         })
-        .catch((error: unknown) =>
-          logger.warn('Failed to start model sync scheduler:', toApiError(error).message)
-        ),
+        .catch((error: unknown) => logger.warn('Failed to start model sync scheduler:', toApiError(error).message)),
 
       // Service imports (just verify they load, no initialization needed)
       import('./services/processMining.service.js')
         .then(() => logger.info('✅ Process Mining service ready'))
-        .catch(error => logger.warn('Process Mining service failed:', error.message)),
+        .catch((error) => logger.warn('Process Mining service failed:', error.message)),
 
       import('./services/nlp.service.js')
         .then(() => logger.info('✅ NLP service ready'))
-        .catch(error => logger.warn('NLP service failed:', error.message)),
+        .catch((error) => logger.warn('NLP service failed:', error.message)),
 
       import('./services/processAnalytics.service.js')
         .then(() => logger.info('✅ Process Analytics service ready'))
-        .catch(error => logger.warn('Process Analytics service failed:', error.message)),
+        .catch((error) => logger.warn('Process Analytics service failed:', error.message)),
 
       import('./services/workflowEngine.service.js')
         .then(() => logger.info('✅ Workflow Engine service ready'))
-        .catch(error => logger.warn('Workflow Engine service failed:', error.message)),
+        .catch((error) => logger.warn('Workflow Engine service failed:', error.message)),
 
       import('./services/collaborativeWiki.service.js')
         .then(() => logger.info('✅ Collaborative Wiki service ready'))
-        .catch(error => logger.warn('Collaborative Wiki service failed:', error.message)),
+        .catch((error) => logger.warn('Collaborative Wiki service failed:', error.message)),
 
       import('./services/aiOptimization.service.js')
         .then(() => logger.info('✅ AI Optimization service ready'))
-        .catch(error => logger.warn('AI Optimization service failed:', error.message)),
+        .catch((error) => logger.warn('AI Optimization service failed:', error.message)),
 
       import('./services/processSimulation.service.js')
         .then(() => logger.info('✅ Process Simulation service ready'))
-        .catch(error => logger.warn('Process Simulation service failed:', error.message)),
+        .catch((error) => logger.warn('Process Simulation service failed:', error.message)),
 
       import('./services/complianceAudit.service.js')
         .then(() => logger.info('✅ Compliance & Audit service ready'))
-        .catch(error => logger.warn('Compliance & Audit service failed:', error.message)),
+        .catch((error) => logger.warn('Compliance & Audit service failed:', error.message)),
 
       import('./services/communitySharing.service.js')
         .then(() => logger.info('✅ Community Sharing service ready'))
-        .catch(error => logger.warn('Community Sharing service failed:', error.message)),
+        .catch((error) => logger.warn('Community Sharing service failed:', error.message)),
 
       import('./services/processImprovement.service.js')
         .then(({ processImprovementService }) => {
@@ -362,22 +314,19 @@ async function startServer() {
           }, 10000); // Increased delay to 10 seconds
 
           // Schedule periodic cleanup every 10 minutes to prevent stuck improvements
-          setInterval(
-            () => {
-              processImprovementService.cleanupStuckImprovements(5).catch((error: any) => {
-                logger.warn('Periodic cleanup of stuck improvements failed:', error.message);
-              });
-            },
-            10 * 60 * 1000
-          ); // Every 10 minutes
+          setInterval(() => {
+            processImprovementService.cleanupStuckImprovements(5).catch((error: any) => {
+              logger.warn('Periodic cleanup of stuck improvements failed:', error.message);
+            });
+          }, 10 * 60 * 1000); // Every 10 minutes
         })
-        .catch(error => logger.warn('Process Improvement service failed:', error.message)),
+        .catch((error) => logger.warn('Process Improvement service failed:', error.message)),
 
       // Backup scheduler
       import('./services/backupScheduler.service.js')
         .then(({ backupScheduler }) => backupScheduler.start())
         .then(() => logger.info('✅ Backup scheduler initialized'))
-        .catch(error => logger.warn('Backup scheduler failed:', error.message)),
+        .catch((error) => logger.warn('Backup scheduler failed:', error.message)),
     ];
 
     // Wait for all parallel initializations
@@ -400,7 +349,7 @@ async function startServer() {
         // Start with skipInitialRun to avoid immediate aggregation
         agentKnowledgeAggregator.start(1, true); // 1 hour interval, skip initial run
         logger.info('✅ Agent Knowledge Aggregator scheduled (runs every hour)');
-      } catch (error: unknown) {
+      } catch (error) {
         logger.warn('Failed to start agent knowledge aggregator');
       }
 
@@ -424,11 +373,8 @@ async function startServer() {
 
         logger.info('\n📡 MCP Server Configuration Status:');
         mcpHealth.forEach(health => {
-          const statusIcon =
-            health.status === 'healthy' ? '✅' : health.status === 'degraded' ? '⚠️' : '❌';
-          logger.info(
-            `   ${statusIcon} ${health.name} (${health.serverId}): ${health.status.toUpperCase()}`
-          );
+          const statusIcon = health.status === 'healthy' ? '✅' : health.status === 'degraded' ? '⚠️' : '❌';
+          logger.info(`   ${statusIcon} ${health.name} (${health.serverId}): ${health.status.toUpperCase()}`);
         });
 
         mcpService.startHealthChecks(5 * 60 * 1000);
@@ -443,7 +389,7 @@ async function startServer() {
 
         import('./services/seedHomepageContent.service.js')
           .then(({ seedHomepageContent }) => seedHomepageContent())
-          .catch(() => {}),
+          .catch(() => { }),
         // import('./services/seedStandards.service.js').catch(() => { }), // File missing
         // import('./services/seedAgentKnowledge.service.js').catch(() => { }), // File missing
         // import('./services/ensureDefaultAdmin.service.js').catch(() => { }), // File missing
@@ -461,18 +407,18 @@ async function startServer() {
         const e2bSource = await apiKeyProvider.getApiKeySource('e2b');
 
         logger.info(`\n🔑 API Keys:`);
-        logger.info(
-          `   Gemini: ${geminiConfigured ? `✅ (${geminiSource})` : '❌ Not configured'}`
-        );
+        logger.info(`   Gemini: ${geminiConfigured ? `✅ (${geminiSource})` : '❌ Not configured'}`);
         logger.info(`   E2B: ${e2bConfigured ? `✅ (${e2bSource})` : '❌ Not configured'}`);
-      } catch {}
+      } catch { }
 
       // Print startup timing summary
       const totalTime = Date.now() - serverStartTime;
       logger.info(`\n⏱️  Startup Performance:`);
       startupTimings.forEach(t => logger.info(`   ${t.name}: ${t.duration}ms`));
       logger.info(`   Total startup time: ${totalTime}ms`);
+
     }, 100); // Small delay to let server start accepting connections first
+
   } catch (error: unknown) {
     logger.error('Failed to start server:', toApiError(error));
     process.exit(1);

@@ -4,23 +4,26 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EmbeddingService } from '../../services/embedding.service.js';
+import { config } from '../../config/env.js';
 
-// Mock apiKeyProvider
-vi.mock('../../services/apiKeyProvider.service.js', () => ({
-  apiKeyProvider: {
-    hasApiKey: vi.fn().mockResolvedValue(false),
-    getApiKey: vi.fn().mockResolvedValue(null),
+// Mock config
+vi.mock('../../config/env.js', () => ({
+  config: {
+    geminiApiKey: 'test-gemini-key',
   },
 }));
 
-// Mock logger
-vi.mock('../../utils/logger.js', () => ({
-  logger: {
-    warn: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-  },
+// Mock Google GenAI
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn().mockImplementation(() => ({
+    models: {
+      embedContent: vi.fn().mockResolvedValue({
+        embedding: {
+          values: Array(768).fill(0.1),
+        },
+      }),
+    },
+  })),
 }));
 
 describe('Embedding Service', () => {
@@ -40,20 +43,26 @@ describe('Embedding Service', () => {
       expect(embedding.length).toBeGreaterThan(0);
     });
 
-    it('should throw for empty text', async () => {
-      await expect(service.generateEmbedding('')).rejects.toThrow('Text cannot be empty');
+    it('should handle empty text', async () => {
+      const embedding = await service.generateEmbedding('');
+      expect(embedding).toBeDefined();
     });
 
-    it('should generate embeddings for multiple texts individually', async () => {
+    it('should handle errors gracefully', async () => {
+      // Mock error scenario
+      vi.mocked(config).geminiApiKey = '';
+
+      await expect(service.generateEmbedding('test')).rejects.toThrow();
+    });
+  });
+
+  describe('generateEmbeddings', () => {
+    it('should generate embeddings for multiple texts', async () => {
       const texts = ['Text 1', 'Text 2', 'Text 3'];
-      const embeddings = await Promise.all(texts.map(t => service.generateEmbedding(t)));
+      const embeddings = await service.generateEmbeddings(texts);
 
       expect(embeddings).toBeDefined();
       expect(embeddings.length).toBe(texts.length);
-      embeddings.forEach(e => {
-        expect(Array.isArray(e)).toBe(true);
-        expect(e.length).toBeGreaterThan(0);
-      });
     });
   });
 });

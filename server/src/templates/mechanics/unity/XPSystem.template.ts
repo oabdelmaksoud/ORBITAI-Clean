@@ -212,36 +212,21 @@ export const UNITY_XP_SYSTEM_CONFIG: MechanicsTemplate = {
     language: 'csharp',
     code: UNITY_XP_SYSTEM_CODE,
     variables: [
-        { name: 'STARTING_LEVEL', type: 'number', default: 1, // @ts-ignore
-  description: 'Initial player level' },
-        { name: 'MAX_LEVEL', type: 'number', default: 50, // @ts-ignore
-  description: 'Maximum achievable level' },
-        { name: 'BASE_XP_REQUIREMENT', type: 'number', default: 100, // @ts-ignore
-  description: 'XP needed for level 2' },
-        { name: 'XP_SCALING_FACTOR', type: 'number', default: 1.5, // @ts-ignore
-  description: 'Exponential XP scaling per level' },
-        { name: 'BASE_STATS', type: 'string', default: 'baseStats', // @ts-ignore
-  description: 'Variable name for base stats' },
-        { name: 'MAX_HEALTH', type: 'string', default: 'maxHealth', // @ts-ignore
-  description: 'Health stat property name' },
-        { name: 'ATTACK_POWER', type: 'string', default: 'attackPower', // @ts-ignore
-  description: 'Attack stat property name' },
-        { name: 'DEFENSE', type: 'string', default: 'defense', // @ts-ignore
-  description: 'Defense stat property name' },
-        { name: 'MOVE_SPEED', type: 'string', default: 'moveSpeed', // @ts-ignore
-  description: 'Speed stat property name' },
-        { name: 'HEALTH_PER_LEVEL', type: 'number', default: 10, // @ts-ignore
-  description: 'Health increase per level' },
-        { name: 'ATTACK_PER_LEVEL', type: 'number', default: 2, // @ts-ignore
-  description: 'Attack increase per level' },
-        { name: 'DEFENSE_PER_LEVEL', type: 'number', default: 1, // @ts-ignore
-  description: 'Defense increase per level' },
-        { name: 'SPEED_PER_LEVEL', type: 'number', default: 0.1, // @ts-ignore
-  description: 'Speed increase per level' },
-        { name: 'ON_LEVEL_UP', type: 'string', default: 'onLevelUp', // @ts-ignore
-  description: 'Level up event name' },
-        { name: 'ON_XP_GAINED', type: 'string', default: 'onXPGained', // @ts-ignore
-  description: 'XP gained event name' }
+        { name: 'STARTING_LEVEL', type: 'number', default: 1, description: 'Initial player level' },
+        { name: 'MAX_LEVEL', type: 'number', default: 50, description: 'Maximum achievable level' },
+        { name: 'BASE_XP_REQUIREMENT', type: 'number', default: 100, description: 'XP needed for level 2' },
+        { name: 'XP_SCALING_FACTOR', type: 'number', default: 1.5, description: 'Exponential XP scaling per level' },
+        { name: 'BASE_STATS', type: 'string', default: 'baseStats', description: 'Variable name for base stats' },
+        { name: 'MAX_HEALTH', type: 'string', default: 'maxHealth', description: 'Health stat property name' },
+        { name: 'ATTACK_POWER', type: 'string', default: 'attackPower', description: 'Attack stat property name' },
+        { name: 'DEFENSE', type: 'string', default: 'defense', description: 'Defense stat property name' },
+        { name: 'MOVE_SPEED', type: 'string', default: 'moveSpeed', description: 'Speed stat property name' },
+        { name: 'HEALTH_PER_LEVEL', type: 'number', default: 10, description: 'Health increase per level' },
+        { name: 'ATTACK_PER_LEVEL', type: 'number', default: 2, description: 'Attack increase per level' },
+        { name: 'DEFENSE_PER_LEVEL', type: 'number', default: 1, description: 'Defense increase per level' },
+        { name: 'SPEED_PER_LEVEL', type: 'number', default: 0.1, description: 'Speed increase per level' },
+        { name: 'ON_LEVEL_UP', type: 'string', default: 'onLevelUp', description: 'Level up event name' },
+        { name: 'ON_XP_GAINED', type: 'string', default: 'onXPGained', description: 'XP gained event name' }
     ],
     dependencies: [
         'Unity 2020.3+',
@@ -313,7 +298,6 @@ xpSystem.LoadSaveData(save);
 - Level-based unlock systems
 - Prestige/rebirth mechanics
 `,
-    // @ts-ignore
-  version: '1.0.0',
+    version: '1.0.0',
     tags: ['progression', 'xp', 'leveling', 'stats', 'rpg']
 };

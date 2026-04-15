@@ -5,6 +5,7 @@
 
 import { createClient, RedisClientType } from 'redis';
 import { logger } from '../utils/logger.js';
+import { config } from '../config/env.js';
 
 class RedisService {
   private client: RedisClientType | null = null;
@@ -25,7 +26,7 @@ class RedisService {
         url: redisUrl,
       });
 
-      this.client.on('error', err => {
+      this.client.on('error', (err) => {
         logger.error('Redis Client Error:', err);
         this.connected = false;
       });
@@ -38,10 +39,7 @@ class RedisService {
       await this.client.connect();
       logger.info('Redis service initialized');
     } catch (error: unknown) {
-      logger.warn(
-        'Redis connection failed, continuing without cache:',
-        error instanceof Error ? error.message : String(error)
-      );
+      logger.warn('Redis connection failed, continuing without cache:', error.message);
       this.client = null;
       this.connected = false;
     }
@@ -69,7 +67,7 @@ class RedisService {
     try {
       const value = await this.client.get(key);
       return value ? (JSON.parse(value) as T) : null;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Redis get error for key ${key}:`, error);
       return null;
     }
@@ -91,7 +89,7 @@ class RedisService {
         await this.client.set(key, serialized);
       }
       return true;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Redis set error for key ${key}:`, error);
       return false;
     }
@@ -108,7 +106,7 @@ class RedisService {
     try {
       await this.client.del(key);
       return true;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Redis delete error for key ${key}:`, error);
       return false;
     }
@@ -123,18 +121,13 @@ class RedisService {
     }
 
     try {
-      let cursor = 0;
-      let deleted = 0;
-      do {
-        const result = await this.client.scan(String(cursor), { MATCH: pattern, COUNT: 100 });
-        cursor = typeof result.cursor === 'string' ? parseInt(result.cursor, 10) : result.cursor;
-        if (result.keys.length > 0) {
-          await this.client.del(result.keys);
-          deleted += result.keys.length;
-        }
-      } while (cursor !== 0);
-      return deleted;
-    } catch (error: unknown) {
+      const keys = await this.client.keys(pattern);
+      if (keys.length === 0) {
+        return 0;
+      }
+      await this.client.del(keys);
+      return keys.length;
+    } catch (error) {
       logger.error(`Redis deletePattern error for pattern ${pattern}:`, error);
       return 0;
     }

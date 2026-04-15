@@ -6,6 +6,7 @@
 
 import { logger } from '../utils/logger.js';
 import { codeQualityAssuranceService } from './codeQualityAssurance.service.js';
+import { testGenerationService } from './testGeneration.service.js';
 import { Project } from '../models/Project.model.js';
 import { requirementsComplianceService } from './requirementsCompliance.service.js';
 import { Artifact } from '../models/Artifact.model.js';
@@ -158,7 +159,7 @@ class QualityGateService {
         passed: false,
         score: 0,
         checks: [],
-        blockers: [`Quality gate check failed: ${(error instanceof Error ? error.message : String(error))}`],
+        blockers: [`Quality gate check failed: ${error.message}`],
         warnings: [],
         recommendations: ['Review project manually']
       };
@@ -194,13 +195,13 @@ class QualityGateService {
 
       for (const artifact of codeArtifacts.slice(0, 5)) { // Limit to 5 for performance
         try {
-          const score = await (codeQualityAssuranceService as any).calculateQualityScore(
+          const score = await codeQualityAssuranceService.calculateQualityScore(
             artifact.content || '',
             this.detectLanguage(artifact.title || '')
           );
           totalScore += score;
           evaluatedCount++;
-        } catch (error: unknown) {
+        } catch (error) {
           // Skip failed evaluations
         }
       }
@@ -222,7 +223,7 @@ class QualityGateService {
         status: 'fail',
         score: 0,
         threshold: options.minCodeQuality || this.DEFAULT_MIN_CODE_QUALITY,
-        message: `Code quality check failed: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Code quality check failed: ${error.message}`
       };
     }
   }
@@ -273,7 +274,7 @@ class QualityGateService {
         status: 'fail',
         score: 0,
         threshold: options.minTestCoverage || this.DEFAULT_MIN_TEST_COVERAGE,
-        message: `Test coverage check failed: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Test coverage check failed: ${error.message}`
       };
     }
   }
@@ -331,7 +332,7 @@ class QualityGateService {
         status: 'warning',
         score: 50,
         threshold: 0,
-        message: `Security scan incomplete: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Security scan incomplete: ${error.message}`
       };
     }
   }
@@ -380,7 +381,7 @@ class QualityGateService {
         status: 'warning',
         score: 50,
         threshold: 70,
-        message: `Documentation check failed: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Documentation check failed: ${error.message}`
       };
     }
   }
@@ -413,7 +414,7 @@ class QualityGateService {
         status: 'warning',
         score: 50,
         threshold: 0,
-        message: `Build check incomplete: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Build check incomplete: ${error.message}`
       };
     }
   }
@@ -459,7 +460,7 @@ class QualityGateService {
         status: 'warning',
         score: 50,
         threshold: 80,
-        message: `Standards compliance check failed: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Standards compliance check failed: ${error.message}`
       };
     }
   }
@@ -509,7 +510,7 @@ class QualityGateService {
         status: 'warning',
         score: 50,
         threshold: options.minRequirementsCoverage || this.DEFAULT_MIN_REQUIREMENTS_COVERAGE,
-        message: `Requirements compliance check failed: ${(error instanceof Error ? error.message : String(error))}`
+        message: `Requirements compliance check failed: ${error.message}`
       };
     }
   }

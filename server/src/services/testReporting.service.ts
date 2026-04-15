@@ -66,8 +66,8 @@ class TestReportingService {
       // Get test artifacts
       const testArtifacts = await Artifact.find({
         projectId,
-        type: 'test-plan',
-      }).lean() as any;
+        type: 'test-plan'
+      }).lean();
 
       // Calculate coverage (if test results provided)
       const coverage = testResults
@@ -80,8 +80,9 @@ class TestReportingService {
         : this.estimateExecutionMetrics(testArtifacts);
 
       // Calculate failure rate
-      const failureRate =
-        execution.totalTests > 0 ? (execution.failed / execution.totalTests) * 100 : 0;
+      const failureRate = execution.totalTests > 0
+        ? (execution.failed / execution.totalTests) * 100
+        : 0;
 
       // Get flaky tests count (would integrate with flaky test service)
       const flakyTests = 0; // Placeholder
@@ -97,7 +98,7 @@ class TestReportingService {
         failureRate: Math.round(failureRate * 100) / 100,
         flakyTests,
         trends,
-        generatedAt: new Date(),
+        generatedAt: new Date()
       };
     } catch (error: unknown) {
       logger.error('Failed to generate test report:', error);
@@ -111,7 +112,9 @@ class TestReportingService {
   private calculateCoverage(
     testResults: Array<{ coverage?: TestCoverageMetrics }>
   ): TestCoverageMetrics {
-    const coverages = testResults.filter(r => r.coverage).map(r => r.coverage!);
+    const coverages = testResults
+      .filter(r => r.coverage)
+      .map(r => r.coverage!);
 
     if (coverages.length === 0) {
       return {
@@ -119,22 +122,15 @@ class TestReportingService {
         statements: 0,
         functions: 0,
         branches: 0,
-        overall: 0,
+        overall: 0
       };
     }
 
-    const avg: {
-      lines: number;
-      statements: number;
-      functions: number;
-      branches: number;
-      overall: number;
-    } = {
+    const avg = {
       lines: coverages.reduce((sum, c) => sum + c.lines, 0) / coverages.length,
       statements: coverages.reduce((sum, c) => sum + c.statements, 0) / coverages.length,
       functions: coverages.reduce((sum, c) => sum + c.functions, 0) / coverages.length,
-      branches: coverages.reduce((sum, c) => sum + c.branches, 0) / coverages.length,
-      overall: 0,
+      branches: coverages.reduce((sum, c) => sum + c.branches, 0) / coverages.length
     };
 
     avg.overall = (avg.lines + avg.statements + avg.functions + avg.branches) / 4;
@@ -144,7 +140,7 @@ class TestReportingService {
       statements: Math.round(avg.statements),
       functions: Math.round(avg.functions),
       branches: Math.round(avg.branches),
-      overall: Math.round(avg.overall),
+      overall: Math.round(avg.overall)
     };
   }
 
@@ -167,7 +163,7 @@ class TestReportingService {
       statements: estimated,
       functions: estimated,
       branches: estimated - 10, // Branches usually lower
-      overall: estimated,
+      overall: estimated
     };
   }
 
@@ -190,7 +186,7 @@ class TestReportingService {
       .slice(0, 10)
       .map(r => ({
         testName: r.testName,
-        duration: r.duration,
+        duration: r.duration
       }));
 
     return {
@@ -200,7 +196,7 @@ class TestReportingService {
       skipped,
       duration,
       averageExecutionTime: Math.round(averageExecutionTime * 100) / 100,
-      slowestTests,
+      slowestTests
     };
   }
 
@@ -218,14 +214,14 @@ class TestReportingService {
       skipped: 0,
       duration: estimatedDuration,
       averageExecutionTime: 100,
-      slowestTests: [],
+      slowestTests: []
     };
   }
 
   /**
    * Generate trends
    */
-  private generateTrends(_projectId: string): TestReport['trends'] {
+  private generateTrends(projectId: string): TestReport['trends'] {
     // Placeholder: would query historical test execution data
     return [];
   }
@@ -260,7 +256,7 @@ class TestReportingService {
   <div class="metrics">
     <div class="metric">
       <h3>Coverage</h3>
-      <div class="value">${(report.coverage as any).overall}%</div>
+      <div class="value">${report.coverage.overall}%</div>
     </div>
     <div class="metric">
       <h3>Tests Passed</h3>

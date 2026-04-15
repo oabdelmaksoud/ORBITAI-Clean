@@ -1,9 +1,9 @@
 /**
  * API Key Provider Service
- * API keys are retrieved from encrypted database storage first,
- * with fallback to environment variables for development convenience.
+ * SECURITY: API keys are ONLY retrieved from encrypted database storage
+ * Environment variables are NOT used to prevent security breaches
  *
- * To add API keys: Admin Console → Settings → API Keys or set in .env
+ * To add API keys: Admin Console → Settings → API Keys
  */
 
 import { apiKeyManagement } from './apiKeyManagement.service.js';
@@ -11,28 +11,7 @@ import { logger } from '../utils/logger.js';
 import { UserSettings } from '../models/UserSettings.model.js';
 import { userApiKeyEncryption } from './userApiKeyEncryption.service.js';
 
-export type APIKeyProvider =
-  | 'gemini'
-  | 'openai'
-  | 'anthropic'
-  | 'deepseek'
-  | 'grok'
-  | 'mistral'
-  | 'qwen'
-  | 'huggingface'
-  | 'e2b'
-  | 'google_search'
-  | 'openrouter'
-  | 'groq'
-  | 'vertex'
-  | 'azure'
-  | 'custom'
-  | 'ollama'
-  | 'vllm'
-  | 'openai_compatible'
-  | 'tripo'
-  | 'flux'
-  | 'sloyd';
+export type APIKeyProvider = 'gemini' | 'openai' | 'anthropic' | 'deepseek' | 'grok' | 'mistral' | 'qwen' | 'huggingface' | 'e2b' | 'google_search' | 'openrouter' | 'groq' | 'vertex' | 'azure' | 'custom' | 'ollama' | 'vllm' | 'openai_compatible' | 'tripo' | 'flux' | 'sloyd';
 
 export type ApiKeyPreference = 'user' | 'platform' | 'user_then_platform';
 
@@ -60,47 +39,20 @@ class APIKeyProviderService {
 
     try {
       // Only use database (encrypted, secure)
-      const dbKey = await apiKeyManagement.getActiveKeyForProvider(provider as any);
+      const dbKey = await apiKeyManagement.getActiveKeyForProvider(provider);
       if (dbKey) {
         this.cache.set(provider, dbKey);
         this.cacheExpiry.set(provider, Date.now() + this.CACHE_TTL);
         logger.debug(`API key for ${provider} retrieved from database`);
         return dbKey;
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Failed to get API key from database for ${provider}:`, error);
     }
 
-    // Fallback to environment variable for development convenience
-    const envKeyMap: Partial<Record<APIKeyProvider, string>> = {
-      openai: 'OPENAI_API_KEY',
-      gemini: 'GEMINI_API_KEY',
-      anthropic: 'ANTHROPIC_API_KEY',
-      deepseek: 'DEEPSEEK_API_KEY',
-      grok: 'GROK_API_KEY',
-      mistral: 'MISTRAL_API_KEY',
-      groq: 'GROQ_API_KEY',
-      qwen: 'QWEN_API_KEY',
-      openrouter: 'OPENROUTER_API_KEY',
-    };
-    const envVarName = envKeyMap[provider];
-    if (envVarName) {
-      const envKey = process.env[envVarName];
-      if (envKey && envKey.trim() !== '') {
-        if (!silent) {
-          logger.info(`[APIKeyProvider] Using ${provider} API key from environment (.env)`);
-        }
-        this.cache.set(provider, envKey);
-        this.cacheExpiry.set(provider, Date.now() + this.CACHE_TTL);
-        return envKey;
-      }
-    }
-
-    // No key found
+    // No key found - return null (don't fallback to env vars for security)
     if (!silent) {
-      logger.warn(
-        `⚠️  API key for ${provider} not found. Add it via Admin Console → Settings → API Keys or set in .env`
-      );
+      logger.warn(`⚠️  API key for ${provider} not found in database. Add it via Admin Console → Settings → API Keys`);
     }
     this.cache.set(provider, null);
     this.cacheExpiry.set(provider, Date.now() + this.CACHE_TTL);
@@ -111,15 +63,13 @@ class APIKeyProviderService {
    * Get API key with metadata for providers that need additional configuration
    * (e.g., Google Search needs engineId alongside the API key)
    */
-  async getApiKeyWithMetadata(
-    provider: APIKeyProvider
-  ): Promise<{ apiKey: string; metadata?: any } | null> {
+  async getApiKeyWithMetadata(provider: APIKeyProvider): Promise<{ apiKey: string; metadata?: any } | null> {
     try {
-      const result = await apiKeyManagement.getActiveKeyWithMetadata(provider as any);
+      const result = await apiKeyManagement.getActiveKeyWithMetadata(provider);
       if (result) {
         return result;
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Failed to get API key with metadata from database for ${provider}:`, error);
     }
 
@@ -135,7 +85,7 @@ class APIKeyProviderService {
       if (result && result.metadata?.additionalConfig?.engineId) {
         return result.metadata.additionalConfig.engineId;
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error('Failed to get Google Search Engine ID from database:', error);
     }
 
@@ -155,9 +105,9 @@ class APIKeyProviderService {
    */
   async hasDatabaseKey(provider: APIKeyProvider): Promise<boolean> {
     try {
-      const dbKey = await apiKeyManagement.getActiveKeyForProvider(provider as any);
+      const dbKey = await apiKeyManagement.getActiveKeyForProvider(provider);
       return !!dbKey && dbKey.trim().length > 0;
-    } catch (error: unknown) {
+    } catch (error) {
       return false;
     }
   }
@@ -190,22 +140,9 @@ class APIKeyProviderService {
    */
   async getConfiguredProviders(): Promise<APIKeyProvider[]> {
     const providers: APIKeyProvider[] = [
-      'gemini',
-      'openai',
-      'anthropic',
-      'deepseek',
-      'grok',
-      'mistral',
-      'qwen',
-      'e2b',
-      'google_search',
-      'openrouter',
-      'groq',
-      'vertex',
-      'azure',
-      'tripo',
-      'flux',
-      'sloyd',
+      'gemini', 'openai', 'anthropic', 'deepseek', 'grok', 'mistral',
+      'qwen', 'e2b', 'google_search', 'openrouter', 'groq', 'vertex', 'azure',
+      'tripo', 'flux', 'sloyd'
     ];
 
     const configured: APIKeyProvider[] = [];
@@ -272,10 +209,7 @@ class APIKeyProviderService {
 
         return decryptedKey;
       } catch (decryptError: any) {
-        logger.error(
-          `Failed to decrypt API key for user ${userId}, provider ${provider}:`,
-          decryptError
-        );
+        logger.error(`Failed to decrypt API key for user ${userId}, provider ${provider}:`, decryptError);
         return null;
       }
     } catch (error: unknown) {
@@ -302,15 +236,10 @@ class APIKeyProviderService {
     }
 
     // Get effective preference (check provider override first, then global preference, then default)
-    const effectivePreference =
-      preference ||
-      (userId ? await this.getEffectiveApiKeyPreference(userId, provider) : 'user_then_platform');
+    const effectivePreference = preference || (userId ? await this.getEffectiveApiKeyPreference(userId, provider) : 'user_then_platform');
 
     // Try user key first if preference allows
-    if (
-      userId &&
-      (effectivePreference === 'user' || effectivePreference === 'user_then_platform')
-    ) {
+    if (userId && (effectivePreference === 'user' || effectivePreference === 'user_then_platform')) {
       const userKey = await this.getUserApiKey(userId, provider);
       if (userKey) {
         return { apiKey: userKey, source: 'user' };
@@ -342,7 +271,7 @@ class APIKeyProviderService {
       if (userSettings?.llmConfig?.apiKeyPreference) {
         return userSettings.llmConfig.apiKeyPreference as ApiKeyPreference;
       }
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Failed to get API key preference for user ${userId}:`, error);
     }
     return 'user_then_platform'; // Default
@@ -370,11 +299,8 @@ class APIKeyProviderService {
 
       // Use global preference
       return (userSettings.llmConfig.apiKeyPreference || 'user_then_platform') as ApiKeyPreference;
-    } catch (error: unknown) {
-      logger.error(
-        `Failed to get effective API key preference for user ${userId}, provider ${provider}:`,
-        error
-      );
+    } catch (error) {
+      logger.error(`Failed to get effective API key preference for user ${userId}, provider ${provider}:`, error);
       return 'user_then_platform'; // Default to fallback
     }
   }

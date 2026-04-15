@@ -95,7 +95,7 @@ class ProjectCompletionService {
           await this.refineProjectCode(project);
           logger.info('Code refinement completed');
         } catch (error: unknown) {
-          result.warnings.push(`Code refinement failed: ${(error instanceof Error ? error.message : String(error))}`);
+          result.warnings.push(`Code refinement failed: ${error.message}`);
         }
       }
 
@@ -105,7 +105,7 @@ class ProjectCompletionService {
           await this.generateProjectTests(project);
           logger.info('Test generation completed');
         } catch (error: unknown) {
-          result.warnings.push(`Test generation failed: ${(error instanceof Error ? error.message : String(error))}`);
+          result.warnings.push(`Test generation failed: ${error.message}`);
         }
       }
 
@@ -129,7 +129,7 @@ class ProjectCompletionService {
 
           logger.info(`Quality gates: ${qualityResult.passed ? 'PASSED' : 'FAILED'} (${qualityResult.score}/100)`);
         } catch (error: unknown) {
-          result.errors.push(`Quality gate check failed: ${(error instanceof Error ? error.message : String(error))}`);
+          result.errors.push(`Quality gate check failed: ${error.message}`);
         }
       }
 
@@ -168,7 +168,7 @@ class ProjectCompletionService {
 
           logger.info('Documentation generated');
         } catch (error: unknown) {
-          result.errors.push(`Documentation generation failed: ${(error instanceof Error ? error.message : String(error))}`);
+          result.errors.push(`Documentation generation failed: ${error.message}`);
         }
       }
 
@@ -182,7 +182,7 @@ class ProjectCompletionService {
           };
           logger.info(`Project packaged: ${(packageResult.zipBuffer.length / 1024).toFixed(2)} KB`);
         } catch (error: unknown) {
-          result.errors.push(`Packaging failed: ${(error instanceof Error ? error.message : String(error))}`);
+          result.errors.push(`Packaging failed: ${error.message}`);
         }
       }
 
@@ -221,7 +221,7 @@ class ProjectCompletionService {
         packaging: { generated: false, packageSize: 0 },
         summary: { totalArtifacts: 0, codeArtifacts: 0, documentationArtifacts: 0, testArtifacts: 0 },
         deploymentReady: false,
-        errors: [`Project completion failed: ${(error instanceof Error ? error.message : String(error))}`],
+        errors: [`Project completion failed: ${error.message}`],
         warnings: []
       };
     }
@@ -253,7 +253,7 @@ class ProjectCompletionService {
           artifact.content = refinement.refinedCode;
           logger.info(`Refined artifact: ${artifact.title} (${refinement.qualityScoreBefore} → ${refinement.qualityScoreAfter})`);
         }
-      } catch (error: unknown) {
+      } catch (error) {
         // Continue with other artifacts
         logger.warn(`Failed to refine artifact ${artifact.title}:`, error);
       }
@@ -293,7 +293,7 @@ class ProjectCompletionService {
             tags: ['test', 'unit', 'generated']
           });
         });
-      } catch (error: unknown) {
+      } catch (error) {
         logger.warn(`Failed to generate tests for ${artifact.title}:`, error);
       }
     }

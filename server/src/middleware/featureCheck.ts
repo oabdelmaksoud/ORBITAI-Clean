@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.js';
 import { isFeatureEnabled } from '../services/featureFlags.service.js';
 import { AppError } from './errorHandler.js';
@@ -36,7 +36,7 @@ export function checkFeatureAccess(featureKey: string) {
       // Store feature key in request for logging/debugging
       (req as any).featureKey = featureKey;
       next();
-    } catch (error: unknown) {
+    } catch (error) {
       next(error);
     }
   };

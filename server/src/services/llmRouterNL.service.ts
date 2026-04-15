@@ -4,7 +4,7 @@
  */
 
 import { llmRouter } from './llm/LLMRouter.js';
-import { IRoutingRule } from '../models/RoutingRule.model.js';
+import { RoutingRule, IRoutingRule } from '../models/RoutingRule.model.js';
 import { logger } from '../utils/logger.js';
 
 export interface NLRuleGenerationResult {
@@ -110,7 +110,7 @@ Return ONLY valid JSON, no markdown formatting, no code blocks.`;
       };
     } catch (error: unknown) {
       logger.error('Failed to generate rule from natural language:', error);
-      throw new Error(`Failed to generate rule: ${(error instanceof Error ? error.message : String(error))}`);
+      throw new Error(`Failed to generate rule: ${error.message}`);
     }
   }
 

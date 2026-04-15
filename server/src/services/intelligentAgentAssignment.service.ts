@@ -375,7 +375,7 @@ If no candidate is suitable (matchScore < 0.7), set bestMatchIndex to 0.`;
     }
 
     return null;
-  } catch (error: unknown) {
+  } catch (error) {
     logger.warn('[Intelligent Assignment] Error finding best match, using first candidate', error);
     return {
       agent: candidates[0],

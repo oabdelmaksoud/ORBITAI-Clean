@@ -101,7 +101,6 @@ class FullProjectArchitectureAnalyzerService {
    * Analyze project requirements and generate comprehensive architecture analysis
    */
   async analyzeArchitecture(input: ArchitectureAnalysisInput): Promise<FullArchitectureAnalysis> {
-    // @ts-ignore TS6198
     const { projectDescription, researchFindings, userRequirements, projectType } = input;
 
     logger.info('[ArchitectureAnalyzer] Starting full project architecture analysis...');
@@ -113,12 +112,12 @@ class FullProjectArchitectureAnalyzerService {
         prompt: analysisPrompt,
         context: {
           agentRole: 'Architecture Agent',
-          taskType: 'architecture-analysis',
+          taskType: 'architecture-analysis'
         },
         routingContext: {},
         requestType: 'architecture-analysis',
         contextType: 'wizard',
-        useInternet: true, // Enable internet research for latest best practices
+        useInternet: true // Enable internet research for latest best practices
       });
 
       // Parse the structured response
@@ -327,19 +326,13 @@ Provide your analysis in a structured JSON format with the following structure:
   /**
    * Parse LLM response into structured analysis
    */
-  private parseAnalysisResponse(
-    response: string,
-    input: ArchitectureAnalysisInput
-  ): FullArchitectureAnalysis {
+  private parseAnalysisResponse(response: string, input: ArchitectureAnalysisInput): FullArchitectureAnalysis {
     try {
       // Try to extract JSON from the response
       let jsonStr = response.trim();
 
       // Remove markdown code blocks if present
-      jsonStr = jsonStr
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
+      jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
       // Try to find JSON object in the response
       const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
@@ -351,11 +344,8 @@ Provide your analysis in a structured JSON format with the following structure:
 
       // Validate and normalize the structure
       return this.normalizeAnalysis(parsed);
-    } catch (error: unknown) {
-      logger.warn(
-        '[ArchitectureAnalyzer] Failed to parse JSON response, using default structure:',
-        error
-      );
+    } catch (error) {
+      logger.warn('[ArchitectureAnalyzer] Failed to parse JSON response, using default structure:', error);
       return this.getDefaultAnalysis(input);
     }
   }
@@ -372,25 +362,21 @@ Provide your analysis in a structured JSON format with the following structure:
         businessLogic: analysis.backendArchitecture?.businessLogic || 'Service layer pattern',
         dataAccess: analysis.backendArchitecture?.dataAccess || 'Repository pattern',
         backgroundJobs: analysis.backendArchitecture?.backgroundJobs || 'Bull queue with Redis',
-        realTimeServices:
-          analysis.backendArchitecture?.realTimeServices || 'Socket.io for real-time features',
-        description: analysis.backendArchitecture?.description || 'Standard backend architecture',
+        realTimeServices: analysis.backendArchitecture?.realTimeServices || 'Socket.io for real-time features',
+        description: analysis.backendArchitecture?.description || 'Standard backend architecture'
       },
       adminConsole: {
         required: analysis.adminConsole?.required ?? true,
-        features: Array.isArray(analysis.adminConsole?.features)
-          ? analysis.adminConsole.features
-          : ['User Management', 'Content Management'],
+        features: Array.isArray(analysis.adminConsole?.features) ? analysis.adminConsole.features : ['User Management', 'Content Management'],
         userManagement: analysis.adminConsole?.userManagement ?? true,
         contentManagement: analysis.adminConsole?.contentManagement ?? true,
         analytics: analysis.adminConsole?.analytics ?? true,
         systemConfiguration: analysis.adminConsole?.systemConfiguration ?? true,
         monitoring: analysis.adminConsole?.monitoring ?? true,
-        description: analysis.adminConsole?.description || 'Admin console for system management',
+        description: analysis.adminConsole?.description || 'Admin console for system management'
       },
       infrastructure: {
-        applicationServers:
-          analysis.infrastructure?.applicationServers || 'Node.js / Python application servers',
+        applicationServers: analysis.infrastructure?.applicationServers || 'Node.js / Python application servers',
         databaseServers: analysis.infrastructure?.databaseServers || 'PostgreSQL / MongoDB',
         caching: analysis.infrastructure?.caching || 'Redis for caching',
         messageQueues: analysis.infrastructure?.messageQueues || 'Bull queue with Redis',
@@ -398,84 +384,64 @@ Provide your analysis in a structured JSON format with the following structure:
         monitoring: analysis.infrastructure?.monitoring || 'Prometheus + Grafana',
         logging: analysis.infrastructure?.logging || 'Winston + ELK stack',
         deployment: analysis.infrastructure?.deployment || 'Docker containers with Kubernetes',
-        description: analysis.infrastructure?.description || 'Standard infrastructure setup',
+        description: analysis.infrastructure?.description || 'Standard infrastructure setup'
       },
       securityArchitecture: {
         authentication: analysis.securityArchitecture?.authentication || 'JWT-based authentication',
-        authorization:
-          analysis.securityArchitecture?.authorization || 'Role-based access control (RBAC)',
-        dataEncryption:
-          analysis.securityArchitecture?.dataEncryption ||
-          'AES-256 encryption at rest, TLS in transit',
-        apiSecurity:
-          analysis.securityArchitecture?.apiSecurity || 'API key validation, request signing',
+        authorization: analysis.securityArchitecture?.authorization || 'Role-based access control (RBAC)',
+        dataEncryption: analysis.securityArchitecture?.dataEncryption || 'AES-256 encryption at rest, TLS in transit',
+        apiSecurity: analysis.securityArchitecture?.apiSecurity || 'API key validation, request signing',
         rateLimiting: analysis.securityArchitecture?.rateLimiting ?? true,
         securityMonitoring: analysis.securityArchitecture?.securityMonitoring ?? true,
-        compliance: Array.isArray(analysis.securityArchitecture?.compliance)
-          ? analysis.securityArchitecture.compliance
-          : [],
-        description:
-          analysis.securityArchitecture?.description || 'Comprehensive security measures',
+        compliance: Array.isArray(analysis.securityArchitecture?.compliance) ? analysis.securityArchitecture.compliance : [],
+        description: analysis.securityArchitecture?.description || 'Comprehensive security measures'
       },
       databaseArchitecture: {
         primaryDatabase: analysis.databaseArchitecture?.primaryDatabase || 'PostgreSQL',
         databaseType: analysis.databaseArchitecture?.databaseType || 'sql',
         schemaDesign: analysis.databaseArchitecture?.schemaDesign || 'Normalized relational schema',
-        cachingStrategy:
-          analysis.databaseArchitecture?.cachingStrategy || 'Redis for frequently accessed data',
-        backupRecovery:
-          analysis.databaseArchitecture?.backupRecovery ||
-          'Daily automated backups with point-in-time recovery',
-        migrations:
-          analysis.databaseArchitecture?.migrations ||
-          'Version-controlled migrations with rollback support',
-        description: analysis.databaseArchitecture?.description || 'Robust database architecture',
+        cachingStrategy: analysis.databaseArchitecture?.cachingStrategy || 'Redis for frequently accessed data',
+        backupRecovery: analysis.databaseArchitecture?.backupRecovery || 'Daily automated backups with point-in-time recovery',
+        migrations: analysis.databaseArchitecture?.migrations || 'Version-controlled migrations with rollback support',
+        description: analysis.databaseArchitecture?.description || 'Robust database architecture'
       },
       apiDesign: {
         apiStyle: analysis.apiDesign?.apiStyle || 'REST',
         endpoints: Array.isArray(analysis.apiDesign?.endpoints) ? analysis.apiDesign.endpoints : [],
-        externalIntegrations: Array.isArray(analysis.apiDesign?.externalIntegrations)
-          ? analysis.apiDesign.externalIntegrations
-          : [],
-        thirdPartyServices: Array.isArray(analysis.apiDesign?.thirdPartyServices)
-          ? analysis.apiDesign.thirdPartyServices
-          : [],
+        externalIntegrations: Array.isArray(analysis.apiDesign?.externalIntegrations) ? analysis.apiDesign.externalIntegrations : [],
+        thirdPartyServices: Array.isArray(analysis.apiDesign?.thirdPartyServices) ? analysis.apiDesign.thirdPartyServices : [],
         webhooks: Array.isArray(analysis.apiDesign?.webhooks) ? analysis.apiDesign.webhooks : [],
         documentation: analysis.apiDesign?.documentation || 'OpenAPI/Swagger documentation',
-        description: analysis.apiDesign?.description || 'Well-designed API architecture',
+        description: analysis.apiDesign?.description || 'Well-designed API architecture'
       },
       frontendArchitecture: {
         framework: analysis.frontendArchitecture?.framework || 'React',
         stateManagement: analysis.frontendArchitecture?.stateManagement || 'React Context / Redux',
         routing: analysis.frontendArchitecture?.routing || 'React Router',
         uiFramework: analysis.frontendArchitecture?.uiFramework || 'Tailwind CSS',
-        description: analysis.frontendArchitecture?.description || 'Modern frontend architecture',
+        description: analysis.frontendArchitecture?.description || 'Modern frontend architecture'
       },
       devOps: {
         deploymentStrategy: analysis.devOps?.deploymentStrategy || 'Docker containers with CI/CD',
-        environmentManagement:
-          analysis.devOps?.environmentManagement ||
-          'Separate dev, staging, production environments',
+        environmentManagement: analysis.devOps?.environmentManagement || 'Separate dev, staging, production environments',
         backupRecovery: analysis.devOps?.backupRecovery || 'Automated daily backups',
         cicd: analysis.devOps?.cicd || 'GitHub Actions / GitLab CI',
-        description: analysis.devOps?.description || 'Comprehensive DevOps setup',
+        description: analysis.devOps?.description || 'Comprehensive DevOps setup'
       },
       testingStrategy: {
         unitTests: analysis.testingStrategy?.unitTests || 'Jest / Vitest for unit testing',
-        integrationTests:
-          analysis.testingStrategy?.integrationTests || 'Supertest for API integration tests',
+        integrationTests: analysis.testingStrategy?.integrationTests || 'Supertest for API integration tests',
         e2eTests: analysis.testingStrategy?.e2eTests || 'Playwright / Cypress for end-to-end tests',
-        performanceTests:
-          analysis.testingStrategy?.performanceTests || 'k6 / Artillery for load testing',
-        description: analysis.testingStrategy?.description || 'Comprehensive testing strategy',
-      },
+        performanceTests: analysis.testingStrategy?.performanceTests || 'k6 / Artillery for load testing',
+        description: analysis.testingStrategy?.description || 'Comprehensive testing strategy'
+      }
     };
   }
 
   /**
    * Get default analysis structure when parsing fails
    */
-  private getDefaultAnalysis(_input: ArchitectureAnalysisInput): FullArchitectureAnalysis {
+  private getDefaultAnalysis(input: ArchitectureAnalysisInput): FullArchitectureAnalysis {
     return this.normalizeAnalysis({});
   }
 }

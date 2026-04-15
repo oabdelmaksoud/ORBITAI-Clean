@@ -6,10 +6,14 @@
 
 import { logger } from '../utils/logger.js';
 import { Project } from '../models/Project.model.js';
+import { llmRouter } from './llm/LLMRouter.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 import JSZip from 'jszip';
 
-// const __filename = fileURLToPath(import.meta.url);
-// const ___dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface ProjectPackage {
   zipBuffer: Buffer;
@@ -209,9 +213,9 @@ class ProjectPackagerService {
    */
   async generateDockerConfig(project: any): Promise<DockerConfig> {
     try {
-      // const _projectType = project.projectType || 'web-app';
+      const projectType = project.projectType || 'web-app';
       const hasBackend = project.architecture?.needsBackend || false;
-      // const _backendType = project.architecture?.backendType || 'REST';
+      const backendType = project.architecture?.backendType || 'REST';
       const framework = project.architecture?.recommendations?.backend?.framework || 'node';
 
       let dockerfile = '';
@@ -254,7 +258,7 @@ class ProjectPackagerService {
    */
   async generateBuildScripts(project: any): Promise<BuildScripts> {
     const scripts: BuildScripts = {};
-    // const _projectType = project.projectType || 'web-app';
+    const projectType = project.projectType || 'web-app';
     const framework = project.architecture?.recommendations?.backend?.framework || 'node';
 
     if (framework.includes('node') || framework.includes('express') || framework.includes('react')) {
@@ -309,7 +313,7 @@ class ProjectPackagerService {
    * Generate environment variable template
    */
   private async generateEnvTemplate(project: any): Promise<string> {
-    // const _hasBackend = project.architecture?.needsBackend || false;
+    const hasBackend = project.architecture?.needsBackend || false;
     const hasDatabase = project.architecture?.detectedFeatures?.dataStorage || false;
     const hasAuth = project.architecture?.detectedFeatures?.authentication || false;
 
@@ -349,7 +353,7 @@ SESSION_SECRET=your_session_secret
   /**
    * Generate CI/CD configuration
    */
-  private async generateCICDConfigs(_project: any): Promise<{ githubActions?: string }> {
+  private async generateCICDConfigs(project: any): Promise<{ githubActions?: string }> {
     const githubActions = `name: Deploy
 
 on:
@@ -381,7 +385,7 @@ jobs:
   }
 
   // Helper methods for generating specific configs
-  private generateNodeDockerfile(_project: any): string {
+  private generateNodeDockerfile(project: any): string {
     return `FROM node:18-alpine
 
 WORKDIR /app
@@ -406,7 +410,7 @@ CMD ["npm", "start"]
 `;
   }
 
-  private generatePythonDockerfile(_project: any): string {
+  private generatePythonDockerfile(project: any): string {
     return `FROM python:3.11-slim
 
 WORKDIR /app
@@ -428,7 +432,7 @@ CMD ["python", "app.py"]
 `;
   }
 
-  private generateReactDockerfile(_project: any): string {
+  private generateReactDockerfile(project: any): string {
     return `# Build stage
 FROM node:18-alpine AS builder
 
@@ -452,7 +456,7 @@ CMD ["nginx", "-g", "daemon off;"]
 `;
   }
 
-  private generateGenericDockerfile(_project: any): string {
+  private generateGenericDockerfile(project: any): string {
     return `FROM node:18-alpine
 
 WORKDIR /app
@@ -467,7 +471,7 @@ CMD ["npm", "start"]
 `;
   }
 
-  private generateDockerCompose(_project: any): string {
+  private generateDockerCompose(project: any): string {
     return `version: '3.8'
 
 services:
@@ -492,7 +496,7 @@ volumes:
 `;
   }
 
-  private generateDockerIgnore(_project: any): string {
+  private generateDockerIgnore(project: any): string {
     return `node_modules
 npm-debug.log
 .env
@@ -511,7 +515,7 @@ README.md
 
   private generatePackageJson(project: any): string {
     const hasBackend = project.architecture?.needsBackend || false;
-    // const _framework = project.architecture?.recommendations?.backend?.framework || 'express';
+    const framework = project.architecture?.recommendations?.backend?.framework || 'express';
 
     return JSON.stringify({
       name: (project.name || 'project').toLowerCase().replace(/\s+/g, '-'),
@@ -552,7 +556,7 @@ README.md
     }, null, 2);
   }
 
-  private generateBuildSh(_project: any): string {
+  private generateBuildSh(project: any): string {
     return `#!/bin/bash
 
 set -e
@@ -570,7 +574,7 @@ echo "Build complete!"
 `;
   }
 
-  private generatePythonBuildSh(_project: any): string {
+  private generatePythonBuildSh(project: any): string {
     return `#!/bin/bash
 
 set -e
@@ -585,13 +589,13 @@ echo "Build complete!"
 `;
   }
 
-  private generateRequirementsTxt(_project: any): string {
+  private generateRequirementsTxt(project: any): string {
     return `flask==3.0.0
 python-dotenv==1.0.0
 `;
   }
 
-  private generateVercelConfig(_project: any): string {
+  private generateVercelConfig(project: any): string {
     return JSON.stringify({
       version: 2,
       builds: [
@@ -609,7 +613,7 @@ python-dotenv==1.0.0
     }, null, 2);
   }
 
-  private generateRailwayConfig(_project: any): string {
+  private generateRailwayConfig(project: any): string {
     return JSON.stringify({
       $schema: 'https://railway.app/railway.schema.json',
       build: {
@@ -636,7 +640,7 @@ python-dotenv==1.0.0
 `;
   }
 
-  private generateNetlifyConfig(_project: any): string {
+  private generateNetlifyConfig(project: any): string {
     return `[build]
   command = "npm run build"
   publish = "dist"

@@ -26,6 +26,8 @@ import { OllamaService } from './providers/OllamaService.js';
 import { VLLMService } from './providers/VLLMService.js';
 import { OpenAICompatibleService } from './providers/OpenAICompatibleService.js';
 import { apiKeyProvider } from '../apiKeyProvider.service.js';
+import { UserSettings } from '../../models/UserSettings.model.js';
+import { internalTaskRouter } from '../internalTaskRouter.service.js';
 import { generationStatusService } from '../GenerationStatus.service.js';
 
 import { llmCircuitBreaker } from './CircuitBreaker.js';
@@ -41,22 +43,7 @@ export interface LLMResponse {
     candidatesTokenCount?: number;
   };
   modelUsed: string;
-  provider:
-    | 'gemini'
-    | 'openai'
-    | 'anthropic'
-    | 'deepseek'
-    | 'grok'
-    | 'mistral'
-    | 'qwen'
-    | 'openrouter'
-    | 'groq'
-    | 'vertex'
-    | 'azure'
-    | 'ollama'
-    | 'vllm'
-    | 'openai_compatible'
-    | 'custom';
+  provider: 'gemini' | 'openai' | 'anthropic' | 'deepseek' | 'grok' | 'mistral' | 'qwen' | 'openrouter' | 'groq' | 'vertex' | 'azure' | 'ollama' | 'vllm' | 'openai_compatible' | 'custom';
   fallbackUsed?: boolean;
   resources?: string[]; // URLs from Google Search grounding (when useInternet is enabled)
 }
@@ -92,47 +79,11 @@ export interface RoutingContext {
   };
 }
 
-export class LLMRouter {
+class LLMRouter {
   /**
    * Execute with intelligent routing - automatically selects best model based on task analysis
    */
-  private rateLimitBackoff = new Map<
-    string,
-    { attempts: number; nextRetry: number; timestamp: number }
-  >();
-  private rateLimitCleanupInterval: ReturnType<typeof setInterval> | null = null;
-
-  constructor() {
-    // Clean up stale rateLimitBackoff entries every 10 minutes
-    this.rateLimitCleanupInterval = setInterval(
-      () => {
-        this.cleanupRateLimitBackoff();
-      },
-      10 * 60 * 1000
-    );
-  }
-
-  /**
-   * Remove rateLimitBackoff entries older than 1 hour
-   */
-  private cleanupRateLimitBackoff(): void {
-    const oneHourAgo = Date.now() - 60 * 60 * 1000;
-    for (const [key, value] of this.rateLimitBackoff) {
-      if (value.timestamp < oneHourAgo) {
-        this.rateLimitBackoff.delete(key);
-      }
-    }
-  }
-
-  /**
-   * Clean up resources (e.g., intervals) when shutting down
-   */
-  destroy(): void {
-    if (this.rateLimitCleanupInterval) {
-      clearInterval(this.rateLimitCleanupInterval);
-      this.rateLimitCleanupInterval = null;
-    }
-  }
+  private rateLimitBackoff = new Map<string, { attempts: number; nextRetry: number }>();
 
   /**
    * Handle rate limit with exponential backoff
@@ -145,8 +96,7 @@ export class LLMRouter {
   ): Promise<number> {
     const apiError = toApiError(error);
     const key = `${provider}:${modelId}`;
-    const isRateLimit =
-      apiError.statusCode === 429 ||
+    const isRateLimit = apiError.statusCode === 429 ||
       apiError.message?.toLowerCase().includes('rate limit') ||
       (error as any)?.code === 'rate_limit_exceeded';
 
@@ -154,17 +104,12 @@ export class LLMRouter {
       return 0; // No backoff needed
     }
 
-    const backoff = this.rateLimitBackoff.get(key) || {
-      attempts: 0,
-      nextRetry: 0,
-      timestamp: Date.now(),
-    };
+    const backoff = this.rateLimitBackoff.get(key) || { attempts: 0, nextRetry: 0 };
     backoff.attempts++;
 
     // Reduced backoff: max 10s instead of 60s for faster fallback
     const delay = Math.min(10000, Math.pow(2, backoff.attempts - 1) * 500);
     backoff.nextRetry = Date.now() + delay;
-    backoff.timestamp = Date.now();
 
     this.rateLimitBackoff.set(key, backoff);
 
@@ -185,31 +130,15 @@ export class LLMRouter {
     useInternet?: boolean; // Enable internet search
     routerType?: 'end-user' | 'internal'; // Which router is handling this request
   }): Promise<LLMResponse> {
-    const {
-      prompt,
-      context,
-      routingContext,
-      requestType = 'chat',
-      contextType = 'other',
-      routerType = 'end-user',
-    } = params;
+    const { prompt, context, routingContext, requestType = 'chat', contextType = 'other', routerType = 'end-user' } = params;
     const startTime = Date.now();
 
     // If model is explicitly specified, use it (backward compatibility)
     if (context.model) {
-      return this.executeWithSpecificModel(
-        prompt,
-        context.model,
-        {
-          systemInstruction: context.systemInstruction,
-          tools: context.tools,
-        },
-        true,
-        routingContext,
-        requestType,
-        contextType,
-        routerType
-      );
+      return this.executeWithSpecificModel(prompt, context.model, {
+        systemInstruction: context.systemInstruction,
+        tools: context.tools
+      }, true, routingContext, requestType, contextType, routerType);
     }
 
     // Use intelligent routing to select the best model
@@ -217,10 +146,14 @@ export class LLMRouter {
       // Analyze the task
       const taskContext: TaskContext = {
         agentRole: context.agentRole,
-        tools: context.tools,
+        tools: context.tools
       };
 
-      const taskAnalysis = taskAnalyzer.analyzeTask(prompt, context.taskType as any, taskContext);
+      const taskAnalysis = taskAnalyzer.analyzeTask(
+        prompt,
+        context.taskType as any,
+        taskContext
+      );
 
       // Build routing context
       const routingContextForEngine: RoutingContextType = {
@@ -228,22 +161,27 @@ export class LLMRouter {
         projectId: routingContext?.projectId,
         packageLimits: routingContext?.packageLimits,
         userPreferences: routingContext?.userPreferences,
-        projectState: routingContext?.projectState,
+        projectState: routingContext?.projectState
       };
+
+      // Get user's API key preference
+      const userId = routingContext?.userId;
+      const apiKeyPreference = userId
+        ? await apiKeyProvider.getUserApiKeyPreference(userId)
+        : 'platform';
 
       // Select best model using routing engine (now async to load settings)
       const modelSelection = await routingEngine.selectModel(taskAnalysis, routingContextForEngine);
       let selectedModel = modelSelection.primaryModel;
 
       // For user-specific models, check user's local LLMs first
-      if (routingContext?.userId) {
-        const userActiveModels = modelRegistry.getActiveModelsForUser(routingContext.userId);
+      if (userId) {
+        const userActiveModels = modelRegistry.getActiveModelsForUser(userId);
         if (userActiveModels.length > 0) {
           // Prefer user's local models if available
-          const userModel = userActiveModels.find(
-            m =>
-              m.provider === selectedModel.provider ||
-              ['ollama', 'vllm', 'openai_compatible'].includes(m.provider)
+          const userModel = userActiveModels.find(m =>
+            m.provider === selectedModel.provider ||
+            ['ollama', 'vllm', 'openai_compatible'].includes(m.provider)
           );
           if (userModel) {
             selectedModel = userModel;
@@ -252,9 +190,7 @@ export class LLMRouter {
         }
       }
 
-      logger.info(
-        `[LLMRouter] Intelligent routing selected: ${selectedModel.name} (${selectedModel.modelIdentifier}) for ${context.agentRole || 'unknown'} agent. Reasoning: ${modelSelection.reasoning}`
-      );
+      logger.info(`[LLMRouter] Intelligent routing selected: ${selectedModel.name} (${selectedModel.modelIdentifier}) for ${context.agentRole || 'unknown'} agent. Reasoning: ${modelSelection.reasoning}`);
 
       // Emit status update for Mission Control (if session is provided)
       if (context.generationSessionId) {
@@ -267,27 +203,27 @@ export class LLMRouter {
       }
 
       // Check cache first (skip for function calling tasks or if explicitly requested)
-      const skipCache = (context.tools && context.tools.length > 0) || context.skipCache === true;
+      const skipCache = (context.tools && context.tools.length > 0) || (context.skipCache === true);
       if (!skipCache) {
-        const cached = responseCache.get(prompt, selectedModel.id, context.systemInstruction, {
-          agentRole: context.agentRole,
-          taskType: context.taskType,
-        });
+        const cached = responseCache.get(
+          prompt,
+          selectedModel.id,
+          context.systemInstruction,
+          { agentRole: context.agentRole, taskType: context.taskType }
+        );
 
         if (cached) {
-          logger.info(
-            `[LLMRouter] Cache HIT - returning cached response (saved $${cached.cost.toFixed(6)})`
-          );
+          logger.info(`[LLMRouter] Cache HIT - returning cached response (saved $${cached.cost.toFixed(6)})`);
           return {
             text: cached.response,
             usage: {
               promptTokens: cached.tokens.input,
               candidatesTokens: cached.tokens.output,
-              totalTokens: cached.tokens.total,
+              totalTokens: cached.tokens.total
             },
             modelUsed: cached.modelId,
             provider: cached.provider as any,
-            fallbackUsed: false,
+            fallbackUsed: false
           };
         }
       }
@@ -318,23 +254,19 @@ export class LLMRouter {
             selectedModel,
             {
               ...config,
-              useInternet: params.useInternet,
+              useInternet: params.useInternet
             },
             routingContext,
             requestType,
             contextType
           );
           logger.info(`[LLMRouter] DEBUG: executeWithProvider returned`);
-          logger.info(
-            `[LLMRouter] Provider execution successful. Response length: ${result.text?.length || 0}`
-          );
+          logger.info(`[LLMRouter] Provider execution successful. Response length: ${result.text?.length || 0}`);
+          break; // Success, exit retry loop
           break; // Success, exit retry loop
         } catch (error: unknown) {
           const apiError = toApiError(error);
-          logger.error(
-            `[LLMRouter] Provider execution failed (attempt ${retries + 1}/${maxRetries + 1}):`,
-            apiError
-          );
+          logger.error(`[LLMRouter] Provider execution failed (attempt ${retries + 1}/${maxRetries + 1}):`, apiError);
           const backoffDelay = await this.handleRateLimit(
             selectedModel.provider,
             selectedModel.modelIdentifier,
@@ -343,9 +275,7 @@ export class LLMRouter {
 
           if (backoffDelay > 0 && retries < maxRetries) {
             retries++;
-            logger.info(
-              `[LLMRouter] Rate limit hit, retrying after ${backoffDelay}ms (attempt ${retries}/${maxRetries})`
-            );
+            logger.info(`[LLMRouter] Rate limit hit, retrying after ${backoffDelay}ms (attempt ${retries}/${maxRetries})`);
             continue;
           } else {
             throw error; // Re-throw if not rate limit or max retries reached
@@ -355,18 +285,14 @@ export class LLMRouter {
 
       // Track usage
       const latencyMs = Date.now() - startTime;
-      const inputTokens =
-        result.usage?.promptTokens || (result.usage as any)?.promptTokenCount || 0;
-      const outputTokens =
-        result.usage?.candidatesTokens || (result.usage as any)?.candidatesTokenCount || 0;
+      const inputTokens = result.usage?.promptTokens || (result.usage as any)?.promptTokenCount || 0;
+      const outputTokens = result.usage?.candidatesTokens || (result.usage as any)?.candidatesTokenCount || 0;
       const totalTokens = inputTokens + outputTokens;
 
       // Calculate cost for caching
       const model = modelRegistry.getModel(selectedModel.id);
       const inputCost = model ? (inputTokens / 1_000_000) * model.pricing.inputCostPer1MTokens : 0;
-      const outputCost = model
-        ? (outputTokens / 1_000_000) * model.pricing.outputCostPer1MTokens
-        : 0;
+      const outputCost = model ? (outputTokens / 1_000_000) * model.pricing.outputCostPer1MTokens : 0;
       const totalCost = inputCost + outputCost;
 
       // Cache the response (skip for function calling tasks)
@@ -383,33 +309,29 @@ export class LLMRouter {
         );
       }
 
-      usageTracker
-        .trackUsage({
-          userId: routingContext?.userId,
-          projectId: routingContext?.projectId,
-          modelId: selectedModel.id,
-          provider: selectedModel.provider,
-          modelIdentifier: selectedModel.modelIdentifier,
-          inputTokens,
-          outputTokens,
-          requestType,
-          agentRole: context.agentRole,
-          taskType: context.taskType,
-          context: contextType,
-          routerType: routerType,
-          success: true,
-          latencyMs,
-        })
-        .catch(err => {
-          logger.warn(`[LLMRouter] Failed to track usage:`, err);
-          // Don't throw - tracking failure shouldn't break the request
-        });
+      usageTracker.trackUsage({
+        userId: routingContext?.userId,
+        projectId: routingContext?.projectId,
+        modelId: selectedModel.id,
+        provider: selectedModel.provider,
+        modelIdentifier: selectedModel.modelIdentifier,
+        inputTokens,
+        outputTokens,
+        requestType,
+        agentRole: context.agentRole,
+        taskType: context.taskType,
+        context: contextType,
+        routerType: routerType,
+        success: true,
+        latencyMs
+      }).catch(err => {
+        logger.warn(`[LLMRouter] Failed to track usage:`, err);
+        // Don't throw - tracking failure shouldn't break the request
+      });
 
       // Process function calls if any
       if ((result as any).functionCalls && (result as any).functionCalls.length > 0) {
-        logger.info(
-          `[LLMRouter] Processing ${(result as any).functionCalls.length} function call(s)`
-        );
+        logger.info(`[LLMRouter] Processing ${result.functionCalls.length} function call(s)`);
         const processed = await functionCallProcessor.processWithFunctionCalls(
           result as LLMResponseWithFunctionCalls,
           prompt,
@@ -425,13 +347,13 @@ export class LLMRouter {
           usage: processed.usage,
           modelUsed: processed.modelUsed,
           provider: processed.provider,
-          fallbackUsed: false,
+          fallbackUsed: false
         };
       }
 
       return {
         ...result,
-        fallbackUsed: false,
+        fallbackUsed: false
       };
     } catch (routingError: unknown) {
       const apiError = toApiError(routingError);
@@ -439,9 +361,7 @@ export class LLMRouter {
 
       // STRICT POLICY: No fallbacks for end-user requests
       if (routerType === 'end-user') {
-        logger.warn(
-          '[LLMRouter] Fallback disabled for end-user request by strict policy - re-throwing error'
-        );
+        logger.warn('[LLMRouter] Fallback disabled for end-user request by strict policy - re-throwing error');
         throw routingError;
       }
 
@@ -454,13 +374,10 @@ export class LLMRouter {
         if (activeModels.length > 0) {
           // Prefer DEFAULT_LLM_PROVIDER if available, otherwise prefer Gemini, otherwise use first available
           const defaultProvider = config.defaultLLMProvider || 'gemini';
-          fallbackModel =
-            activeModels.find(m => m.provider === defaultProvider) ||
+          fallbackModel = activeModels.find(m => m.provider === defaultProvider) ||
             activeModels.find(m => m.provider === 'gemini') ||
             activeModels[0];
-          logger.info(
-            `[LLMRouter] Using fallback model from routing engine: ${fallbackModel.name} (${fallbackModel.modelIdentifier}) [preferred provider: ${defaultProvider}]`
-          );
+          logger.info(`[LLMRouter] Using fallback model from routing engine: ${fallbackModel.name} (${fallbackModel.modelIdentifier}) [preferred provider: ${defaultProvider}]`);
         }
       } catch (fallbackError) {
         logger.error(`[LLMRouter] Failed to get fallback model:`, fallbackError);
@@ -471,47 +388,34 @@ export class LLMRouter {
       const fallbackModelId = fallbackModel?.modelIdentifier || 'unknown';
       const fallbackProvider = fallbackModel?.provider || 'unknown';
 
-      usageTracker
-        .trackUsage({
-          userId: routingContext?.userId,
-          projectId: routingContext?.projectId,
-          modelId: fallbackModelId,
-          provider: fallbackProvider,
-          modelIdentifier: fallbackModelId,
-          inputTokens: Math.ceil(prompt.length / 4), // Rough estimate
-          outputTokens: 0,
-          requestType,
-          agentRole: context.agentRole,
-          taskType: context.taskType,
-          context: contextType,
-          routerType: routerType,
-          success: false,
-          errorMessage: apiError.message,
-          latencyMs,
-        })
-        .catch(err => {
-          logger.warn(`[LLMRouter] Failed to track usage error:`, err);
-        });
+      usageTracker.trackUsage({
+        userId: routingContext?.userId,
+        projectId: routingContext?.projectId,
+        modelId: fallbackModelId,
+        provider: fallbackProvider,
+        modelIdentifier: fallbackModelId,
+        inputTokens: Math.ceil(prompt.length / 4), // Rough estimate
+        outputTokens: 0,
+        requestType,
+        agentRole: context.agentRole,
+        taskType: context.taskType,
+        context: contextType,
+        routerType: routerType,
+        success: false,
+        errorMessage: apiError.message,
+        latencyMs
+      }).catch(err => {
+        logger.warn(`[LLMRouter] Failed to track usage error:`, err);
+      });
 
       // Use fallback model from routing engine if available, otherwise throw error
       if (fallbackModel) {
-        logger.warn(
-          `[LLMRouter] Routing failed, using fallback model: ${fallbackModel.modelIdentifier}`
-        );
-        return this.executeWithSpecificModel(
-          prompt,
-          fallbackModel.modelIdentifier,
-          {
-            systemInstruction: context.systemInstruction,
-            tools: context.tools,
-            useInternet: params.useInternet,
-          },
-          false,
-          routingContext,
-          requestType,
-          contextType,
-          routerType
-        ); // Don't allow further fallback
+        logger.warn(`[LLMRouter] Routing failed, using fallback model: ${fallbackModel.modelIdentifier}`);
+        return this.executeWithSpecificModel(prompt, fallbackModel.modelIdentifier, {
+          systemInstruction: context.systemInstruction,
+          tools: context.tools,
+          useInternet: params.useInternet
+        }, false, routingContext, requestType, contextType, routerType); // Don't allow further fallback
       }
 
       // If no fallback available, throw error - routing must work
@@ -531,23 +435,20 @@ export class LLMRouter {
     useInternet?: boolean;
     routerType?: 'end-user' | 'internal';
   }): AsyncGenerator<string, void, unknown> {
-    const {
-      prompt,
-      context,
-      routingContext,
-      requestType = 'chat',
-      contextType = 'other',
-      routerType = 'end-user',
-    } = params;
+    const { prompt, context, routingContext, requestType = 'chat', contextType = 'other', routerType = 'end-user' } = params;
 
     try {
       // Analyze the task
       const taskContext: TaskContext = {
         agentRole: context.agentRole,
-        tools: context.tools,
+        tools: context.tools
       };
 
-      const taskAnalysis = taskAnalyzer.analyzeTask(prompt, context.taskType as any, taskContext);
+      const taskAnalysis = taskAnalyzer.analyzeTask(
+        prompt,
+        context.taskType as any,
+        taskContext
+      );
 
       // Build routing context
       const routingContextForEngine: RoutingContextType = {
@@ -555,34 +456,35 @@ export class LLMRouter {
         projectId: routingContext?.projectId,
         packageLimits: routingContext?.packageLimits,
         userPreferences: routingContext?.userPreferences,
-        projectState: routingContext?.projectState,
+        projectState: routingContext?.projectState
       };
+
+      // Get user's API key preference
+      const userId = routingContext?.userId;
+      const apiKeyPreference = userId
+        ? await apiKeyProvider.getUserApiKeyPreference(userId)
+        : 'platform';
 
       // Select best model using routing engine
       const modelSelection = await routingEngine.selectModel(taskAnalysis, routingContextForEngine);
       let selectedModel = modelSelection.primaryModel;
 
       // For user-specific models, check user's local LLMs first
-      if (routingContext?.userId) {
-        const userActiveModels = modelRegistry.getActiveModelsForUser(routingContext.userId);
+      if (userId) {
+        const userActiveModels = modelRegistry.getActiveModelsForUser(userId);
         if (userActiveModels.length > 0) {
-          const userModel = userActiveModels.find(
-            m =>
-              m.provider === selectedModel.provider ||
-              ['ollama', 'vllm', 'openai_compatible'].includes(m.provider)
+          const userModel = userActiveModels.find(m =>
+            m.provider === selectedModel.provider ||
+            ['ollama', 'vllm', 'openai_compatible'].includes(m.provider)
           );
           if (userModel) {
             selectedModel = userModel;
-            logger.info(
-              `[LLMRouter] Using user's local model for streaming: ${selectedModel.name}`
-            );
+            logger.info(`[LLMRouter] Using user's local model for streaming: ${selectedModel.name}`);
           }
         }
       }
 
-      logger.info(
-        `[LLMRouter] Streaming with: ${selectedModel.name} (${selectedModel.modelIdentifier})`
-      );
+      logger.info(`[LLMRouter] Streaming with: ${selectedModel.name} (${selectedModel.modelIdentifier})`);
 
       // Execute streaming with selected provider
       const config: any = {};
@@ -613,7 +515,7 @@ export class LLMRouter {
           systemInstruction: config.systemInstruction,
           temperature: 0.7,
           maxTokens: config.maxTokens,
-          tools: config.tools,
+          tools: config.tools
         });
         for await (const chunk of stream) {
           yield chunk;
@@ -621,9 +523,7 @@ export class LLMRouter {
       } else {
         // For other providers, fallback to non-streaming and yield full response
         // This is a limitation - not all providers support streaming yet
-        logger.warn(
-          `[LLMRouter] Provider ${provider} doesn't support streaming, using non-streaming fallback`
-        );
+        logger.warn(`[LLMRouter] Provider ${provider} doesn't support streaming, using non-streaming fallback`);
         const result = await this.executeWithProvider(
           prompt,
           selectedModel,
@@ -641,9 +541,7 @@ export class LLMRouter {
 
       // STRICT POLICY: No fallbacks for end-user requests
       if (routerType === 'end-user') {
-        logger.warn(
-          '[LLMRouter] Streaming fallback disabled for end-user request by strict policy - re-throwing error'
-        );
+        logger.warn('[LLMRouter] Streaming fallback disabled for end-user request by strict policy - re-throwing error');
         throw error;
       }
 
@@ -651,19 +549,13 @@ export class LLMRouter {
       const activeModels = modelRegistry.getActiveModels();
       if (activeModels.length > 0) {
         const fallbackModel = activeModels.find(m => m.provider === 'gemini') || activeModels[0];
-        logger.warn(
-          `[LLMRouter] Streaming failed, trying fallback: ${fallbackModel.modelIdentifier}`
-        );
+        logger.warn(`[LLMRouter] Streaming failed, trying fallback: ${fallbackModel.modelIdentifier}`);
         try {
           const config: any = {
             systemInstruction: context.systemInstruction,
-            useInternet: params.useInternet,
+            useInternet: params.useInternet
           };
-          const stream = geminiService.generateContentStream(
-            prompt,
-            fallbackModel.modelIdentifier,
-            config
-          );
+          const stream = geminiService.generateContentStream(prompt, fallbackModel.modelIdentifier, config);
           for await (const chunk of stream) {
             yield chunk;
           }
@@ -690,8 +582,8 @@ export class LLMRouter {
       skipCache?: boolean;
     },
     routingContext?: RoutingContext,
-    _requestType: string = 'chat',
-    _contextType: 'wizard' | 'workspace' | 'other' = 'other'
+    requestType: string = 'chat',
+    contextType: 'wizard' | 'workspace' | 'other' = 'other'
   ): Promise<LLMResponse | LLMResponseWithFunctionCalls> {
     const provider = model.provider;
     const modelIdentifier = model.modelIdentifier;
@@ -723,26 +615,22 @@ export class LLMRouter {
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
           text: result.text || '',
           usage: {
-            promptTokens:
-              result.usage?.promptTokens || (result.usage as any)?.promptTokenCount || 0,
-            candidatesTokens:
-              result.usage?.candidatesTokens || (result.usage as any)?.candidatesTokenCount || 0,
-            totalTokens: result.usage?.totalTokens || 0,
+            promptTokens: result.usage?.promptTokens || (result.usage as any)?.promptTokenCount || 0,
+            candidatesTokens: result.usage?.candidatesTokens || (result.usage as any)?.candidatesTokenCount || 0,
+            totalTokens: result.usage?.totalTokens || 0
           },
           modelUsed: modelIdentifier,
           provider: 'gemini',
           fallbackUsed: false,
-          resources: result.resources || [], // Include URLs from Google Search grounding
+          resources: result.resources || [] // Include URLs from Google Search grounding
         };
 
         // Add function calls if present
         if (result.functionCalls && result.functionCalls.length > 0) {
-          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-            fc => ({
-              name: fc.name,
-              args: fc.args,
-            })
-          );
+          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(fc => ({
+            name: fc.name,
+            args: fc.args
+          }));
         }
 
         // Record success in circuit breaker
@@ -752,7 +640,7 @@ export class LLMRouter {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
           temperature: 0.7,
-          tools: config?.tools, // Pass tools for native function calling
+          tools: config?.tools // Pass tools for native function calling
         };
 
         const result = await openAIService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -762,19 +650,15 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'openai',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Add function calls if present (from native OpenAI function calling or text extraction)
-        if (
-          result.functionCalls &&
-          Array.isArray(result.functionCalls) &&
-          result.functionCalls.length > 0
-        ) {
+        if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
           (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls;
         } else {
           // Fallback: Extract function calls from text
@@ -788,25 +672,21 @@ export class LLMRouter {
       } else if (provider === 'anthropic') {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
 
-        const result = await anthropicService.generateContent(
-          prompt,
-          modelIdentifier,
-          serviceConfig
-        );
+        const result = await anthropicService.generateContent(prompt, modelIdentifier, serviceConfig);
 
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
           text: result.text || '',
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'anthropic',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Extract function calls from Anthropic response (text-based for now)
@@ -819,25 +699,21 @@ export class LLMRouter {
       } else if (provider === 'deepseek') {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
 
-        const result = await deepSeekService.generateContent(
-          prompt,
-          modelIdentifier,
-          serviceConfig
-        );
+        const result = await deepSeekService.generateContent(prompt, modelIdentifier, serviceConfig);
 
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
           text: result.text || '',
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'deepseek',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Extract function calls from DeepSeek response (text-based for now)
@@ -850,7 +726,7 @@ export class LLMRouter {
       } else if (provider === 'grok') {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
 
         const result = await grokService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -860,11 +736,11 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'grok',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Extract function calls from Grok response (text-based for now)
@@ -878,7 +754,7 @@ export class LLMRouter {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
           temperature: 0.7,
-          tools: config?.tools, // Pass tools for native function calling
+          tools: config?.tools // Pass tools for native function calling
         };
 
         const result = await mistralService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -888,27 +764,19 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'mistral',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Add function calls if present
-        if (
-          result.functionCalls &&
-          Array.isArray(result.functionCalls) &&
-          result.functionCalls.length > 0
-        ) {
-          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-            fc => ({
-              name: (fc as any).function?.name || fc.name,
-              args: (fc as any).function?.arguments
-                ? JSON.parse((fc as any).function.arguments)
-                : fc.args || {},
-            })
-          );
+        if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
+          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(fc => ({
+            name: (fc as any).function?.name || fc.name,
+            args: (fc as any).function?.arguments ? JSON.parse((fc as any).function.arguments) : fc.args || {}
+          }));
         } else {
           // Fallback: Extract function calls from text
           const functionCalls = this.extractFunctionCallsFromText(result.text);
@@ -921,7 +789,7 @@ export class LLMRouter {
       } else if (provider === 'qwen') {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
 
         const result = await qwenService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -931,11 +799,11 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'qwen',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Extract function calls from Qwen response (text-based for now)
@@ -948,16 +816,13 @@ export class LLMRouter {
       } else if (provider === 'vertex') {
         // Convert prompt to messages format for Vertex AI
         const messages = config?.systemInstruction
-          ? [
-              { role: 'system', content: config.systemInstruction },
-              { role: 'user', content: prompt },
-            ]
+          ? [{ role: 'system', content: config.systemInstruction }, { role: 'user', content: prompt }]
           : [{ role: 'user', content: prompt }];
 
         const result = await vertexService.generateContent(modelIdentifier, messages, {
           temperature: 0.7,
           tools: config?.tools,
-          useInternet: config?.useInternet,
+          useInternet: config?.useInternet
         });
 
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
@@ -965,40 +830,31 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage?.promptTokens || 0,
             candidatesTokens: result.usage?.completionTokens || 0,
-            totalTokens: result.usage?.totalTokens || 0,
+            totalTokens: result.usage?.totalTokens || 0
           },
           modelUsed: modelIdentifier,
           provider: 'vertex',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Add function calls if present
-        if (
-          result.functionCalls &&
-          Array.isArray(result.functionCalls) &&
-          result.functionCalls.length > 0
-        ) {
-          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-            fc => ({
-              name: fc.name,
-              args: fc.args || {},
-            })
-          );
+        if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
+          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(fc => ({
+            name: fc.name,
+            args: fc.args || {}
+          }));
         }
 
         return response;
       } else if (provider === 'azure') {
         // Convert prompt to messages format for Azure OpenAI
         const messages = config?.systemInstruction
-          ? [
-              { role: 'system', content: config.systemInstruction },
-              { role: 'user', content: prompt },
-            ]
+          ? [{ role: 'system', content: config.systemInstruction }, { role: 'user', content: prompt }]
           : [{ role: 'user', content: prompt }];
 
         const result = await azureOpenAIService.generateContent(modelIdentifier, messages, {
           temperature: 0.7,
-          tools: config?.tools,
+          tools: config?.tools
         });
 
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
@@ -1006,40 +862,31 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage?.promptTokens || 0,
             candidatesTokens: result.usage?.completionTokens || 0,
-            totalTokens: result.usage?.totalTokens || 0,
+            totalTokens: result.usage?.totalTokens || 0
           },
           modelUsed: modelIdentifier,
           provider: 'azure',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Add function calls if present
-        if (
-          result.functionCalls &&
-          Array.isArray(result.functionCalls) &&
-          result.functionCalls.length > 0
-        ) {
-          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-            fc => ({
-              name: fc.name,
-              args: fc.args || {},
-            })
-          );
+        if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
+          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(fc => ({
+            name: fc.name,
+            args: fc.args || {}
+          }));
         }
 
         return response;
       } else if (provider === 'openrouter') {
         // Convert prompt to messages format for OpenRouter
         const messages = config?.systemInstruction
-          ? [
-              { role: 'system', content: config.systemInstruction },
-              { role: 'user', content: prompt },
-            ]
+          ? [{ role: 'system', content: config.systemInstruction }, { role: 'user', content: prompt }]
           : [{ role: 'user', content: prompt }];
 
         const result = await openRouterService.generateContent(modelIdentifier, messages, {
           temperature: 0.7,
-          tools: config?.tools,
+          tools: config?.tools
         });
 
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
@@ -1047,40 +894,31 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage?.promptTokens || 0,
             candidatesTokens: result.usage?.completionTokens || 0,
-            totalTokens: result.usage?.totalTokens || 0,
+            totalTokens: result.usage?.totalTokens || 0
           },
           modelUsed: modelIdentifier,
           provider: 'openrouter',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Add function calls if present
-        if (
-          result.functionCalls &&
-          Array.isArray(result.functionCalls) &&
-          result.functionCalls.length > 0
-        ) {
-          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-            fc => ({
-              name: fc.name,
-              args: fc.args || {},
-            })
-          );
+        if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
+          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(fc => ({
+            name: fc.name,
+            args: fc.args || {}
+          }));
         }
 
         return response;
       } else if (provider === 'groq') {
         // Convert prompt to messages format for Groq
         const messages = config?.systemInstruction
-          ? [
-              { role: 'system', content: config.systemInstruction },
-              { role: 'user', content: prompt },
-            ]
+          ? [{ role: 'system', content: config.systemInstruction }, { role: 'user', content: prompt }]
           : [{ role: 'user', content: prompt }];
 
         const result = await groqService.generateContent(modelIdentifier, messages, {
           temperature: 0.7,
-          tools: config?.tools,
+          tools: config?.tools
         });
 
         const response: LLMResponse | LLMResponseWithFunctionCalls = {
@@ -1088,40 +926,31 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage?.promptTokens || 0,
             candidatesTokens: result.usage?.completionTokens || 0,
-            totalTokens: result.usage?.totalTokens || 0,
+            totalTokens: result.usage?.totalTokens || 0
           },
           modelUsed: modelIdentifier,
           provider: 'groq',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         // Add function calls if present
-        if (
-          result.functionCalls &&
-          Array.isArray(result.functionCalls) &&
-          result.functionCalls.length > 0
-        ) {
-          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-            fc => ({
-              name: fc.name,
-              args: fc.args || {},
-            })
-          );
+        if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
+          (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(fc => ({
+            name: fc.name,
+            args: fc.args || {}
+          }));
         }
 
         return response;
       } else if (provider === 'ollama') {
         // Get base URL from model metadata or user settings
         const userId = routingContext?.userId;
-        const baseUrl =
-          (model as any).baseUrl ||
-          modelRegistry.getLocalModelBaseUrl(userId || '', model.id) ||
-          'http://localhost:11434';
+        const baseUrl = (model as any).baseUrl || modelRegistry.getLocalModelBaseUrl(userId || '', model.id) || 'http://localhost:11434';
 
         const ollamaService = new OllamaService(baseUrl);
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
 
         const result = await ollamaService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -1131,28 +960,21 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'ollama',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
       } else if (provider === 'vllm') {
         // Get base URL and API key from model metadata or user settings
         const userId = routingContext?.userId;
-        const baseUrl =
-          (model as any).baseUrl ||
-          modelRegistry.getLocalModelBaseUrl(userId || '', model.id) ||
-          'http://localhost:8000';
+        const baseUrl = (model as any).baseUrl || modelRegistry.getLocalModelBaseUrl(userId || '', model.id) || 'http://localhost:8000';
 
         // Try to get API key (vLLM may or may not require one)
         let apiKey: string | undefined;
         if (userId) {
-          const keyResult = await apiKeyProvider.getApiKeyForRequest(
-            userId,
-            'vllm',
-            'user_then_platform'
-          );
+          const keyResult = await apiKeyProvider.getApiKeyForRequest(userId, 'vllm', 'user_then_platform');
           apiKey = keyResult.apiKey || undefined;
         }
 
@@ -1160,7 +982,7 @@ export class LLMRouter {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
           temperature: 0.7,
-          tools: config?.tools,
+          tools: config?.tools
         };
 
         const result = await vllmService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -1170,11 +992,11 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'vllm',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         if (result.functionCalls && result.functionCalls.length > 0) {
@@ -1185,19 +1007,12 @@ export class LLMRouter {
       } else if (provider === 'openai_compatible') {
         // Get base URL and API key from model metadata or user settings
         const userId = routingContext?.userId;
-        const baseUrl =
-          (model as any).baseUrl ||
-          modelRegistry.getLocalModelBaseUrl(userId || '', model.id) ||
-          'http://localhost:8000';
+        const baseUrl = (model as any).baseUrl || modelRegistry.getLocalModelBaseUrl(userId || '', model.id) || 'http://localhost:8000';
 
         // Try to get API key (OpenAI-compatible may or may not require one)
         let apiKey: string | undefined;
         if (userId) {
-          const keyResult = await apiKeyProvider.getApiKeyForRequest(
-            userId,
-            'openai_compatible',
-            'user_then_platform'
-          );
+          const keyResult = await apiKeyProvider.getApiKeyForRequest(userId, 'openai_compatible', 'user_then_platform');
           apiKey = keyResult.apiKey || undefined;
         }
 
@@ -1205,7 +1020,7 @@ export class LLMRouter {
         const serviceConfig: any = {
           systemInstruction: config?.systemInstruction,
           temperature: 0.7,
-          tools: config?.tools,
+          tools: config?.tools
         };
 
         const result = await openAIService.generateContent(prompt, modelIdentifier, serviceConfig);
@@ -1215,11 +1030,11 @@ export class LLMRouter {
           usage: {
             promptTokens: result.usage.promptTokens,
             candidatesTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
+            totalTokens: result.usage.totalTokens
           },
           modelUsed: modelIdentifier,
           provider: 'openai_compatible',
-          fallbackUsed: false,
+          fallbackUsed: false
         };
 
         if (result.functionCalls && result.functionCalls.length > 0) {
@@ -1239,10 +1054,7 @@ export class LLMRouter {
       llmCircuitBreaker.recordFailure(provider);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(
-        `[LLMRouter] Provider ${provider} execution failed (circuit breaker notified):`,
-        errorMessage
-      );
+      logger.error(`[LLMRouter] Provider ${provider} execution failed (circuit breaker notified):`, errorMessage);
       throw error;
     }
   }
@@ -1283,44 +1095,32 @@ export class LLMRouter {
       if (!isTestRequest) {
         const skipCache = config?.tools && Array.isArray(config.tools) && config.tools.length > 0;
         if (!skipCache) {
-          const cached = responseCache.get(prompt, modelId, config?.systemInstruction, {
-            requestType,
-            contextType,
-          });
+          const cached = responseCache.get(
+            prompt,
+            modelId,
+            config?.systemInstruction,
+            { requestType, contextType }
+          );
 
           if (cached) {
-            logger.info(
-              `[LLMRouter] Cache HIT - returning cached response (saved $${cached.cost.toFixed(6)})`
-            );
+            logger.info(`[LLMRouter] Cache HIT - returning cached response (saved $${cached.cost.toFixed(6)})`);
             return {
               text: cached.response,
               usage: {
                 promptTokens: cached.tokens.input,
                 candidatesTokens: cached.tokens.output,
-                totalTokens: cached.tokens.total,
+                totalTokens: cached.tokens.total
               },
               modelUsed: cached.modelId,
               provider: cached.provider as any,
-              fallbackUsed: false,
+              fallbackUsed: false
             };
           }
         }
       }
 
       // Try to determine provider from model ID (default to Gemini)
-      let provider:
-        | 'gemini'
-        | 'openai'
-        | 'anthropic'
-        | 'deepseek'
-        | 'grok'
-        | 'mistral'
-        | 'qwen'
-        | 'openrouter'
-        | 'groq'
-        | 'vertex'
-        | 'azure'
-        | 'custom' = 'gemini';
+      let provider: 'gemini' | 'openai' | 'anthropic' | 'deepseek' | 'grok' | 'mistral' | 'qwen' | 'openrouter' | 'groq' | 'vertex' | 'azure' | 'custom' = 'gemini';
       if (modelId.includes('gpt-') || modelId.includes('o1-')) {
         provider = 'openai';
       } else if (modelId.includes('claude-')) {
@@ -1329,25 +1129,13 @@ export class LLMRouter {
         provider = 'deepseek';
       } else if (modelId.includes('grok')) {
         provider = 'grok';
-      } else if (
-        modelId.includes('mistral') ||
-        modelId.includes('magistral') ||
-        modelId.includes('devstral')
-      ) {
+      } else if (modelId.includes('mistral') || modelId.includes('magistral') || modelId.includes('devstral')) {
         provider = 'mistral';
       } else if (modelId.includes('qwen')) {
         provider = 'qwen';
-      } else if (
-        modelId.startsWith('vertex:') ||
-        modelId.startsWith('vertex-') ||
-        (modelId.includes('vertex') && modelId.includes('gemini'))
-      ) {
+      } else if (modelId.startsWith('vertex:') || modelId.startsWith('vertex-') || (modelId.includes('vertex') && modelId.includes('gemini'))) {
         provider = 'vertex';
-      } else if (
-        modelId.startsWith('azure:') ||
-        modelId.startsWith('azure-') ||
-        modelId.includes('azure')
-      ) {
+      } else if (modelId.startsWith('azure:') || modelId.startsWith('azure-') || modelId.includes('azure')) {
         provider = 'azure';
       } else if (modelId.startsWith('openrouter:') || modelId.includes('/')) {
         provider = 'openrouter';
@@ -1370,25 +1158,25 @@ export class LLMRouter {
       } else if (provider === 'openai') {
         const openAIConfig: any = {
           systemInstruction: serviceConfig.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
         result = await openAIService.generateContent(prompt, modelId, openAIConfig);
       } else if (provider === 'anthropic') {
         const anthropicConfig: any = {
           systemInstruction: serviceConfig.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
         result = await anthropicService.generateContent(prompt, modelId, anthropicConfig);
       } else if (provider === 'deepseek') {
         const deepSeekConfig: any = {
           systemInstruction: serviceConfig.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
         result = await deepSeekService.generateContent(prompt, modelId, deepSeekConfig);
       } else if (provider === 'grok') {
         const grokConfig: any = {
           systemInstruction: serviceConfig.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
         result = await grokService.generateContent(prompt, modelId, grokConfig);
         finalProvider = 'grok';
@@ -1396,14 +1184,14 @@ export class LLMRouter {
         const mistralConfig: any = {
           systemInstruction: serviceConfig.systemInstruction,
           temperature: 0.7,
-          tools: serviceConfig.tools,
+          tools: serviceConfig.tools
         };
         result = await mistralService.generateContent(prompt, modelId, mistralConfig);
         finalProvider = 'mistral';
       } else if (provider === 'qwen') {
         const qwenConfig: any = {
           systemInstruction: serviceConfig.systemInstruction,
-          temperature: 0.7,
+          temperature: 0.7
         };
         result = await qwenService.generateContent(prompt, modelId, qwenConfig);
         finalProvider = 'qwen';
@@ -1412,7 +1200,7 @@ export class LLMRouter {
         const messages = [{ role: 'user', content: prompt }];
         result = await openRouterService.generateContent(modelId, messages, {
           temperature: 0.7,
-          tools: serviceConfig.tools,
+          tools: serviceConfig.tools
         });
         finalProvider = 'openrouter';
       } else if (provider === 'groq') {
@@ -1420,7 +1208,7 @@ export class LLMRouter {
         const messages = [{ role: 'user', content: prompt }];
         result = await groqService.generateContent(modelId, messages, {
           temperature: 0.7,
-          tools: serviceConfig.tools,
+          tools: serviceConfig.tools
         });
         finalProvider = 'groq';
       } else if (provider === 'vertex') {
@@ -1429,7 +1217,7 @@ export class LLMRouter {
         result = await vertexService.generateContent(modelId, messages, {
           temperature: 0.7,
           tools: serviceConfig.tools,
-          useInternet: config?.useInternet,
+          useInternet: config?.useInternet
         });
         finalProvider = 'vertex';
       } else if (provider === 'azure') {
@@ -1437,7 +1225,7 @@ export class LLMRouter {
         const messages = [{ role: 'user', content: prompt }];
         result = await azureOpenAIService.generateContent(modelId, messages, {
           temperature: 0.7,
-          tools: serviceConfig.tools,
+          tools: serviceConfig.tools
         });
         finalProvider = 'azure';
       } else {
@@ -1446,62 +1234,47 @@ export class LLMRouter {
 
       // Track usage
       const latencyMs = Date.now() - startTime;
-      const inputTokens =
-        result.usage?.promptTokens ||
-        result.usage?.promptTokenCount ||
-        result.usage?.promptTokens ||
-        0;
-      const outputTokens =
-        result.usage?.candidatesTokens ||
-        result.usage?.candidatesTokenCount ||
-        result.usage?.completionTokens ||
-        0;
-      const totalTokens = result.usage?.totalTokens || inputTokens + outputTokens;
+      const inputTokens = result.usage?.promptTokens || result.usage?.promptTokenCount || result.usage?.promptTokens || 0;
+      const outputTokens = result.usage?.candidatesTokens || result.usage?.candidatesTokenCount || result.usage?.completionTokens || 0;
+      const totalTokens = result.usage?.totalTokens || (inputTokens + outputTokens);
 
-      usageTracker
-        .trackUsage({
-          userId: routingContext?.userId,
-          projectId: routingContext?.projectId,
-          modelId,
-          provider: finalProvider,
-          modelIdentifier: modelId,
-          inputTokens,
-          outputTokens,
-          requestType,
-          context: contextType,
-          routerType: routerType,
-          success: true,
-          latencyMs,
-        })
-        .catch(err => {
-          logger.warn(`[LLMRouter] Failed to track usage:`, err);
-        });
+      usageTracker.trackUsage({
+        userId: routingContext?.userId,
+        projectId: routingContext?.projectId,
+        modelId,
+        provider: finalProvider,
+        modelIdentifier: modelId,
+        inputTokens,
+        outputTokens,
+        requestType,
+        context: contextType,
+        routerType: routerType,
+        success: true,
+        latencyMs
+      }).catch(err => {
+        logger.warn(`[LLMRouter] Failed to track usage:`, err);
+      });
 
       const response: LLMResponse = {
         text: result.text || '',
         usage: {
           promptTokens: inputTokens,
           candidatesTokens: outputTokens,
-          totalTokens,
+          totalTokens
         },
         modelUsed: modelId,
         provider: finalProvider,
         fallbackUsed: false,
-        resources: (result as any).resources || [], // Include URLs from Google Search grounding (Gemini only)
+        resources: (result as any).resources || [] // Include URLs from Google Search grounding (Gemini only)
       };
 
       // Don't cache test requests - they should always hit the API to verify keys
       if (!isTestRequest && result.text) {
-        const skipCacheForTools =
-          config?.tools && Array.isArray(config.tools) && config.tools.length > 0;
+        const skipCacheForTools = config?.tools && Array.isArray(config.tools) && config.tools.length > 0;
         if (!skipCacheForTools) {
           const model = modelRegistry.getModel(modelId);
-          const inputCost = model
-            ? (inputTokens / 1_000_000) * model.pricing.inputCostPer1MTokens
-            : 0;
-          const outputCost = model
-            ? (outputTokens / 1_000_000) * model.pricing.outputCostPer1MTokens
-            : 0;
+          const inputCost = model ? (inputTokens / 1_000_000) * model.pricing.inputCostPer1MTokens : 0;
+          const outputCost = model ? (outputTokens / 1_000_000) * model.pricing.outputCostPer1MTokens : 0;
           const totalCost = inputCost + outputCost;
 
           responseCache.set(
@@ -1519,17 +1292,11 @@ export class LLMRouter {
 
       // Add function calls if present
       // Check for native function calls (Gemini, OpenAI)
-      if (
-        result.functionCalls &&
-        Array.isArray(result.functionCalls) &&
-        result.functionCalls.length > 0
-      ) {
-        (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map(
-          (fc: any) => ({
-            name: fc.name,
-            args: fc.args || {},
-          })
-        );
+      if (result.functionCalls && Array.isArray(result.functionCalls) && result.functionCalls.length > 0) {
+        (response as LLMResponseWithFunctionCalls).functionCalls = result.functionCalls.map((fc: any) => ({
+          name: fc.name,
+          args: fc.args || {}
+        }));
       } else if (finalProvider !== 'gemini') {
         // For other providers, extract function calls from text as fallback
         const functionCalls = this.extractFunctionCallsFromText(result.text);
@@ -1542,40 +1309,35 @@ export class LLMRouter {
     } catch (error: any) {
       // Track failure
       const latencyMs = Date.now() - startTime;
-      usageTracker
-        .trackUsage({
-          userId: routingContext?.userId,
-          projectId: routingContext?.projectId,
-          modelId,
-          provider: 'gemini', // Default provider
-          modelIdentifier: modelId,
-          inputTokens: Math.ceil(prompt.length / 4), // Rough estimate
-          outputTokens: 0,
-          requestType,
-          context: contextType,
-          routerType: routerType,
-          success: false,
-          errorMessage: error.message,
-          latencyMs,
-        })
-        .catch(err => {
-          logger.warn(`[LLMRouter] Failed to track usage error:`, err);
-        });
+      usageTracker.trackUsage({
+        userId: routingContext?.userId,
+        projectId: routingContext?.projectId,
+        modelId,
+        provider: 'gemini', // Default provider
+        modelIdentifier: modelId,
+        inputTokens: Math.ceil(prompt.length / 4), // Rough estimate
+        outputTokens: 0,
+        requestType,
+        context: contextType,
+        routerType: routerType,
+        success: false,
+        errorMessage: error.message,
+        latencyMs
+      }).catch(err => {
+        logger.warn(`[LLMRouter] Failed to track usage error:`, err);
+      });
 
       if (allowFallback) {
-        logger.warn(
-          `[LLMRouter] Specific model failed, trying intelligent routing fallback:`,
-          error
-        );
+        logger.warn(`[LLMRouter] Specific model failed, trying intelligent routing fallback:`, error);
         return this.executeWithFallback({
           prompt,
           context: {
             systemInstruction: config?.systemInstruction,
-            tools: config?.tools,
+            tools: config?.tools
           },
           routingContext,
           requestType,
-          contextType,
+          contextType
         });
       }
       throw error;
@@ -1604,9 +1366,7 @@ export class LLMRouter {
     try {
       // Use intelligent routing that respects user-configured rules from Admin Console
       // This ensures internal tasks use the same routing rules as user-facing tasks
-      logger.info(
-        `[LLMRouter] Internal task using user-configured routing for: ${params.taskType || 'internal'}`
-      );
+      logger.info(`[LLMRouter] Internal task using user-configured routing for: ${params.taskType || 'internal'}`);
 
       // Use executeWithFallback which respects user's routing rules
       // The routing engine will use user-configured rules based on task type
@@ -1614,19 +1374,19 @@ export class LLMRouter {
         prompt: params.prompt,
         context: {
           systemInstruction: params.config?.systemInstruction,
-          tools: params.config?.tools,
+          tools: params.config?.tools
         },
         routingContext: {},
         requestType: params.taskType || 'internal',
         contextType: 'other',
-        routerType: 'internal',
+        routerType: 'internal'
       });
     } catch (error: any) {
       logger.error(`[LLMRouter] Internal task execution failed:`, error);
 
       // Fallback to economy model on failure (gemini-2.5-flash is always available)
-      const fallbackModel =
-        modelRegistry.getModel('gemini-2.5-flash') || modelRegistry.getActiveModels()[0];
+      const fallbackModel = modelRegistry.getModel('gemini-2.5-flash') ||
+        modelRegistry.getActiveModels()[0];
 
       if (fallbackModel) {
         logger.warn(`[LLMRouter] Using fallback model: ${fallbackModel.modelIdentifier}`);
@@ -1648,9 +1408,7 @@ export class LLMRouter {
   /**
    * Extract function calls from text (helper method)
    */
-  private extractFunctionCallsFromText(
-    text: string
-  ): Array<{ name: string; args: Record<string, any> }> {
+  private extractFunctionCallsFromText(text: string): Array<{ name: string; args: Record<string, any> }> {
     const functionCalls: Array<{ name: string; args: Record<string, any> }> = [];
 
     // Look for JSON function call patterns in text
@@ -1662,17 +1420,16 @@ export class LLMRouter {
         const args = JSON.parse(match[1]);
         functionCalls.push({
           name: 'create_mcp_server',
-          args,
+          args
         });
-      } catch (e: unknown) {
+      } catch (e) {
         // Try to extract key-value pairs if JSON parsing fails
         logger.debug('JSON parsing failed, trying alternative extraction');
       }
     }
 
     // Pattern 2: Look for structured function call blocks
-    const blockPattern =
-      /```(?:json|function_call)?\s*\{[\s\S]*?"name"\s*:\s*"create_mcp_server"[\s\S]*?\}\s*```/gi;
+    const blockPattern = /```(?:json|function_call)?\s*\{[\s\S]*?"name"\s*:\s*"create_mcp_server"[\s\S]*?\}\s*```/gi;
     while ((match = blockPattern.exec(text)) !== null) {
       try {
         const jsonMatch = match[0].match(/\{[\s\S]*\}/);
@@ -1681,11 +1438,11 @@ export class LLMRouter {
           if (parsed.name === 'create_mcp_server' && parsed.args) {
             functionCalls.push({
               name: 'create_mcp_server',
-              args: parsed.args,
+              args: parsed.args
             });
           }
         }
-      } catch (e: unknown) {
+      } catch (e) {
         // Ignore parsing errors
       }
     }

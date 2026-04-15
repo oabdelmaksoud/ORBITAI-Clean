@@ -1,6 +1,7 @@
 import { Page } from '../models/Page.model.js';
 import { PageRevision } from '../models/PageRevision.model.js';
 import { PageTheme } from '../models/PageTheme.model.js';
+import { PageTemplate } from '../models/PageTemplate.model.js';
 import { logger } from '../utils/logger.js';
 
 export interface PublishOptions {
@@ -29,7 +30,7 @@ export async function publishPage(options: PublishOptions): Promise<{ page: any;
   // Create revision before publishing
   const latestRevision = await PageRevision.findOne({ pageId })
     .sort({ revisionNumber: -1 })
-    .lean() as any;
+    .lean();
 
   const nextRevisionNumber = (latestRevision?.revisionNumber || 0) + 1;
 
@@ -97,7 +98,7 @@ export async function rollbackToRevision(options: RollbackOptions): Promise<{ pa
   // Create a new revision from the rollback
   const latestRevision = await PageRevision.findOne({ pageId })
     .sort({ revisionNumber: -1 })
-    .lean() as any;
+    .lean();
 
   const nextRevisionNumber = (latestRevision?.revisionNumber || 0) + 1;
 
@@ -164,7 +165,7 @@ export async function createAutoSaveRevision(
 
   const latestRevision = await PageRevision.findOne({ pageId })
     .sort({ revisionNumber: -1 })
-    .lean() as any;
+    .lean();
 
   const nextRevisionNumber = (latestRevision?.revisionNumber || 0) + 1;
 
@@ -201,7 +202,7 @@ export async function createAutoSaveRevision(
  * Get default theme or create one if none exists
  */
 export async function getDefaultTheme(): Promise<any> {
-  let defaultTheme = await PageTheme.findOne({ isDefault: true }).lean() as any;
+  let defaultTheme = await PageTheme.findOne({ isDefault: true }).lean();
 
   if (!defaultTheme) {
     // Create a default theme

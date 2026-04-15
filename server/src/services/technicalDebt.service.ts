@@ -296,7 +296,7 @@ class TechnicalDebtService {
     try {
       logger.info(`Generating technical debt report for project ${projectId}`);
 
-      const allDebt = await TechnicalDebt.find({ projectId }).lean() as any;
+      const allDebt = await TechnicalDebt.find({ projectId }).lean();
 
       if (allDebt.length === 0) {
         return {
@@ -314,7 +314,7 @@ class TechnicalDebtService {
       }
 
       // Calculate totals
-      const totalDebt = allDebt.reduce((sum: any, d: any) => sum + d.debtScore, 0);
+      const totalDebt = allDebt.reduce((sum, d) => sum + d.debtScore, 0);
       const maxPossibleDebt = allDebt.length * 100;
       const debtScore = maxPossibleDebt > 0 
         ? Math.max(0, 100 - (totalDebt / maxPossibleDebt) * 100)
@@ -324,22 +324,22 @@ class TechnicalDebtService {
       const byCategory = this.groupBy(allDebt, 'category').map(([category, items]) => ({
         category,
         count: items.length,
-        totalScore: items.reduce((sum: any, d: any) => sum + d.debtScore, 0),
-        averageScore: items.reduce((sum: any, d: any) => sum + d.debtScore, 0) / items.length
+        totalScore: items.reduce((sum, d) => sum + d.debtScore, 0),
+        averageScore: items.reduce((sum, d) => sum + d.debtScore, 0) / items.length
       }));
 
       // Group by severity
       const bySeverity = this.groupBy(allDebt, 'severity').map(([severity, items]) => ({
         severity,
         count: items.length,
-        totalScore: items.reduce((sum: any, d: any) => sum + d.debtScore, 0)
+        totalScore: items.reduce((sum, d) => sum + d.debtScore, 0)
       }));
 
       // Group by status
       const byStatus = this.groupBy(allDebt, 'status').map(([status, items]) => ({
         status,
         count: items.length,
-        totalScore: items.reduce((sum: any, d: any) => sum + d.debtScore, 0)
+        totalScore: items.reduce((sum, d) => sum + d.debtScore, 0)
       }));
 
       // Calculate trends (last 30 days)
@@ -347,10 +347,10 @@ class TechnicalDebtService {
 
       // Top debt items
       const topDebtItems = allDebt
-        .filter((d: any) => d.status === 'open')
-        .sort((a: any, b: any) => b.debtScore - a.debtScore)
+        .filter(d => d.status === 'open')
+        .sort((a, b) => b.debtScore - a.debtScore)
         .slice(0, 10)
-        .map((d: any) => ({
+        .map(d => ({
           id: d._id.toString(),
           category: d.category,
           severity: d.severity,
@@ -407,19 +407,19 @@ class TechnicalDebtService {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
 
-      const dayDebt = allDebt.filter((d: any) => {
+      const dayDebt = allDebt.filter(d => {
         const debtDate = new Date(d.identifiedAt);
         return debtDate <= date;
       });
 
-      const openDebt = dayDebt.filter((d: any) => d.status === 'open');
-      const resolvedDebt = dayDebt.filter((d: any) => d.status === 'resolved');
+      const openDebt = dayDebt.filter(d => d.status === 'open');
+      const resolvedDebt = dayDebt.filter(d => d.status === 'resolved');
 
       trends.push({
         date,
-        totalDebt: dayDebt.reduce((sum: any, d: any) => sum + d.debtScore, 0),
-        openDebt: openDebt.reduce((sum: any, d: any) => sum + d.debtScore, 0),
-        resolvedDebt: resolvedDebt.reduce((sum: any, d: any) => sum + d.debtScore, 0)
+        totalDebt: dayDebt.reduce((sum, d) => sum + d.debtScore, 0),
+        openDebt: openDebt.reduce((sum, d) => sum + d.debtScore, 0),
+        resolvedDebt: resolvedDebt.reduce((sum, d) => sum + d.debtScore, 0)
       });
     }
 
@@ -436,9 +436,9 @@ class TechnicalDebtService {
     const priorities: TechnicalDebtReport['remediationPriorities'] = [];
 
     for (const category of byCategory) {
-      const categoryDebt = allDebt.filter((d: any) => d.category === category.category && d.status === 'open');
-      const criticalCount = categoryDebt.filter((d: any) => d.severity === 'critical' || d.severity === 'high').length;
-      const totalEffort = categoryDebt.reduce((sum: any, d: any) => sum + d.estimatedEffort, 0);
+      const categoryDebt = allDebt.filter(d => d.category === category.category && d.status === 'open');
+      const criticalCount = categoryDebt.filter(d => d.severity === 'critical' || d.severity === 'high').length;
+      const totalEffort = categoryDebt.reduce((sum, d) => sum + d.estimatedEffort, 0);
 
       // Priority calculation: severity (40%) + count (30%) + effort (30%)
       const priority = Math.min(10, Math.round(
@@ -475,7 +475,7 @@ class TechnicalDebtService {
       });
     }
 
-    return priorities.sort((a: any, b: any) => b.priority - a.priority);
+    return priorities.sort((a, b) => b.priority - a.priority);
   }
 
   /**

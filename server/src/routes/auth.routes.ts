@@ -87,7 +87,7 @@ router.post('/register', strictRateLimiter, validate(registerSchema), async (req
         token
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -154,7 +154,7 @@ router.post('/login', strictRateLimiter, validate(loginSchema), async (req, res,
         token
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -186,7 +186,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res, next) => {
         }
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -210,7 +210,7 @@ router.get('/privacy-settings', authenticateToken, async (req: AuthRequest, res,
         privacyMode: user.privacyMode ?? false // Default to false if not set
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -241,7 +241,7 @@ router.put('/privacy-settings', authenticateToken, validate(z.object({ privacyMo
         privacyMode: user.privacyMode
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -405,7 +405,7 @@ router.post('/oauth', strictRateLimiter, validate(oauthSchema), async (req, res,
         token
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

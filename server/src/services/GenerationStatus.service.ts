@@ -177,7 +177,7 @@ class GenerationStatusService {
             try {
                 this.socketEmitter(sessionId, event);
                 logger.info(`[GenerationStatus] Emitted ${event.type}: ${event.message} (session: ${sessionId.substring(0, 20)}...)`);
-            } catch (error: unknown) {
+            } catch (error) {
                 logger.error('[GenerationStatus] Failed to emit via WebSocket:', error);
             }
         } else {

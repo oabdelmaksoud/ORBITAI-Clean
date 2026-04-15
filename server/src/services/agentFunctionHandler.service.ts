@@ -5,6 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { agentMCPServerCreator } from './agentMCPServerCreator.js';
+import { MCPServer } from '../models/MCPServer.model.js';
 
 export interface FunctionCall {
   name: string;
@@ -15,7 +16,7 @@ export interface FunctionCallResult {
   success: boolean;
   result?: any;
   error?: string;
-  serverCreated?: any;
+  serverCreated?: MCPServer;
 }
 
 export class AgentFunctionHandler {
@@ -51,7 +52,7 @@ export class AgentFunctionHandler {
       logger.error(`[AgentFunctionHandler] Error handling function call:`, error);
       return {
         success: false,
-        error: (error instanceof Error ? error.message : String(error)) || 'Failed to execute function call'
+        error: error.message || 'Failed to execute function call'
       };
     }
   }
@@ -127,7 +128,7 @@ export class AgentFunctionHandler {
       logger.error(`[AgentFunctionHandler] Failed to create MCP server:`, error);
       return {
         success: false,
-        error: (error instanceof Error ? error.message : String(error)) || 'Failed to create MCP server'
+        error: error.message || 'Failed to create MCP server'
       };
     }
   }

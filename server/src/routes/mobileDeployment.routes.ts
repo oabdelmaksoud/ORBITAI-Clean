@@ -53,7 +53,7 @@ router.post(
       logger.info(`📱 Deploying mobile app: ${project.name} (${appType}) to ${platform}`);
 
       // Emit progress update via WebSocket
-      (webSocketService as any).broadcast(userId, {
+      webSocketService.broadcast(userId, {
         type: 'mobile_deployment_started',
         projectId,
         platform,
@@ -76,13 +76,13 @@ router.post(
       } else if (appType === 'flutter') {
         result = await mobileDeploymentService.deployFlutter(projectId, config);
       } else if (appType === 'native-ios') {
-        result = await ((mobileDeploymentService as any).deployNativeIOS)(projectId, config);
+        result = await mobileDeploymentService.deployNativeIOS(projectId, config);
       } else if (appType === 'native-android') {
-        result = await ((mobileDeploymentService as any).deployNativeAndroid)(projectId, config);
+        result = await mobileDeploymentService.deployNativeAndroid(projectId, config);
       }
 
       if (!result || !result.success) {
-        (webSocketService as any).broadcast(userId, {
+        webSocketService.broadcast(userId, {
           type: 'mobile_deployment_failed',
           projectId,
           error: result?.error || 'Unknown error'
@@ -110,7 +110,7 @@ router.post(
       await deployment.save();
 
       // Emit success event
-      (webSocketService as any).broadcast(userId, {
+      webSocketService.broadcast(userId, {
         type: 'mobile_deployment_completed',
         projectId,
         deploymentId: result.deploymentId,
@@ -158,7 +158,7 @@ router.get(
       }
 
       // Get real-time status from deployment service
-      const status = await ((mobileDeploymentService as any).getDeploymentStatus)(deploymentId);
+      const status = await mobileDeploymentService.getDeploymentStatus(deploymentId);
 
       res.json({
         success: true,
@@ -242,8 +242,7 @@ router.post(
   checkFeatureAccess('deployment'),
   async (req: AuthRequest & FeatureRequest, res: Response, next) => {
     try {
-      // @ts-ignore TS6133
-      const { platform, _appType, appStoreConfig, credentials } = req.body;
+      const { platform, appType, appStoreConfig, credentials } = req.body;
 
       const validationResults = {
         ios: { valid: false, missing: [] as string[], warnings: [] as string[] },

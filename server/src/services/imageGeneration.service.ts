@@ -174,7 +174,7 @@ class ImageGenerationService {
       return {
         success: false,
         images: [],
-        error: (error instanceof Error ? error.message : String(error)) || 'Image generation failed'
+        error: error.message || 'Image generation failed'
       };
     }
   }
@@ -291,7 +291,7 @@ class ImageGenerationService {
       };
     } catch (error: unknown) {
       logger.error('[ImageGeneration] Gemini image generation failed:', error);
-      throw new Error(`Gemini image generation failed: ${(error instanceof Error ? error.message : String(error))}`);
+      throw new Error(`Gemini image generation failed: ${error.message}`);
     }
   }
 
@@ -356,7 +356,7 @@ class ImageGenerationService {
       };
     } catch (error: unknown) {
       logger.error('[ImageGeneration] Imagen generation failed:', error);
-      throw new Error(`Imagen generation failed: ${(error instanceof Error ? error.message : String(error))}`);
+      throw new Error(`Imagen generation failed: ${error.message}`);
     }
   }
 
@@ -419,7 +419,7 @@ class ImageGenerationService {
       };
     } catch (error: unknown) {
       logger.error('[ImageGeneration] Nano Banana generation failed:', error);
-      throw new Error(`Nano Banana generation failed: ${(error instanceof Error ? error.message : String(error))}`);
+      throw new Error(`Nano Banana generation failed: ${error.message}`);
     }
   }
 
@@ -478,7 +478,7 @@ class ImageGenerationService {
       return {
         success: false,
         images: [],
-        error: (error instanceof Error ? error.message : String(error)) || 'Image editing failed'
+        error: error.message || 'Image editing failed'
       };
     }
   }
@@ -527,7 +527,7 @@ class ImageGenerationService {
       return {
         success: false,
         images: [],
-        error: (error instanceof Error ? error.message : String(error)) || 'Image variation failed'
+        error: error.message || 'Image variation failed'
       };
     }
   }

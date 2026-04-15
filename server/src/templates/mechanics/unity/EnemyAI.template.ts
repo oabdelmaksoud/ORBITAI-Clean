@@ -283,37 +283,24 @@ public class EnemyAI : MonoBehaviour
 export const UNITY_ENEMY_AI_CONFIG: MechanicsTemplate = {
     id: 'unity-enemy-ai',
     name: 'Unity Enemy AI System',
-    // @ts-ignore
-  description: 'Complete enemy AI with patrol, chase, and attack behaviors using state machine',
+    description: 'Complete enemy AI with patrol, chase, and attack behaviors using state machine',
     engine: 'unity',
     category: 'ai',
     language: 'csharp',
     code: UNITY_ENEMY_AI_CODE,
     variables: [
-        { name: 'WAYPOINTS_ARRAY_NAME', type: 'string', default: 'patrolWaypoints', // @ts-ignore
-  description: 'Name of waypoints array variable' },
-        { name: 'PATROL_SPEED', type: 'number', default: 2, // @ts-ignore
-  description: 'Enemy patrol movement speed' },
-        { name: 'WAYPOINT_WAIT_TIME', type: 'number', default: 1, // @ts-ignore
-  description: 'Time to wait at each waypoint' },
-        { name: 'CHASE_SPEED', type: 'number', default: 4, // @ts-ignore
-  description: 'Enemy chase movement speed' },
-        { name: 'DETECTION_RANGE', type: 'number', default: 8, // @ts-ignore
-  description: 'Range to detect player' },
-        { name: 'CHASE_RANGE', type: 'number', default: 12, // @ts-ignore
-  description: 'How far to chase before giving up' },
-        { name: 'ATTACK_RANGE', type: 'number', default: 1.5, // @ts-ignore
-  description: 'Range to attack player' },
-        { name: 'ATTACK_DAMAGE', type: 'number', default: 10, // @ts-ignore
-  description: 'Damage dealt per attack' },
-        { name: 'ATTACK_COOLDOWN', type: 'number', default: 1.5, // @ts-ignore
-  description: 'Time between attacks' },
-        { name: 'VISION_ANGLE', type: 'number', default: 60, // @ts-ignore
-  description: 'Field of view angle in degrees' },
-        { name: 'PLAYER_LAYER', type: 'string', default: 'PlayerLayer', // @ts-ignore
-  description: 'Layer mask for player detection' },
-        { name: 'OBSTACLE_LAYER', type: 'string', default: 'ObstacleLayer', // @ts-ignore
-  description: 'Layer mask for obstacles' }
+        { name: 'WAYPOINTS_ARRAY_NAME', type: 'string', default: 'patrolWaypoints', description: 'Name of waypoints array variable' },
+        { name: 'PATROL_SPEED', type: 'number', default: 2, description: 'Enemy patrol movement speed' },
+        { name: 'WAYPOINT_WAIT_TIME', type: 'number', default: 1, description: 'Time to wait at each waypoint' },
+        { name: 'CHASE_SPEED', type: 'number', default: 4, description: 'Enemy chase movement speed' },
+        { name: 'DETECTION_RANGE', type: 'number', default: 8, description: 'Range to detect player' },
+        { name: 'CHASE_RANGE', type: 'number', default: 12, description: 'How far to chase before giving up' },
+        { name: 'ATTACK_RANGE', type: 'number', default: 1.5, description: 'Range to attack player' },
+        { name: 'ATTACK_DAMAGE', type: 'number', default: 10, description: 'Damage dealt per attack' },
+        { name: 'ATTACK_COOLDOWN', type: 'number', default: 1.5, description: 'Time between attacks' },
+        { name: 'VISION_ANGLE', type: 'number', default: 60, description: 'Field of view angle in degrees' },
+        { name: 'PLAYER_LAYER', type: 'string', default: 'PlayerLayer', description: 'Layer mask for player detection' },
+        { name: 'OBSTACLE_LAYER', type: 'string', default: 'ObstacleLayer', description: 'Layer mask for obstacles' }
     ],
     dependencies: [
         'Unity 2D Physics',
@@ -387,7 +374,6 @@ In Scene view with enemy selected, you'll see:
 - Red circle: Attack range
 - Blue lines: Vision cone
 `,
-    // @ts-ignore
-  version: '1.0.0',
+    version: '1.0.0',
     tags: ['ai', 'enemy', 'behavior', 'patrol', 'chase', 'attack', 'state-machine']
 };

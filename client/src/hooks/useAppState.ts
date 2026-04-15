@@ -194,33 +194,6 @@ export function useAppState() {
     // Sync Ref
     useEffect(() => { autoPilotStatusRef.current = autoPilotStatus; }, [autoPilotStatus]);
 
-    // Resizable panel mouse tracking (extracted from App.tsx — all state lives here)
-    useEffect(() => {
-      const handleMouseMove = (e: MouseEvent) => {
-        if (isResizingLeft) setLeftWidth(Math.min(Math.max(e.clientX, 220), 500));
-        if (isResizingLogs) {
-          setIsLogsCollapsed(false);
-          setLogHeight(Math.min(Math.max(document.body.clientHeight - e.clientY, 36), 600));
-        }
-      };
-      const handleMouseUp = () => { setIsResizingLeft(false); setIsResizingLogs(false); };
-      if (isResizingLeft || isResizingLogs) {
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-        document.body.style.cursor = isResizingLogs ? 'row-resize' : 'col-resize';
-        document.body.style.userSelect = 'none';
-      } else {
-        document.body.style.cursor = 'default';
-        document.body.style.userSelect = 'auto';
-      }
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.body.style.cursor = 'default';
-        document.body.style.userSelect = 'auto';
-      };
-    }, [isResizingLeft, isResizingLogs]);
-
 
     // Wizard / Setup State
     const [setupProjectName, setSetupProjectName] = useState("");

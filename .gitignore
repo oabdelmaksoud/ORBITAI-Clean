@@ -1,14 +1,3 @@
-# Claude Code / OMC tooling (local only)
-.claude/
-.omc/
-.tldr/
-.tldrignore
-
-# Backup and temporary editor files
-*.bak
-*.new
-*.new.backup
-
 # Logs
 logs
 *.log

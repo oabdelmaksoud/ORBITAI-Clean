@@ -4,7 +4,7 @@
  */
 
 import express, { Response, NextFunction } from 'express';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { requireAdmin, AdminRequest } from '../middleware/adminAuth.js';
 import { agentKnowledgeAggregator } from '../services/agentKnowledgeAggregator.js';
 import { embeddingService } from '../services/embedding.service.js';
@@ -30,7 +30,7 @@ router.post('/trigger', async (req: AdminRequest, res: Response, next: NextFunct
 
     res.json({
       success: true,
-      message: 'Agent learning aggregation completed',
+      message: 'Agent learning aggregation completed'
     });
   } catch (error: unknown) {
     next(error);
@@ -45,16 +45,14 @@ router.post('/embed-artifacts', async (req: AdminRequest, res: Response, next: N
   try {
     const limit = parseInt(req.body.limit as string) || 100;
 
-    logger.info(
-      `Manual artifact embedding requested by admin: ${req.admin?.email}, limit: ${limit}`
-    );
+    logger.info(`Manual artifact embedding requested by admin: ${req.admin?.email}, limit: ${limit}`);
 
     const embedded = await autoEmbedArtifacts.embedAllArtifacts(limit);
 
     res.json({
       success: true,
       message: `Embedded ${embedded} artifacts`,
-      count: embedded,
+      count: embedded
     });
   } catch (error: unknown) {
     next(error);
@@ -65,10 +63,10 @@ router.post('/embed-artifacts', async (req: AdminRequest, res: Response, next: N
  * GET /api/admin/learning/status
  * Get learning service status
  */
-router.get('/status', async (_req: AdminRequest, res: Response, next: NextFunction) => {
+router.get('/status', async (req: AdminRequest, res: Response, next: NextFunction) => {
   try {
-    const hasOpenAI = await (embeddingService as any).hasApiKey?.('openai');
-    const hasGemini = await (embeddingService as any).hasApiKey?.('gemini');
+    const hasOpenAI = await embeddingService.hasApiKey?.('openai');
+    const hasGemini = await embeddingService.hasApiKey?.('gemini');
 
     res.json({
       success: true,
@@ -77,8 +75,8 @@ router.get('/status', async (_req: AdminRequest, res: Response, next: NextFuncti
         hasOpenAIKey: hasOpenAI,
         hasGeminiKey: hasGemini,
         embeddingDimensions: embeddingService.getEmbeddingDimensions?.() || 0,
-        aggregatorRunning: (agentKnowledgeAggregator as any).isRunning || false,
-      },
+        aggregatorRunning: agentKnowledgeAggregator.isRunning || false
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -89,36 +87,32 @@ router.get('/status', async (_req: AdminRequest, res: Response, next: NextFuncti
  * POST /api/admin/learning/embed-single/:artifactId
  * Embed a specific artifact
  */
-router.post(
-  '/embed-single/:artifactId',
-  async (req: AdminRequest, res: Response, next: NextFunction) => {
-    try {
-      const { artifactId } = req.params;
+router.post('/embed-single/:artifactId', async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const { artifactId } = req.params;
 
-      logger.info(`Manual single artifact embedding requested: ${artifactId}`);
+    logger.info(`Manual single artifact embedding requested: ${artifactId}`);
 
-      // Import dynamically to avoid circular dependency
-      const { Artifact } = await import('../models/Artifact.model.js');
-      const artifact = await Artifact.findById(artifactId);
+    // Import dynamically to avoid circular dependency
+    const { Artifact } = await import('../models/Artifact.model.js');
+    const artifact = await Artifact.findById(artifactId);
 
-      if (!artifact) {
-        res.status(404).json({
-          success: false,
-          message: 'Artifact not found',
-        });
-        return;
-      }
-
-      await autoEmbedArtifacts.embedArtifact(artifact);
-
-      res.json({
-        success: true,
-        message: `Artifact ${artifactId} embedding generated`,
+    if (!artifact) {
+      return res.status(404).json({
+        success: false,
+        message: 'Artifact not found'
       });
-    } catch (error: unknown) {
-      next(error);
     }
+
+    await autoEmbedArtifacts.embedArtifact(artifact);
+
+    res.json({
+      success: true,
+      message: `Artifact ${artifactId} embedding generated`
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 export const learningTriggerRoutes = router;

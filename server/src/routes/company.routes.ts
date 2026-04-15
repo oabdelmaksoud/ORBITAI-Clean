@@ -1,10 +1,9 @@
-import express, { Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { CustomAgent, ICustomAgent } from '../models/CustomAgent.model.js';
-// @ts-ignore
-import { paginationSchema } from '../validation/schemas.js';
+import { validate, paginationSchema } from '../validation/schemas.js';
 
 const router = express.Router();
 
@@ -29,7 +28,7 @@ router.get('/agents', async (req: AuthRequest, res: Response, next: NextFunction
 
     // Build query
     const query: any = {
-      userId: req.user!.id,
+      userId: req.user!.id
     };
 
     if (!includeInactive) {
@@ -63,15 +62,15 @@ router.get('/agents', async (req: AuthRequest, res: Response, next: NextFunction
         hierarchy: {
           level: hierarchyLevel,
           reportsTo: agent.reportsTo || null,
-          hasReports: false, // Will be computed below
-        },
+          hasReports: false // Will be computed below
+        }
       };
     });
 
     // Check which agents have reports (agents that are being reported to)
     const agentIds = agents.map(a => a._id);
     const agentsWithReports = await CustomAgent.find({
-      reportsTo: { $in: agentIds },
+      reportsTo: { $in: agentIds }
     }).distinct('reportsTo');
 
     const agentsWithReportsSet = new Set(agentsWithReports.map(id => id.toString()));
@@ -81,8 +80,8 @@ router.get('/agents', async (req: AuthRequest, res: Response, next: NextFunction
       ...agent,
       hierarchy: {
         ...agent.hierarchy,
-        hasReports: agentsWithReportsSet.has(agent._id.toString()),
-      },
+        hasReports: agentsWithReportsSet.has(agent._id.toString())
+      }
     }));
 
     logger.info(`Retrieved ${agents.length} agents for user ${req.user!.id}`);
@@ -95,11 +94,11 @@ router.get('/agents', async (req: AuthRequest, res: Response, next: NextFunction
           total,
           page,
           limit,
-          pages: Math.ceil(total / limit),
-        },
-      },
+          pages: Math.ceil(total / limit)
+        }
+      }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -114,7 +113,7 @@ router.get('/agents/:id', async (req: AuthRequest, res: Response, next: NextFunc
 
     const agent = await CustomAgent.findOne({
       _id: id,
-      userId: req.user!.id,
+      userId: req.user!.id
     }).populate('reportsTo', 'name title role avatar');
 
     if (!agent) {
@@ -124,7 +123,7 @@ router.get('/agents/:id', async (req: AuthRequest, res: Response, next: NextFunc
     // Get direct reports
     const directReports = await CustomAgent.find({
       reportsTo: agent._id,
-      userId: req.user!.id,
+      userId: req.user!.id
     }).select('name title role avatar');
 
     // Get reporting chain (all agents above this one)
@@ -132,9 +131,8 @@ router.get('/agents/:id', async (req: AuthRequest, res: Response, next: NextFunc
     let currentAgent: ICustomAgent | null = agent;
 
     while (currentAgent?.reportsTo) {
-      const supervisor: any = await CustomAgent.findById(currentAgent.reportsTo).select(
-        'name title role avatar reportsTo'
-      );
+      const supervisor = await CustomAgent.findById(currentAgent.reportsTo)
+        .select('name title role avatar reportsTo');
 
       if (supervisor) {
         reportingChain.push(supervisor);
@@ -154,11 +152,11 @@ router.get('/agents/:id', async (req: AuthRequest, res: Response, next: NextFunc
           reportsTo: agent.reportsTo || null,
           directReports,
           reportingChain: reportingChain.reverse(),
-          level: reportingChain.length,
-        },
-      },
+          level: reportingChain.length
+        }
+      }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -167,59 +165,54 @@ router.get('/agents/:id', async (req: AuthRequest, res: Response, next: NextFunc
  * GET /api/company/agents/hierarchy
  * Get the full agent hierarchy tree
  */
-router.get(
-  '/agents/hierarchy/tree',
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      // Get all agents for this user
-      const agents = await CustomAgent.find({
-        userId: req.user!.id,
-        isActive: true,
-      })
-        .select('name title role avatar reportsTo')
-        .sort({ name: 1 });
+router.get('/agents/hierarchy/tree', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Get all agents for this user
+    const agents = await CustomAgent.find({
+      userId: req.user!.id,
+      isActive: true
+    }).select('name title role avatar reportsTo').sort({ name: 1 });
 
-      // Build hierarchy tree
-      const agentMap = new Map<string, any>();
-      const rootAgents: any[] = [];
+    // Build hierarchy tree
+    const agentMap = new Map<string, any>();
+    const rootAgents: any[] = [];
 
-      // First pass: create map of all agents
-      agents.forEach(agent => {
-        agentMap.set(agent._id.toString(), {
-          ...agent.toObject(),
-          reports: [],
-        });
+    // First pass: create map of all agents
+    agents.forEach(agent => {
+      agentMap.set(agent._id.toString(), {
+        ...agent.toObject(),
+        reports: []
       });
+    });
 
-      // Second pass: build tree structure
-      agents.forEach(agent => {
-        const agentNode = agentMap.get(agent._id.toString());
+    // Second pass: build tree structure
+    agents.forEach(agent => {
+      const agentNode = agentMap.get(agent._id.toString());
 
-        if (agent.reportsTo) {
-          const parent = agentMap.get(agent.reportsTo.toString());
-          if (parent) {
-            parent.reports.push(agentNode);
-          } else {
-            // Parent not found, treat as root
-            rootAgents.push(agentNode);
-          }
+      if (agent.reportsTo) {
+        const parent = agentMap.get(agent.reportsTo.toString());
+        if (parent) {
+          parent.reports.push(agentNode);
         } else {
-          // No reportsTo, this is a root agent
+          // Parent not found, treat as root
           rootAgents.push(agentNode);
         }
-      });
+      } else {
+        // No reportsTo, this is a root agent
+        rootAgents.push(agentNode);
+      }
+    });
 
-      res.json({
-        success: true,
-        data: {
-          hierarchy: rootAgents,
-          totalAgents: agents.length,
-        },
-      });
-    } catch (error: unknown) {
-      next(error);
-    }
+    res.json({
+      success: true,
+      data: {
+        hierarchy: rootAgents,
+        totalAgents: agents.length
+      }
+    });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 export default router;

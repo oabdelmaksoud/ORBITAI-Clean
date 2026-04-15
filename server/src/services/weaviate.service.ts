@@ -6,11 +6,11 @@
 import { config } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { embeddingService } from './embedding.service.js';
-type Artifact = any;
+import { Artifact } from '../../../types.js';
 
 // Lazy import Weaviate to avoid startup failure if package not installed
 let weaviateClient: any = null;
-// let weaviateClient: any = null;
+let WeaviateClient: any = null;
 let ApiKey: any = null;
 
 async function loadWeaviateClient() {
@@ -19,7 +19,7 @@ async function loadWeaviateClient() {
   try {
     const weaviateModule = await import('weaviate-ts-client');
     weaviateClient = weaviateModule.default;
-    weaviateClient = (weaviateModule as any).WeaviateClient;
+    WeaviateClient = weaviateModule.WeaviateClient;
     ApiKey = weaviateModule.ApiKey;
   } catch (error: unknown) {
     logger.warn('Weaviate package not installed. Vector search will use in-memory fallback.');
@@ -127,7 +127,7 @@ export class WeaviateService {
       }
 
       // Create class schema
-      // const _embeddingDimensions = embeddingService.getEmbeddingDimensions();
+      const embeddingDimensions = embeddingService.getEmbeddingDimensions();
 
       const classDefinition = {
         class: this.className,
@@ -206,7 +206,7 @@ export class WeaviateService {
       await this.client.schema.classCreator().withClass(classDefinition).do();
       logger.info(`✅ Created Weaviate class: ${this.className}`);
     } catch (error: unknown) {
-      if ((error instanceof Error ? error.message : String(error))?.includes('already exists')) {
+      if (error.message?.includes('already exists')) {
         logger.debug(`Weaviate class "${this.className}" already exists`);
       } else {
         logger.error('Failed to create Weaviate schema:', error);
@@ -281,7 +281,8 @@ export class WeaviateService {
       };
 
       // Upsert (insert or update)
-      await this.client!.data.merger()
+      await this.client!.data
+        .merger()
         .withId(artifact.id)
         .withClassName(this.className)
         .withProperties(weaviateObject)
@@ -304,7 +305,11 @@ export class WeaviateService {
     }
 
     try {
-      await this.client!.data.deleter().withId(artifactId).withClassName(this.className).do();
+      await this.client!.data
+        .deleter()
+        .withId(artifactId)
+        .withClassName(this.className)
+        .do();
 
       logger.debug(`Deleted artifact from Weaviate: ${artifactId}`);
     } catch (error: unknown) {
@@ -325,14 +330,12 @@ export class WeaviateService {
       type?: string;
       phase?: string;
     }
-  ): Promise<
-    Array<{
-      id: string;
-      text: string;
-      score: number;
-      metadata?: Record<string, any>;
-    }>
-  > {
+  ): Promise<Array<{
+    id: string;
+    text: string;
+    score: number;
+    metadata?: Record<string, any>;
+  }>> {
     if (!this.isAvailable()) {
       logger.warn('Weaviate not available, returning empty results');
       return [];
@@ -386,7 +389,8 @@ export class WeaviateService {
       }
 
       // Perform vector search
-      const result = await this.client!.graphql.get()
+      const result = await this.client!.graphql
+        .get()
         .withClassName(this.className)
         .withFields('artifactId title content type phase createdBy tags')
         .withNearVector({
@@ -430,14 +434,12 @@ export class WeaviateService {
       type?: string;
       phase?: string;
     }
-  ): Promise<
-    Array<{
-      id: string;
-      text: string;
-      score: number;
-      metadata?: Record<string, any>;
-    }>
-  > {
+  ): Promise<Array<{
+    id: string;
+    text: string;
+    score: number;
+    metadata?: Record<string, any>;
+  }>> {
     if (!this.isAvailable()) {
       return await this.vectorSearch(query, topK, filters);
     }
@@ -490,7 +492,8 @@ export class WeaviateService {
       }
 
       // Perform hybrid search (vector + BM25 keyword search)
-      const result = await this.client!.graphql.get()
+      const result = await this.client!.graphql
+        .get()
         .withClassName(this.className)
         .withFields('artifactId title content type phase createdBy tags')
         .withHybrid({
@@ -533,7 +536,8 @@ export class WeaviateService {
     }
 
     try {
-      const result = await this.client!.graphql.aggregate()
+      const result = await this.client!.graphql
+        .aggregate()
         .withClassName(this.className)
         .withFields('meta { count }')
         .do();
@@ -554,7 +558,8 @@ export class WeaviateService {
     }
 
     try {
-      await this.client!.batch.objectsBatchDeleter()
+      await this.client!.batch
+        .objectsBatchDeleter()
         .withClassName(this.className)
         .withWhere({
           operator: 'Like' as const,

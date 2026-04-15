@@ -58,7 +58,7 @@ class TraceabilityMatrixService {
       const reqArtifacts = await Artifact.find({
         projectId,
         type: 'requirement'
-      }).lean() as any;
+      }).lean();
 
       if (reqArtifacts.length === 0) {
         return {
@@ -78,10 +78,10 @@ class TraceabilityMatrixService {
       }
 
       const requirements = requirementsValidationService.extractRequirements(reqArtifacts);
-      const allArtifacts = await Artifact.find({ projectId }).lean() as any;
+      const allArtifacts = await Artifact.find({ projectId }).lean();
 
       // Filter relevant artifacts (code, tests, designs)
-      const relevantArtifacts = allArtifacts.filter((a: any) => 
+      const relevantArtifacts = allArtifacts.filter(a =>
         a.type === 'code' || 
         a.type === 'test-plan' || 
         a.type === 'design' || 
@@ -117,7 +117,7 @@ class TraceabilityMatrixService {
           type: req.type,
           priority: req.priority
         })),
-        artifacts: relevantArtifacts.map((art: any) => ({
+        artifacts: relevantArtifacts.map(art => ({
           id: art._id.toString(),
           title: art.title,
           type: art.type
@@ -144,7 +144,7 @@ class TraceabilityMatrixService {
   private analyzeLink(
     requirement: ParsedRequirement,
     artifact: IArtifact,
-    _allArtifacts: IArtifact[]
+    allArtifacts: IArtifact[]
   ): TraceabilityMatrixCell {
     let linkType: 'direct' | 'indirect' | 'none' = 'none';
     let linkStrength = 0;
@@ -164,8 +164,8 @@ class TraceabilityMatrixService {
     }
 
     // Check if requirement ID appears in artifact
-    // const normalizeId = (id: string) => id.replace(/[-\s_]/g, '').toUpperCase();
-    // const _normalizedReqId = normalizeId(requirement.id);
+    const normalizeId = (id: string) => id.replace(/[-\s_]/g, '').toUpperCase();
+    const normalizedReqId = normalizeId(requirement.id);
     const exactMatch = new RegExp(`\\b${requirement.id.replace(/[-\s]/g, '[-\\s]?')}\\b`, 'i');
 
     if (exactMatch.test(artifact.title) || exactMatch.test(artifact.content)) {
@@ -293,7 +293,7 @@ class TraceabilityMatrixService {
 
       filteredMatrix = {
         ...filteredMatrix,
-        artifacts: filteredMatrix.artifacts.filter((_art, idx) => 
+        artifacts: filteredMatrix.artifacts.filter((art, idx) =>
           artifactIndices.includes(idx)
         ),
         matrix: filteredMatrix.matrix.map(row => 

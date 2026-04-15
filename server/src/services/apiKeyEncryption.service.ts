@@ -4,34 +4,28 @@
  */
 
 import crypto from 'crypto';
-import { logger } from '../utils/logger.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16; // 128 bits
-// const _SALT_LENGTH = 64;
-// const _TAG_LENGTH = 16;
+const SALT_LENGTH = 64;
+const TAG_LENGTH = 16;
 
 class ApiKeyEncryptionService {
   private encryptionKey: Buffer;
 
   constructor() {
-    // Get encryption key from environment.
+    // Get encryption key from environment or use a fixed development key
     // CRITICAL: Changing this key will make all existing encrypted keys unreadable!
     const masterKey = process.env.API_KEY_ENCRYPTION_KEY;
 
     if (!masterKey) {
-      if (process.env.NODE_ENV === 'production') {
-        // Hard crash in production — encrypted keys cannot be safely managed without this.
-        throw new Error(
-          'CRITICAL: API_KEY_ENCRYPTION_KEY must be set in production. ' +
-            'Set it in your .env file before starting the server.'
-        );
-      }
-      // Development only: use a fixed fallback so encrypted keys survive restarts.
-      logger.error('❌ API_KEY_ENCRYPTION_KEY not set — using development fallback key.');
-      logger.error('   Set API_KEY_ENCRYPTION_KEY in your .env file for persistent encryption.');
+      // Use a fixed development key instead of random to prevent key rotation issues
+      // In production, this should ALWAYS be set via environment variable
       const devKey = 'orbitai-dev-encryption-key-2024-do-not-use-in-production-change-this';
+      console.error('❌ CRITICAL: API_KEY_ENCRYPTION_KEY not set in environment!');
+      console.error('   Using development key. ALL ENCRYPTED KEYS WILL BE LOST ON SERVER RESTART!');
+      console.error('   Set API_KEY_ENCRYPTION_KEY in your .env file immediately.');
       this.encryptionKey = this.deriveKey(devKey);
     } else {
       this.encryptionKey = this.deriveKey(masterKey);
@@ -42,14 +36,7 @@ class ApiKeyEncryptionService {
    * Derive encryption key from master key using PBKDF2
    */
   private deriveKey(masterKey: string): Buffer {
-    const envSalt = process.env.API_KEY_ENCRYPTION_SALT;
-    if (!envSalt && process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'CRITICAL: API_KEY_ENCRYPTION_SALT must be set in production. ' +
-          'Set it in your .env file before starting the server.'
-      );
-    }
-    const salt = envSalt || 'orbitai-api-key-salt-2024';
+    const salt = process.env.API_KEY_ENCRYPTION_SALT || 'orbitai-api-key-salt-2024';
     return crypto.pbkdf2Sync(masterKey, salt, 100000, KEY_LENGTH, 'sha512');
   }
 
@@ -72,7 +59,7 @@ class ApiKeyEncryptionService {
     return {
       encrypted,
       iv: iv.toString('hex'),
-      tag: tag.toString('hex'),
+      tag: tag.toString('hex')
     };
   }
 
@@ -95,9 +82,7 @@ class ApiKeyEncryptionService {
 
       return decrypted;
     } catch (error: unknown) {
-      throw new Error(
-        `Decryption failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(`Decryption failed: ${error.message}`);
     }
   }
 

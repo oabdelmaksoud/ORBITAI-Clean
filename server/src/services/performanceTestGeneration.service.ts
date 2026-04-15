@@ -5,7 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { llmRouter } from './llm/LLMRouter.js';
-// import { Type, Schema } from '@google/genai';
+import { Type, Schema } from '@google/genai';
 
 export interface PerformanceTest {
   id: string;
@@ -55,8 +55,8 @@ class PerformanceTestGenerationService {
    * Generate performance test suite
    */
   async generateTestSuite(
-    _code: string,
-    _language: string,
+    code: string,
+    language: string,
     endpoints: Array<{ method: string; path: string; parameters: string[] }>,
     nfrRequirements?: Array<{ type: string; target: string; unit: string }>
   ): Promise<PerformanceTestSuite> {
@@ -162,7 +162,7 @@ Generate k6 test code that:
 Return the complete k6 test code.`;
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -204,7 +204,7 @@ Return the complete k6 test code.`;
         }
       };
     } catch (error: unknown) {
-      logger.warn(`Failed to generate load test for ${endpoint.path}:`, (error instanceof Error ? error.message : String(error)));
+      logger.warn(`Failed to generate load test for ${endpoint.path}:`, error.message);
       return null;
     }
   }

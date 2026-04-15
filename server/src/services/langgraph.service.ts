@@ -6,7 +6,7 @@
 import { StateGraph, END, START } from '@langchain/langgraph';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { BaseMessage, SystemMessage } from '@langchain/core/messages';
+import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { logger } from '../utils/logger.js';
 import { apiKeyProvider } from './apiKeyProvider.service.js';
 import { internalTaskRouter } from './internalTaskRouter.service.js';
@@ -45,7 +45,7 @@ export interface GraphExecutionResult {
 }
 
 class LangGraphService {
-  private workflows: Map<string, StateGraph<any>> = new Map();
+  private workflows: Map<string, StateGraph> = new Map();
   private workflowConfigs: Map<string, GraphWorkflow> = new Map();
   private llmCache: Map<string, any> = new Map();
   private initialized: boolean = false;
@@ -78,17 +78,13 @@ class LangGraphService {
         const routingDecision = await internalTaskRouter.routeTask({
           prompt: taskPrompt || 'LangGraph workflow execution',
           taskType: 'analysis',
-          context: 'system',
+          context: 'system'
         });
 
         modelName = routingDecision.selectedModel.modelIdentifier;
-        logger.info(
-          `[LangGraph] Internal router selected: ${modelName} (${routingDecision.tier} tier)`
-        );
+        logger.info(`[LangGraph] Internal router selected: ${modelName} (${routingDecision.tier} tier)`);
       } catch (routerError: any) {
-        logger.warn(
-          `[LangGraph] Internal router failed, using default model: ${routerError.message}`
-        );
+        logger.warn(`[LangGraph] Internal router failed, using default model: ${routerError.message}`);
         const openaiKey = await apiKeyProvider.getApiKey('openai');
         modelName = openaiKey ? 'gpt-4o-mini' : 'gemini-2.5-flash'; // Default to economy models
       }
@@ -113,14 +109,12 @@ class LangGraphService {
       });
     } else if (geminiKey) {
       llm = new ChatGoogleGenerativeAI({
-        model: modelName,
+        modelName: modelName,
         temperature: temp,
         apiKey: geminiKey,
-      } as any);
+      });
     } else {
-      throw new Error(
-        'No LLM API key configured. Add API keys via Admin Console → Settings → API Keys'
-      );
+      throw new Error('No LLM API key configured. Add API keys via Admin Console → Settings → API Keys');
     }
 
     this.llmCache.set(cacheKey, llm);
@@ -130,60 +124,64 @@ class LangGraphService {
   /**
    * Create a workflow from configuration
    */
-  createWorkflow(workflow: GraphWorkflow): StateGraph<any> {
+  createWorkflow(workflow: GraphWorkflow): StateGraph {
     if (!this.initialized) {
       this.initialize();
     }
 
     // Create state graph
-    const graph = new StateGraph<any>({
+    const graph = new StateGraph({
       channels: {
         messages: {
           reducer: (x: BaseMessage[], y: BaseMessage[]) => x.concat(y),
           default: () => [],
         },
       },
-    } as any);
+    });
 
     // Add nodes
     for (const node of workflow.nodes) {
-      (graph as any).addNode(node.id, node.handler);
+      graph.addNode(node.id, node.handler);
     }
 
     // Add edges
     for (const edge of workflow.edges) {
       if (edge.condition) {
         // Conditional edge
-        (graph as any).addConditionalEdges(edge.from, edge.condition, {
-          [edge.to]: edge.to,
-        });
+        graph.addConditionalEdges(
+          edge.from,
+          edge.condition,
+          {
+            [edge.to]: edge.to,
+          }
+        );
       } else {
         // Direct edge
         if (edge.from === 'START') {
-          (graph as any).addEdge(START, edge.to);
+          graph.addEdge(START, edge.to);
         } else if (edge.to === 'END') {
-          (graph as any).addEdge(edge.from, END);
+          graph.addEdge(edge.from, END);
         } else {
-          (graph as any).addEdge(edge.from, edge.to);
+          graph.addEdge(edge.from, edge.to);
         }
       }
     }
 
     // Set entry point
-    const entryNode = workflow.nodes.find(
-      n => !workflow.edges.some(e => e.to === n.id && e.from !== 'START')
+    const entryNode = workflow.nodes.find(n =>
+      !workflow.edges.some(e => e.to === n.id && e.from !== 'START')
     );
     if (entryNode && !workflow.edges.some(e => e.from === 'START')) {
-      (graph as any).addEdge(START, entryNode.id);
+      graph.addEdge(START, entryNode.id);
     }
 
     // Set exit point
-    const exitNodes = workflow.nodes.filter(
-      n => !workflow.edges.some(e => e.from === n.id && e.to !== 'END')
+    const exitNodes = workflow.nodes.filter(n =>
+      !workflow.edges.some(e => e.from === n.id && e.to !== 'END')
     );
     for (const exitNode of exitNodes) {
       if (!workflow.edges.some(e => e.from === exitNode.id)) {
-        (graph as any).addEdge(exitNode.id, END);
+        graph.addEdge(exitNode.id, END);
       }
     }
 
@@ -250,7 +248,7 @@ class LangGraphService {
     compiledGraph: any,
     initialState: GraphState,
     executionPath: string[],
-    _startTime: number
+    startTime: number
   ): AsyncGenerator<GraphState, void, unknown> {
     try {
       const stream = await compiledGraph.stream(initialState);
@@ -273,7 +271,7 @@ class LangGraphService {
     workflowName: string,
     systemPrompt: string,
     model?: string
-  ): Promise<StateGraph<any>> {
+  ): Promise<StateGraph> {
     const llm = await this.getLLM(model);
 
     // Define nodes
@@ -319,7 +317,7 @@ class LangGraphService {
     workflowName: string,
     agents: Array<{ id: string; name: string; systemPrompt: string; model?: string }>,
     routingLogic?: (state: GraphState) => string
-  ): StateGraph<any> {
+  ): StateGraph {
     const nodes: GraphNode[] = agents.map(agent => ({
       id: agent.id,
       name: agent.name,
@@ -328,7 +326,10 @@ class LangGraphService {
         const messages = state.messages || [];
 
         // Add system message for this agent
-        const agentMessages = [new SystemMessage(agent.systemPrompt), ...messages];
+        const agentMessages = [
+          new SystemMessage(agent.systemPrompt),
+          ...messages,
+        ];
 
         const response = await llm.invoke(agentMessages);
 
@@ -383,7 +384,7 @@ class LangGraphService {
     workflowName: string,
     retrievalHandler: (state: GraphState) => Promise<Partial<GraphState>>,
     model?: string
-  ): Promise<StateGraph<any>> {
+  ): Promise<StateGraph> {
     const llm = await this.getLLM(model);
 
     const nodes: GraphNode[] = [
@@ -428,7 +429,7 @@ class LangGraphService {
   /**
    * Get workflow by ID
    */
-  getWorkflow(workflowId: string): StateGraph<any> | undefined {
+  getWorkflow(workflowId: string): StateGraph | undefined {
     return this.workflows.get(workflowId);
   }
 

@@ -152,7 +152,7 @@ Return as JSON array with steps.`;
     };
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'documentation',
         agentRole: 'Notebook Agent',
@@ -172,7 +172,7 @@ Return as JSON array with steps.`;
         dependencies: []
       }));
     } catch (error: unknown) {
-      logger.warn('LLM recovery procedure generation failed, using template:', (error instanceof Error ? error.message : String(error)));
+      logger.warn('LLM recovery procedure generation failed, using template:', error.message);
       return this.getDefaultRecoveryProcedures();
     }
   }
@@ -181,7 +181,7 @@ Return as JSON array with steps.`;
    * Generate failover procedures
    */
   private async generateFailoverProcedures(
-    _request: DRPlanRequest
+    request: DRPlanRequest
   ): Promise<IDisasterRecoveryPlan['failoverProcedures']> {
     return [
       {

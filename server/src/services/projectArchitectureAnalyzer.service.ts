@@ -6,7 +6,7 @@
 
 import { logger } from '../utils/logger.js';
 import { llmRouter } from './llm/LLMRouter.js';
-import { enhancePrompt } from './promptEngineering.service.js';
+import { enhancePrompt, type PromptContext } from './promptEngineering.service.js';
 
 export interface ArchitectureRequirements {
   needsBackend: boolean;
@@ -44,8 +44,7 @@ export interface ArchitectureRequirements {
       framework?: string;
       features?: string[];
     };
-    mobileApp: {
-      // New: Mobile app recommendations
+    mobileApp: { // New: Mobile app recommendations
       framework?: 'react-native' | 'flutter' | 'native-ios' | 'native-android';
       platform?: 'ios' | 'android' | 'both';
       reasoning?: string;
@@ -83,26 +82,26 @@ class ProjectArchitectureAnalyzerService {
       await this.initialize();
 
       const prompt = this.buildAnalysisPrompt(input);
-      const context: any = {
+      const context: PromptContext = {
         taskType: 'analysis',
         agentRole: 'Architecture Agent',
         projectContext: input.description,
         standards: [],
-        complexity: input.complexity || 'moderate',
+        complexity: input.complexity || 'moderate'
       };
 
       const enhancedPrompt = enhancePrompt(prompt, context);
 
       // Use LLM Router to get best model for analysis
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt: enhancedPrompt,
         taskType: 'analysis',
         agentRole: 'Architecture Agent',
         context: {
           agentRole: 'Architecture Agent',
-          tools: [],
+          tools: []
         },
-        requiredOutputFormat: 'json',
+        requiredOutputFormat: 'json'
       });
 
       // Parse LLM response
@@ -111,15 +110,12 @@ class ProjectArchitectureAnalyzerService {
       logger.info(`Architecture analysis complete for project: ${input.name}`, {
         needsBackend: analysis.needsBackend,
         needsAdminPanel: analysis.needsAdminPanel,
-        confidence: analysis.confidence,
+        confidence: analysis.confidence
       });
 
       return analysis;
     } catch (error: unknown) {
-      logger.error(
-        'Architecture analysis failed, using defaults:',
-        error instanceof Error ? error.message : String(error)
-      );
+      logger.error('Architecture analysis failed, using defaults:', error.message);
       // Return safe defaults
       return this.getDefaultArchitecture(input);
     }
@@ -228,18 +224,12 @@ Respond in JSON format:
   /**
    * Parse LLM response into ArchitectureRequirements
    */
-  private parseAnalysisResponse(
-    response: string,
-    input: ProjectAnalysisInput
-  ): ArchitectureRequirements {
+  private parseAnalysisResponse(response: string, input: ProjectAnalysisInput): ArchitectureRequirements {
     try {
       // Extract JSON from response (handle markdown code blocks)
       let jsonStr = response.trim();
       if (jsonStr.startsWith('```json')) {
-        jsonStr = jsonStr
-          .replace(/```json\n?/g, '')
-          .replace(/```\n?/g, '')
-          .trim();
+        jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       } else if (jsonStr.startsWith('```')) {
         jsonStr = jsonStr.replace(/```\n?/g, '').trim();
       }
@@ -269,32 +259,28 @@ Respond in JSON format:
           multiTenancy: parsed.detectedFeatures?.multiTenancy || false,
           mobileAccess: parsed.detectedFeatures?.mobileAccess || false,
           offlineSupport: parsed.detectedFeatures?.offlineSupport || false,
-          pushNotifications: parsed.detectedFeatures?.pushNotifications || false,
+          pushNotifications: parsed.detectedFeatures?.pushNotifications || false
         },
         recommendations: {
           backend: {
             framework: parsed.recommendations?.backend?.framework || 'Node.js/Express',
             database: parsed.recommendations?.backend?.database || 'MongoDB',
             authentication: parsed.recommendations?.backend?.authentication || 'JWT',
-            deployment: parsed.recommendations?.backend?.deployment || 'Docker',
+            deployment: parsed.recommendations?.backend?.deployment || 'Docker'
           },
           adminPanel: {
             framework: parsed.recommendations?.adminPanel?.framework || 'React',
-            features: parsed.recommendations?.adminPanel?.features || [],
+            features: parsed.recommendations?.adminPanel?.features || []
           },
           mobileApp: {
             framework: parsed.recommendations?.mobileApp?.framework || 'react-native',
             platform: parsed.recommendations?.mobileApp?.platform || 'both',
-            reasoning:
-              parsed.recommendations?.mobileApp?.reasoning || 'Cross-platform support recommended',
-          },
-        },
+            reasoning: parsed.recommendations?.mobileApp?.reasoning || 'Cross-platform support recommended'
+          }
+        }
       };
     } catch (error: unknown) {
-      logger.warn(
-        'Failed to parse LLM response, using rule-based analysis:',
-        error instanceof Error ? error.message : String(error)
-      );
+      logger.warn('Failed to parse LLM response, using rule-based analysis:', error.message);
       return this.ruleBasedAnalysis(input);
     }
   }
@@ -309,117 +295,43 @@ Respond in JSON format:
 
     // Keywords that indicate backend needs
     const backendKeywords = [
-      'api',
-      'backend',
-      'server',
-      'database',
-      'storage',
-      'user',
-      'authentication',
-      'login',
-      'register',
-      'account',
-      'profile',
-      'data',
-      'crud',
-      'rest',
-      'graphql',
-      'endpoint',
-      'service',
-      'microservice',
-      'ecommerce',
-      'payment',
-      'order',
-      'cart',
-      'checkout',
-      'admin',
-      'dashboard',
-      'analytics',
-      'report',
-      'upload',
-      'file',
-      'real-time',
-      'websocket',
-      'socket',
-      'notification',
-      'email',
+      'api', 'backend', 'server', 'database', 'storage', 'user', 'authentication',
+      'login', 'register', 'account', 'profile', 'data', 'crud', 'rest', 'graphql',
+      'endpoint', 'service', 'microservice', 'ecommerce', 'payment', 'order',
+      'cart', 'checkout', 'admin', 'dashboard', 'analytics', 'report', 'upload',
+      'file', 'real-time', 'websocket', 'socket', 'notification', 'email'
     ];
 
     // Keywords that indicate admin panel needs
     const adminKeywords = [
-      'admin',
-      'dashboard',
-      'control panel',
-      'management',
-      'cms',
-      'content management',
-      'user management',
-      'analytics',
-      'reporting',
-      'settings',
-      'configuration',
-      'monitoring',
-      'logs',
-      'audit',
-      'permissions',
-      'roles',
-      'multi-tenant',
+      'admin', 'dashboard', 'control panel', 'management', 'cms', 'content management',
+      'user management', 'analytics', 'reporting', 'settings', 'configuration',
+      'monitoring', 'logs', 'audit', 'permissions', 'roles', 'multi-tenant'
     ];
 
     // Keywords that indicate mobile app needs
     const mobileKeywords = [
-      'mobile',
-      'app',
-      'ios',
-      'android',
-      'iphone',
-      'smartphone',
-      'tablet',
-      'app store',
-      'play store',
-      'mobile app',
-      'native app',
-      'react native',
-      'flutter',
-      'on-the-go',
-      'offline',
-      'push notification',
-      'location',
-      'camera',
-      'mobile-first',
-      'responsive mobile',
-      'mobile experience',
+      'mobile', 'app', 'ios', 'android', 'iphone', 'smartphone', 'tablet',
+      'app store', 'play store', 'mobile app', 'native app', 'react native',
+      'flutter', 'on-the-go', 'offline', 'push notification', 'location',
+      'camera', 'mobile-first', 'responsive mobile', 'mobile experience'
     ];
 
     const needsBackend = backendKeywords.some(keyword => combined.includes(keyword));
-    const needsAdminPanel =
-      adminKeywords.some(keyword => combined.includes(keyword)) || needsBackend;
+    const needsAdminPanel = adminKeywords.some(keyword => combined.includes(keyword)) || needsBackend;
     const needsMobileApp = mobileKeywords.some(keyword => combined.includes(keyword));
 
     // Determine backend type
     let backendType: 'REST' | 'GraphQL' | 'gRPC' | 'Microservices' | 'Serverless' = 'REST';
     if (combined.includes('graphql')) backendType = 'GraphQL';
-    else if (combined.includes('grpc') || combined.includes('microservice'))
-      backendType = 'Microservices';
-    else if (combined.includes('serverless') || combined.includes('lambda'))
-      backendType = 'Serverless';
+    else if (combined.includes('grpc') || combined.includes('microservice')) backendType = 'Microservices';
+    else if (combined.includes('serverless') || combined.includes('lambda')) backendType = 'Serverless';
 
     // Determine mobile app framework
-    let mobileAppType: 'react-native' | 'flutter' | 'native-ios' | 'native-android' =
-      'react-native';
+    let mobileAppType: 'react-native' | 'flutter' | 'native-ios' | 'native-android' = 'react-native';
     if (combined.includes('flutter')) mobileAppType = 'flutter';
-    else if (
-      combined.includes('native ios') ||
-      combined.includes('swift') ||
-      combined.includes('objective-c')
-    )
-      mobileAppType = 'native-ios';
-    else if (
-      combined.includes('native android') ||
-      combined.includes('kotlin') ||
-      combined.includes('java android')
-    )
-      mobileAppType = 'native-android';
+    else if (combined.includes('native ios') || combined.includes('swift') || combined.includes('objective-c')) mobileAppType = 'native-ios';
+    else if (combined.includes('native android') || combined.includes('kotlin') || combined.includes('java android')) mobileAppType = 'native-android';
     else if (combined.includes('react native')) mobileAppType = 'react-native';
 
     // Determine mobile platform
@@ -437,8 +349,8 @@ Respond in JSON format:
       reasoning: needsBackend
         ? 'Project requires backend for data management and API endpoints'
         : needsMobileApp
-          ? 'Project requires mobile app for mobile access'
-          : 'Project appears to be frontend-only',
+        ? 'Project requires mobile app for mobile access'
+        : 'Project appears to be frontend-only',
       confidence: 0.6,
       detectedFeatures: {
         dataStorage: needsBackend,
@@ -454,34 +366,34 @@ Respond in JSON format:
         multiTenancy: combined.includes('multi-tenant') || combined.includes('tenant'),
         mobileAccess: needsMobileApp,
         offlineSupport: combined.includes('offline') || combined.includes('sync'),
-        pushNotifications: combined.includes('push') || combined.includes('notification'),
+        pushNotifications: combined.includes('push') || combined.includes('notification')
       },
       recommendations: {
         backend: {
           framework: 'Node.js/Express',
           database: 'MongoDB',
           authentication: 'JWT',
-          deployment: 'Docker',
+          deployment: 'Docker'
         },
         adminPanel: {
           framework: 'React',
-          features: needsAdminPanel ? ['User Management', 'Dashboard', 'Analytics'] : [],
+          features: needsAdminPanel ? ['User Management', 'Dashboard', 'Analytics'] : []
         },
         mobileApp: {
           framework: mobileAppType,
           platform: mobilePlatform,
           reasoning: needsMobileApp
             ? `Recommended ${mobileAppType} for ${mobilePlatform === 'both' ? 'cross-platform' : mobilePlatform} support`
-            : 'No mobile app needed',
-        },
-      },
+            : 'No mobile app needed'
+        }
+      }
     };
   }
 
   /**
    * Get default architecture (when analysis fails)
    */
-  private getDefaultArchitecture(_input: ProjectAnalysisInput): ArchitectureRequirements {
+  private getDefaultArchitecture(input: ProjectAnalysisInput): ArchitectureRequirements {
     return {
       needsBackend: false,
       needsAdminPanel: false,
@@ -505,25 +417,25 @@ Respond in JSON format:
         multiTenancy: false,
         mobileAccess: false,
         offlineSupport: false,
-        pushNotifications: false,
+        pushNotifications: false
       },
       recommendations: {
         backend: {
           framework: 'Node.js/Express',
           database: 'MongoDB',
           authentication: 'JWT',
-          deployment: 'Docker',
+          deployment: 'Docker'
         },
         adminPanel: {
           framework: 'React',
-          features: [],
+          features: []
         },
         mobileApp: {
           framework: 'react-native',
           platform: 'both',
-          reasoning: 'No mobile app needed',
-        },
-      },
+          reasoning: 'No mobile app needed'
+        }
+      }
     };
   }
 }

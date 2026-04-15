@@ -29,8 +29,7 @@ router.post('/:projectId/identify', authenticateToken, async (req: AuthRequest, 
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
-      return;
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     logger.info(`Identifying technical debt for project: ${projectId}`);
@@ -55,7 +54,7 @@ router.post('/:projectId/identify', authenticateToken, async (req: AuthRequest, 
     res.status(500).json({
       success: false,
       message: 'Failed to identify technical debt',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -70,8 +69,7 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
-      return;
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     logger.info(`Getting technical debt report for project: ${projectId}`);
@@ -87,7 +85,7 @@ router.get('/:projectId/report', authenticateToken, async (req: AuthRequest, res
     res.status(500).json({
       success: false,
       message: 'Failed to get technical debt report',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });
@@ -102,8 +100,7 @@ router.post('/:debtId/resolve', authenticateToken, async (req: AuthRequest, res:
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
-      return;
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     logger.info(`Resolving technical debt: ${debtId}`);
@@ -119,7 +116,7 @@ router.post('/:debtId/resolve', authenticateToken, async (req: AuthRequest, res:
     res.status(500).json({
       success: false,
       message: 'Failed to resolve technical debt',
-      error: (error instanceof Error ? error.message : String(error))
+      error: error.message
     });
   }
 });

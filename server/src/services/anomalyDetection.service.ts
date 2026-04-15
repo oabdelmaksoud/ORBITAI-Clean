@@ -6,6 +6,7 @@
 
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { logger } from '../utils/logger.js';
+import { Project } from '../models/Project.model.js';
 
 export interface Anomaly {
   id: string;
@@ -233,7 +234,7 @@ class AnomalyDetectionService {
    */
   private async detectErrorSpikes(
     recentUsage: any[],
-    _filters?: any
+    filters?: any
   ): Promise<Anomaly[]> {
     const anomalies: Anomaly[] = [];
 

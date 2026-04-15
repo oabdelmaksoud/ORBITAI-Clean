@@ -14,13 +14,12 @@ router.get('/', async (_req, res, next) => {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
       // MongoDB not connected - return empty array
-      res.json({
+      return res.json({
         success: true,
         data: {
           packages: []
         }
       });
-      return;
     }
     
     const packages = await Package.find({ isActive: true })
@@ -61,11 +60,10 @@ router.get('/:id', async (req, res, next) => {
   try {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'MongoDB not connected'
       });
-      return;
     }
     
     const packageDoc = await Package.findOne({ 
@@ -79,11 +77,10 @@ router.get('/:id', async (req, res, next) => {
       .lean();
 
     if (!packageDoc) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: 'Package not found'
       });
-      return;
     }
 
     const { _id, ...rest } = packageDoc as any;

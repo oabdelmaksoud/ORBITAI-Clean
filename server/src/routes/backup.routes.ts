@@ -24,7 +24,7 @@ const BACKUP_DIR = path.join(__dirname, '../../backups');
 (async () => {
   try {
     await fs.mkdir(BACKUP_DIR, { recursive: true });
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('Failed to create backup directory:', error);
   }
 })();
@@ -40,7 +40,10 @@ router.get('/', async (req: AdminRequest, res, next) => {
 
     if (status) query.status = status;
 
-    const backups = await DatabaseBackup.find(query).sort({ createdAt: -1 }).limit(100).lean();
+    const backups = await DatabaseBackup.find(query)
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
 
     res.json({
       success: true,
@@ -60,9 +63,9 @@ router.get('/', async (req: AdminRequest, res, next) => {
           createdBy: b.createdBy,
           retentionDays: b.retentionDays,
           expiresAt: b.expiresAt,
-          createdAt: (b as any).createdAt,
-        })),
-      },
+          createdAt: b.createdAt
+        }))
+      }
     });
   } catch (error: unknown) {
     next(error);
@@ -89,7 +92,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
       collections: collections || [],
       createdBy: req.admin?.id || req.user?.id,
       retentionDays: retentionDays || 30,
-      expiresAt: new Date(Date.now() + (retentionDays || 30) * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + (retentionDays || 30) * 24 * 60 * 60 * 1000)
     });
 
     await backup.save();
@@ -97,7 +100,7 @@ router.post('/', async (req: AdminRequest, res, next) => {
     // Perform backup asynchronously
     (async () => {
       try {
-        const db = mongoose.connection.db!;
+        const db = mongoose.connection.db;
         const backupData: any = {};
 
         if (collections && collections.length > 0) {
@@ -131,9 +134,9 @@ router.post('/', async (req: AdminRequest, res, next) => {
         logger.info(`Backup completed: ${filename}`);
       } catch (error: unknown) {
         backup.status = 'failed';
-        backup.error = error instanceof Error ? error.message : String(error);
+        backup.error = error.message;
         await backup.save();
-        logger.error(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
+        logger.error(`Backup failed: ${error.message}`);
       }
     })();
 
@@ -143,10 +146,10 @@ router.post('/', async (req: AdminRequest, res, next) => {
         backup: {
           id: backup._id.toString(),
           filename: backup.filename,
-          status: backup.status,
-        },
+          status: backup.status
+        }
       },
-      message: 'Backup started',
+      message: 'Backup started'
     });
   } catch (error: unknown) {
     next(error);
@@ -185,16 +188,13 @@ router.post('/:id/verify', async (req: AdminRequest, res, next) => {
         success: true,
         data: {
           verified: isValid,
-          message: isValid ? 'Backup verified successfully' : 'Backup verification failed',
-        },
+          message: isValid ? 'Backup verified successfully' : 'Backup verification failed'
+        }
       });
     } catch (error: unknown) {
       backup.verified = false;
       await backup.save();
-      throw new AppError(
-        `Backup verification failed: ${error instanceof Error ? error.message : String(error)}`,
-        400
-      );
+      throw new AppError(`Backup verification failed: ${error.message}`, 400);
     }
   } catch (error: unknown) {
     next(error);
@@ -220,7 +220,7 @@ router.post('/:id/restore', async (req: AdminRequest, res, next) => {
     // Read backup file
     const data = await fs.readFile(backup.filePath, 'utf-8');
     const backupData = JSON.parse(data);
-    const db = mongoose.connection.db!;
+    const db = mongoose.connection.db;
 
     // Restore collections
     for (const [collectionName, documents] of Object.entries(backupData)) {
@@ -241,7 +241,7 @@ router.post('/:id/restore', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'Backup restored successfully',
+      message: 'Backup restored successfully'
     });
   } catch (error: unknown) {
     next(error);
@@ -263,7 +263,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
     // Delete file
     try {
       await fs.unlink(backup.filePath);
-    } catch (error: unknown) {
+    } catch (error) {
       // File might not exist, continue
     }
 
@@ -274,7 +274,7 @@ router.delete('/:id', async (req: AdminRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'Backup deleted',
+      message: 'Backup deleted'
     });
   } catch (error: unknown) {
     next(error);

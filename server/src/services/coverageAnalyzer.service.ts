@@ -200,7 +200,7 @@ Return ONLY valid JSON in this exact format:
             };
 
         } catch (error: unknown) {
-            logger.warn(`[CoverageAnalyzer] AI analysis failed, falling back to keyword matching:`, (error instanceof Error ? error.message : String(error)));
+            logger.warn(`[CoverageAnalyzer] AI analysis failed, falling back to keyword matching:`, error.message);
             // Fall back to keyword-based analysis
             return this.analyzePrototypeCoverage(htmlContent, selectedIdeas);
         }

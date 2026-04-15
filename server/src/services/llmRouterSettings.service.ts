@@ -36,7 +36,7 @@ class LLMRouterSettingsService {
     try {
       const settings = await LLMRouterSettings.findOne({ scope: 'global' })
         .populate('routingRules')
-        .lean() as any;
+        .lean();
       return settings;
     } catch (error: unknown) {
       logger.error('Failed to get global router settings:', error);
@@ -59,7 +59,7 @@ class LLMRouterSettingsService {
         userId: new mongoose.Types.ObjectId(userId)
       })
         .populate('routingRules')
-        .lean() as any;
+        .lean();
       return settings;
     } catch (error: unknown) {
       logger.error(`Failed to get user router settings for ${userId}:`, error);
@@ -145,7 +145,7 @@ class LLMRouterSettingsService {
 
       const allEnabledRules = await RoutingRule.find(ruleQuery)
         .sort({ priority: -1 })
-        .lean() as any;
+        .lean();
 
       // If settings has specific rule references, use those; otherwise use all enabled rules
       if (effective.routingRules.length > 0) {
@@ -153,7 +153,7 @@ class LLMRouterSettingsService {
           typeof r === 'object' && r._id ? r._id.toString() : r.toString()
         );
         // Filter to only referenced rules that are enabled and match routerType
-        effective.routingRules = allEnabledRules.filter((rule: any) =>
+        effective.routingRules = allEnabledRules.filter(rule =>
           ruleIds.includes(rule._id.toString())
         ) as IRoutingRule[];
       } else {

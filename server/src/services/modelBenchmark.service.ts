@@ -107,9 +107,7 @@ class ModelBenchmarkService {
    * Run a benchmark for a specific model and task type
    */
   async runBenchmark(config: BenchmarkConfig): Promise<IBenchmarkResult> {
-    // @ts-ignore TS6133
-    // @ts-ignore TS6133
-    const { modelId, taskType, _timeoutMs = 30000, _iterations = 1 } = config;
+    const { modelId, taskType, timeoutMs = 30000, iterations = 1 } = config;
     
     const benchmarkKey = `${modelId}-${taskType}`;
     if (this.runningBenchmarks.has(benchmarkKey)) {
@@ -201,7 +199,7 @@ class ModelBenchmarkService {
         qualityScore: 0,
         benchmarkPrompt: BENCHMARK_PROMPTS[taskType]?.[0]?.prompt || '',
         status: 'failure',
-        errorMessage: (error instanceof Error ? error.message : String(error)),
+        errorMessage: error.message,
         timestamp: new Date()
       });
 
@@ -226,7 +224,7 @@ class ModelBenchmarkService {
     return BenchmarkResult.find(query)
       .sort({ timestamp: -1 })
       .limit(limit)
-      .lean() as any;
+      .lean();
   }
 
   /**

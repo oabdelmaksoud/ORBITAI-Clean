@@ -5,7 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { AgentExecution, IAgentExecution } from '../models/AgentExecution.model.js';
-import { Artifact} from '../models/Artifact.model.js';
+import { Artifact, IArtifact } from '../models/Artifact.model.js';
 import { agentCommunicationService } from './agentCommunication.service.js';
 
 export interface RollbackResult {
@@ -29,10 +29,10 @@ class AgentRollbackService {
   ): Promise<IAgentExecution> {
     try {
       // Get current artifacts
-      const artifacts = await Artifact.find({ projectId }).lean() as any;
+      const artifacts = await Artifact.find({ projectId }).lean();
 
       const snapshot = {
-        artifacts: artifacts.map((a: any) => ({
+        artifacts: artifacts.map(a => ({
           id: a._id.toString(),
           content: a.content,
           version: 1 // Simplified versioning
@@ -122,7 +122,7 @@ class AgentRollbackService {
             artifactsReverted++;
           }
         } catch (error: unknown) {
-          logger.warn(`Failed to revert artifact ${artifactInfo.artifactId}:`, (error instanceof Error ? error.message : String(error)));
+          logger.warn(`Failed to revert artifact ${artifactInfo.artifactId}:`, error.message);
         }
       }
 
@@ -139,7 +139,7 @@ class AgentRollbackService {
           }
           restoredState = true;
         } catch (error: unknown) {
-          logger.warn('Failed to restore state from snapshot:', (error instanceof Error ? error.message : String(error)));
+          logger.warn('Failed to restore state from snapshot:', error.message);
         }
       }
 
@@ -175,7 +175,7 @@ class AgentRollbackService {
         artifactsReverted: 0,
         dependentAgentsNotified: 0,
         restoredState: false,
-        error: (error instanceof Error ? error.message : String(error))
+        error: error.message
       };
     }
   }
@@ -228,7 +228,7 @@ class AgentRollbackService {
     })
       .sort({ rolledBackAt: -1 })
       .limit(50)
-      .lean() as any;
+      .lean();
   }
 }
 

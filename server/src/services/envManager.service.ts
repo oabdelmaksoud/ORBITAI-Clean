@@ -19,7 +19,7 @@ const EDITABLE_VARS = [
   'LOG_LEVEL',
   'CORS_ORIGINS',
   'CORS_CREDENTIALS',
-  // NODE_ENV intentionally excluded: changing it via UI could bypass production security guards
+  'NODE_ENV', // Environment switching (requires restart)
   // LLM Configuration
   'ENABLE_MULTI_LLM',
   'DEFAULT_LLM_PROVIDER',
@@ -31,15 +31,14 @@ const EDITABLE_VARS = [
   'VERTEX_PROJECT_ID',
   'VERTEX_LOCATION',
   'AZURE_OPENAI_ENDPOINT',
-  'AZURE_OPENAI_DEPLOYMENT_NAME',
-  'AZURE_OPENAI_API_VERSION',
-  // Note: GOOGLE_SEARCH_ENGINE_ID is now stored in database with API key (metadata.additionalConfig.engineId)
+      'AZURE_OPENAI_DEPLOYMENT_NAME',
+      'AZURE_OPENAI_API_VERSION',
+      // Note: GOOGLE_SEARCH_ENGINE_ID is now stored in database with API key (metadata.additionalConfig.engineId)
 ];
 
 // API Keys - These are now managed via database (Settings → API Keys)
 // They are NOT editable via environment variables UI
-// @ts-ignore TS6133
-const _API_KEY_VARS = [
+const API_KEY_VARS = [
   'GEMINI_API_KEY',
   'OPENAI_API_KEY',
   'ANTHROPIC_API_KEY',
@@ -57,8 +56,12 @@ const _API_KEY_VARS = [
 ];
 
 // Variables that require server restart to take effect
-// @ts-ignore TS6133
-const _REQUIRES_RESTART_VARS = ['NODE_ENV', 'PORT', 'MONGODB_URI', 'JWT_SECRET'];
+const REQUIRES_RESTART_VARS = [
+  'NODE_ENV',
+  'PORT',
+  'MONGODB_URI',
+  'JWT_SECRET',
+];
 
 // Variables that should be masked when reading (show only last 4 chars)
 const MASKED_VARS = [
@@ -99,10 +102,8 @@ async function readEnvFile(): Promise<Record<string, string>> {
         let value = match[2].trim();
 
         // Remove quotes if present
-        if (
-          (value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))
-        ) {
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
           value = value.slice(1, -1);
         }
 
@@ -112,7 +113,7 @@ async function readEnvFile(): Promise<Record<string, string>> {
 
     return env;
   } catch (error: unknown) {
-    if ((error as any).code === 'ENOENT') {
+    if (error.code === 'ENOENT') {
       // File doesn't exist, return empty object
       logger.warn('.env file not found, returning empty config');
       return {};
@@ -130,7 +131,7 @@ async function writeEnvFile(env: Record<string, string>): Promise<void> {
   try {
     existingContent = await fs.readFile(ENV_FILE_PATH, 'utf-8');
   } catch (error: unknown) {
-    if ((error as any).code !== 'ENOENT') {
+    if (error.code !== 'ENOENT') {
       throw error;
     }
   }
@@ -169,10 +170,9 @@ async function writeEnvFile(env: Record<string, string>): Promise<void> {
   // Add updated/new variables
   for (const [key, value] of Object.entries(env)) {
     // Escape value if it contains spaces or special characters
-    const escapedValue =
-      value.includes(' ') || value.includes('#') || value.includes('=')
-        ? `"${value.replace(/"/g, '\\"')}"`
-        : value;
+    const escapedValue = value.includes(' ') || value.includes('#') || value.includes('=')
+      ? `"${value.replace(/"/g, '\\"')}"`
+      : value;
 
     newLines.push(`${key}=${escapedValue}`);
   }
@@ -184,18 +184,19 @@ async function writeEnvFile(env: Record<string, string>): Promise<void> {
 /**
  * Get environment variables (masked for sensitive values)
  */
-export async function getEnvironmentVariables(): Promise<
-  Record<string, { value: string; editable: boolean; masked: boolean }>
-> {
+export async function getEnvironmentVariables(): Promise<Record<string, { value: string; editable: boolean; masked: boolean }>> {
   const env = await readEnvFile();
   const result: Record<string, { value: string; editable: boolean; masked: boolean }> = {};
 
   // Get all environment variables from process.env and .env file
-  const allVars = new Set([...Object.keys(env), ...Object.keys(process.env)]);
+  const allVars = new Set([
+    ...Object.keys(env),
+    ...Object.keys(process.env)
+  ]);
 
   for (const key of allVars) {
     // Skip internal Node.js variables
-    if (key.startsWith('npm_') || (key.startsWith('NODE_') && key !== 'NODE_ENV')) {
+    if (key.startsWith('npm_') || key.startsWith('NODE_') && key !== 'NODE_ENV') {
       continue;
     }
 
@@ -206,7 +207,7 @@ export async function getEnvironmentVariables(): Promise<
     result[key] = {
       value: masked ? `***${value.slice(-4)}` : value,
       editable,
-      masked,
+      masked
     };
   }
 
@@ -216,7 +217,9 @@ export async function getEnvironmentVariables(): Promise<
 /**
  * Update environment variables
  */
-export async function updateEnvironmentVariables(updates: Record<string, string>): Promise<void> {
+export async function updateEnvironmentVariables(
+  updates: Record<string, string>
+): Promise<void> {
   // Validate that all keys are editable
   for (const key of Object.keys(updates)) {
     if (!EDITABLE_VARS.includes(key)) {

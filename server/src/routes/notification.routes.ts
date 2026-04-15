@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Notification } from '../models/Notification.model';
 import { authenticateToken } from '../middleware/auth';
-import { logger } from '../utils/logger.js';
+import { Types } from 'mongoose';
 
 const router = Router();
 
@@ -14,7 +14,7 @@ router.use(authenticateToken);
  */
 router.get('/', async (req, res) => {
   try {
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
     const { read, type, limit, page } = req.query;
 
     const options: any = {};
@@ -30,9 +30,9 @@ router.get('/', async (req, res) => {
     options.limit = parseInt(limit as string) || 20;
     options.skip = (parseInt(page as string) || 0) * options.limit;
 
-    const notifications = await ((Notification as any).getNotifications)(userId, options);
+    const notifications = await Notification.getNotifications(userId, options);
     const totalCount = await Notification.countDocuments({ user: userId });
-    const unreadCount = await ((Notification as any).getUnreadCount)(userId);
+    const unreadCount = await Notification.getUnreadCount(userId);
 
     res.json({
       notifications,
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
       limit: options.limit
     });
   } catch (error: any) {
-    logger.error('Get notifications error:', error);
+    console.error('Get notifications error:', error);
     res.status(500).json({ error: error.message || 'Failed to get notifications' });
   }
 });
@@ -53,12 +53,12 @@ router.get('/', async (req, res) => {
  */
 router.get('/unread', async (req, res) => {
   try {
-    const userId = ((req as any).user)._id;
-    const count = await ((Notification as any).getUnreadCount)(userId);
+    const userId = req.user._id;
+    const count = await Notification.getUnreadCount(userId);
 
     res.json({ count });
   } catch (error: any) {
-    logger.error('Get unread count error:', error);
+    console.error('Get unread count error:', error);
     res.status(500).json({ error: error.message || 'Failed to get unread count' });
   }
 });
@@ -70,7 +70,7 @@ router.get('/unread', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
 
     const notification = await Notification.findById(id)
       .populate('data.actor', 'name avatar')
@@ -78,19 +78,17 @@ router.get('/:id', async (req, res) => {
       .populate('data.project', 'name');
 
     if (!notification) {
-      res.status(404).json({ error: 'Notification not found' });
-      return;
+      return res.status(404).json({ error: 'Notification not found' });
     }
 
     // Check if notification belongs to user
     if (!notification.user.equals(userId)) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     res.json(notification);
   } catch (error: any) {
-    logger.error('Get notification error:', error);
+    console.error('Get notification error:', error);
     res.status(500).json({ error: error.message || 'Failed to get notification' });
   }
 });
@@ -102,26 +100,24 @@ router.get('/:id', async (req, res) => {
 router.put('/:id/read', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
 
     const notification = await Notification.findById(id);
 
     if (!notification) {
-      res.status(404).json({ error: 'Notification not found' });
-      return;
+      return res.status(404).json({ error: 'Notification not found' });
     }
 
     // Check if notification belongs to user
     if (!notification.user.equals(userId)) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
-    await ((notification as any).markAsRead)();
+    await notification.markAsRead();
 
     res.json(notification);
   } catch (error: any) {
-    logger.error('Mark as read error:', error);
+    console.error('Mark as read error:', error);
     res.status(500).json({ error: error.message || 'Failed to mark as read' });
   }
 });
@@ -132,16 +128,16 @@ router.put('/:id/read', async (req, res) => {
  */
 router.put('/read-all', async (req, res) => {
   try {
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
 
-    const result = await ((Notification as any).markAllAsRead)(userId);
+    const result = await Notification.markAllAsRead(userId);
 
     res.json({ 
       message: 'All notifications marked as read',
       modifiedCount: result.modifiedCount
     });
   } catch (error: any) {
-    logger.error('Mark all as read error:', error);
+    console.error('Mark all as read error:', error);
     res.status(500).json({ error: error.message || 'Failed to mark all as read' });
   }
 });
@@ -153,26 +149,24 @@ router.put('/read-all', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
 
     const notification = await Notification.findById(id);
 
     if (!notification) {
-      res.status(404).json({ error: 'Notification not found' });
-      return;
+      return res.status(404).json({ error: 'Notification not found' });
     }
 
     // Check if notification belongs to user
     if (!notification.user.equals(userId)) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     await notification.deleteOne();
 
     res.json({ message: 'Notification deleted successfully' });
   } catch (error: any) {
-    logger.error('Delete notification error:', error);
+    console.error('Delete notification error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete notification' });
   }
 });
@@ -183,7 +177,7 @@ router.delete('/:id', async (req, res) => {
  */
 router.delete('/', async (req, res) => {
   try {
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
 
     const result = await Notification.deleteMany({
       user: userId,
@@ -195,7 +189,7 @@ router.delete('/', async (req, res) => {
       deletedCount: result.deletedCount
     });
   } catch (error: any) {
-    logger.error('Delete read notifications error:', error);
+    console.error('Delete read notifications error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete notifications' });
   }
 });
@@ -206,10 +200,10 @@ router.delete('/', async (req, res) => {
  */
 router.post('/test', async (req, res) => {
   try {
-    const userId = ((req as any).user)._id;
+    const userId = req.user._id;
     const { type, title, message, data } = req.body;
 
-    const notification = await ((Notification as any).createNotification)(
+    const notification = await Notification.createNotification(
       userId,
       type || 'mention',
       title || 'Test notification',
@@ -219,7 +213,7 @@ router.post('/test', async (req, res) => {
 
     res.status(201).json(notification);
   } catch (error: any) {
-    logger.error('Create test notification error:', error);
+    console.error('Create test notification error:', error);
     res.status(500).json({ error: error.message || 'Failed to create test notification' });
   }
 });

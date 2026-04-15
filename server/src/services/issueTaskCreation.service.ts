@@ -9,14 +9,7 @@ import { TaskStatus, AgentRoleType, AgentRole } from '@orbitai/shared';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface DetectedIssue {
-  type:
-    | 'security'
-    | 'performance'
-    | 'quality'
-    | 'best-practice'
-    | 'bug'
-    | 'compliance'
-    | 'requirement';
+  type: 'security' | 'performance' | 'quality' | 'best-practice' | 'bug' | 'compliance' | 'requirement';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
@@ -40,7 +33,7 @@ class IssueTaskCreationService {
   async createTaskForIssue(
     projectId: string,
     issue: DetectedIssue,
-    _userId: string
+    userId: string
   ): Promise<TaskCreationResult> {
     try {
       // Find project
@@ -49,16 +42,14 @@ class IssueTaskCreationService {
         return {
           taskId: '',
           created: false,
-          message: 'Project not found',
+          message: 'Project not found'
         };
       }
 
       // Check if similar task already exists (prevent duplicates)
-      const existingTask = project.tasks?.find(
-        (t: any) =>
-          t.title.toLowerCase().includes(issue.title.toLowerCase().substring(0, 30)) ||
-          (t.description &&
-            t.description.toLowerCase().includes(issue.description.toLowerCase().substring(0, 50)))
+      const existingTask = project.tasks?.find((t: any) =>
+        t.title.toLowerCase().includes(issue.title.toLowerCase().substring(0, 30)) ||
+        (t.description && t.description.toLowerCase().includes(issue.description.toLowerCase().substring(0, 50)))
       );
 
       if (existingTask) {
@@ -66,7 +57,7 @@ class IssueTaskCreationService {
         return {
           taskId: existingTask.id || existingTask._id?.toString() || '',
           created: false,
-          message: 'Similar task already exists',
+          message: 'Similar task already exists'
         };
       }
 
@@ -97,7 +88,7 @@ class IssueTaskCreationService {
           score: 0,
           reasoning: 'Quality score will be calculated when task is executed.',
           criteria: [],
-          timestamp: Date.now(),
+          timestamp: Date.now()
         },
         metadata: {
           issueType: issue.type,
@@ -105,8 +96,8 @@ class IssueTaskCreationService {
           detectedBy: issue.agentRole,
           location: issue.location,
           artifactId: issue.artifactId,
-          autoCreated: true,
-        },
+          autoCreated: true
+        }
       };
 
       // Add task to project
@@ -121,14 +112,14 @@ class IssueTaskCreationService {
       return {
         taskId: newTask.id,
         created: true,
-        message: `Task created successfully: ${newTask.title}`,
+        message: `Task created successfully: ${newTask.title}`
       };
     } catch (error: unknown) {
       logger.error('Failed to create task for issue:', error);
       return {
         taskId: '',
         created: false,
-        message: `Failed to create task: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to create task: ${error.message}`
       };
     }
   }
@@ -157,19 +148,8 @@ class IssueTaskCreationService {
   async createTasksFromCodeReview(
     projectId: string,
     reviewResult: {
-      securityIssues?: Array<{
-        severity: string;
-        type: string;
-        description: string;
-        location?: string;
-        recommendation?: string;
-      }>;
-      bestPractices?: Array<{
-        status: string;
-        principle: string;
-        description: string;
-        location?: string;
-      }>;
+      securityIssues?: Array<{ severity: string; type: string; description: string; location?: string; recommendation?: string }>;
+      bestPractices?: Array<{ status: string; principle: string; description: string; location?: string }>;
       performanceMetrics?: { potentialBottlenecks: string[]; optimizationSuggestions: string[] };
       codeStyle?: { formatting: string[]; naming: string[]; structure: string[] };
     },
@@ -190,7 +170,7 @@ class IssueTaskCreationService {
             location: issue.location,
             recommendation: issue.recommendation,
             agentRole: AgentRole.QA_AUDIT_AGENT,
-            artifactId,
+            artifactId
           });
         }
       }
@@ -207,7 +187,7 @@ class IssueTaskCreationService {
             description: check.description,
             location: check.location,
             agentRole: AgentRole.QA_AUDIT_AGENT,
-            artifactId,
+            artifactId
           });
         }
       }
@@ -221,8 +201,8 @@ class IssueTaskCreationService {
           severity: 'medium',
           title: `Performance: ${bottleneck.substring(0, 50)}`,
           description: bottleneck,
-          agentRole: (AgentRole as any).QA_AUDIT,
-          artifactId,
+          agentRole: AgentRole.QA_AUDIT,
+          artifactId
         });
       }
     }
@@ -241,12 +221,11 @@ class IssueTaskCreationService {
   ): Promise<TaskCreationResult[]> {
     const issues: DetectedIssue[] = missingRequirements.map(req => ({
       type: 'requirement',
-      severity:
-        req.priority === 'critical' ? 'critical' : req.priority === 'high' ? 'high' : 'medium',
+      severity: req.priority === 'critical' ? 'critical' : req.priority === 'high' ? 'high' : 'medium',
       title: `Missing Requirement: ${req.id}`,
       description: req.description,
       agentRole: AgentRole.REQUIREMENTS_AGENT,
-      relatedTaskId: undefined,
+      relatedTaskId: undefined
     }));
 
     return await this.createTasksForIssues(projectId, issues, userId);

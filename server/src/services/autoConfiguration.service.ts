@@ -7,6 +7,7 @@
 import { LLMUsage } from '../models/LLMUsage.model.js';
 import { logger } from '../utils/logger.js';
 import { llmRouterSettingsService } from './llmRouterSettings.service.js';
+import { Project } from '../models/Project.model.js';
 
 export interface ConfigurationRecommendation {
   setting: string;
@@ -297,17 +298,17 @@ class AutoConfigurationService {
     recommendation: ConfigurationRecommendation,
     userId?: string
   ): Promise<void> {
-    // const _settings = await llmRouterSettingsService.getEffectiveSettings(userId);
+    const settings = await llmRouterSettingsService.getEffectiveSettings(userId);
 
     switch (recommendation.setting) {
       case 'defaultCostPreference':
-        await llmRouterSettingsService.updateUserSettings(userId!, {
+        await llmRouterSettingsService.updateSettings(userId, {
           defaultCostPreference: recommendation.recommendedValue as 'low' | 'balanced' | 'quality'
         });
         break;
 
       case 'enableIntelligentRouting':
-        await llmRouterSettingsService.updateUserSettings(userId!, {
+        await llmRouterSettingsService.updateSettings(userId, {
           enableIntelligentRouting: recommendation.recommendedValue as boolean
         });
         break;

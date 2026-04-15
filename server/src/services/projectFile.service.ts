@@ -5,7 +5,6 @@
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { logger } from '../utils/logger.js';
 
 export interface ProjectFile {
     path: string;
@@ -16,8 +15,7 @@ export interface ProjectFile {
 class ProjectFileService {
     // In-memory store: projectId -> Map<filePath, content>
     private fileStore: Map<string, Map<string, string>> = new Map();
-    // @ts-ignore TS6133
-    private _tempDirs: Map<string, string> = new Map();
+    private tempDirs: Map<string, string> = new Map();
 
     /**
      * Save/Update files for a project
@@ -37,7 +35,7 @@ class ProjectFileService {
             }
         }
 
-        logger.info(`[ProjectFileService] Processed ${files.length} file updates for ${projectId}. Total files: ${projectFiles.size}`);
+        console.log(`[ProjectFileService] Processed ${files.length} file updates for ${projectId}. Total files: ${projectFiles.size}`);
     }
 
     /**
@@ -87,7 +85,7 @@ class ProjectFileService {
                 fs.mkdirSync(dirName, { recursive: true });
             }
 
-            fs.writeFileSync(fullPath, file.content || "");
+            fs.writeFileSync(fullPath, file.content);
         }
 
         return tmpDir;

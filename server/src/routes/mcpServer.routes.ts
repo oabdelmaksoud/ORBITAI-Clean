@@ -60,7 +60,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
         lastUsed: s.lastUsed
       }))
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -101,7 +101,7 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
         lastUsed: server.lastUsed
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -175,7 +175,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
       }
     });
   } catch (error: unknown) {
-    if ((error as any).code === 11000) {
+    if (error.code === 11000) {
       // Duplicate key error
       throw new AppError('MCP server with this ID already exists', 409);
     }
@@ -243,7 +243,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
         updatedAt: server.updatedAt
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -281,7 +281,7 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
       success: true,
       message: 'MCP server deleted successfully'
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -313,7 +313,7 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
 
         const serverTools = tools.get(id) || [];
 
-        res.json({
+        return res.json({
           success: true,
           data: {
             serverId: id,
@@ -322,17 +322,15 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
             message: health.status === 'healthy' ? 'Server connection successful' : health.message || 'Server connection failed'
           }
         });
-        return;
       } catch (error: unknown) {
-        res.json({
+        return res.json({
           success: false,
           data: {
             serverId: id,
             status: 'error',
-            message: (error instanceof Error ? error.message : String(error)) || 'Failed to connect to server'
+            message: error.message || 'Failed to connect to server'
           }
         });
-        return;
       }
     }
 
@@ -377,11 +375,11 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
         data: {
           serverId: server.id,
           status: 'error',
-          message: (error instanceof Error ? error.message : String(error)) || 'Failed to connect to server'
+          message: error.message || 'Failed to connect to server'
         }
       });
     }
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -401,11 +399,10 @@ router.get('/:id/health', async (req: AuthRequest, res, next) => {
       // For system servers, check health even if not in DB
       if (id.startsWith('mcp-sys-')) {
         const health = await mcpService.checkServerHealth(id);
-        res.json({
+        return res.json({
           success: true,
           data: health
         });
-        return;
       }
       throw new AppError('MCP server not found', 404);
     }
@@ -420,7 +417,7 @@ router.get('/:id/health', async (req: AuthRequest, res, next) => {
       success: true,
       data: health
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -429,14 +426,14 @@ router.get('/:id/health', async (req: AuthRequest, res, next) => {
  * GET /api/mcp-servers/health/all
  * Get health status of all system MCP servers
  */
-router.get('/health/all', async (_req: AuthRequest, res, next) => {
+router.get('/health/all', async (req: AuthRequest, res, next) => {
   try {
     const healthStatuses = await mcpService.checkAllSystemServersHealth();
     res.json({
       success: true,
       data: healthStatuses
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

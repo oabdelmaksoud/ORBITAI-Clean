@@ -399,8 +399,8 @@ class LLMRouterAutoTuneService {
    * Rollback to previous settings if performance degraded
    */
   async rollback(
-    _currentSettings: EffectiveRouterSettings,
-    _targetMetrics: PerformanceMetrics
+    currentSettings: EffectiveRouterSettings,
+    targetMetrics: PerformanceMetrics
   ): Promise<boolean> {
     try {
       if (this.tuningHistory.length === 0) {

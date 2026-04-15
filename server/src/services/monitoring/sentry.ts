@@ -30,7 +30,7 @@ export function initSentry(dsn?: string): void {
       dsn: sentryDsn,
       environment: config.nodeEnv,
       tracesSampleRate: config.nodeEnv === 'production' ? 0.1 : 1.0,
-      beforeSend(event: any, _hint: any) {
+      beforeSend(event, hint) {
         // Filter out sensitive data
         if (event.request) {
           // Remove sensitive headers
@@ -49,7 +49,7 @@ export function initSentry(dsn?: string): void {
 
     initialized = true;
     logger.info('Sentry initialized successfully');
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('Failed to initialize Sentry:', error);
   }
 }
@@ -63,7 +63,7 @@ export function captureException(error: Error, context?: Record<string, any>): v
     return;
   }
 
-  Sentry.withScope((scope: any) => {
+  Sentry.withScope((scope) => {
     if (context) {
       Object.entries(context).forEach(([key, value]) => {
         scope.setContext(key, value);
@@ -76,7 +76,7 @@ export function captureException(error: Error, context?: Record<string, any>): v
 /**
  * Capture message
  */
-export function captureMessage(message: string, level: any = 'info'): void {
+export function captureMessage(message: string, level: Sentry.SeverityLevel = 'info'): void {
   if (!initialized) {
     logger.info(message);
     return;
@@ -106,5 +106,5 @@ export default {
   captureException,
   captureMessage,
   setUser,
-  clearUser,
+  clearUser
 };

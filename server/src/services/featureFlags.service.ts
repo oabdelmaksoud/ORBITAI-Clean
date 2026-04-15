@@ -65,7 +65,7 @@ export async function isFeatureEnabled(
 
     // Feature is enabled, active for current environment, and user's role has access
     return true;
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error(`Error checking feature flag '${featureKey}':`, error);
     // On error, default to enabled to avoid breaking the app
     return true;
@@ -83,7 +83,7 @@ export async function getEnabledFeaturesForRole(userRole: string): Promise<strin
     }).select('featureKey').lean();
 
     return flags.map(f => f.featureKey);
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error(`Error getting enabled features for role '${userRole}':`, error);
     return [];
   }
@@ -115,7 +115,7 @@ export async function getFeatureFlagsByCategory(): Promise<Record<string, any[]>
     });
 
     return grouped;
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error('Error getting feature flags by category:', error);
     return {};
   }

@@ -44,7 +44,7 @@ import { ChatHistorySidebar } from './neural-stream-chat/components/ChatHistoryS
 import { IdeaVisualization } from './neural-stream-chat/components/IdeaVisualization';
 import { useIdeaExtraction } from './neural-stream-chat/hooks/useIdeaExtraction';
 
-import type { VisualizationCategory, ValidMethodology, AgentVoice, NeuralStreamChatProps, BrainstormingData } from './neural-stream-chat';
+import type { VisualizationCategory, ValidMethodology, AgentVoice } from './neural-stream-chat';
 import { calculateMaturityAssessment } from '@src/utils/maturityAssessment';
 
 // Other visualization components
@@ -63,7 +63,35 @@ declare global {
 // normalizeIdeas, recategorizeIdeasWithAI, normalizeMethodology, normalizeProjectPreview,
 // VALID_VIZ_CATEGORIES, VisualizationCategory, and ValidMethodology are now imported
 // from './neural-stream-chat' module above
-// NeuralStreamChatProps and BrainstormingData are imported from './neural-stream-chat/types'
+
+interface NeuralStreamChatProps {
+  messages: ChatMessage[];
+  onSendMessage: (message: string, stageContext?: string) => void;
+  input: string;
+  setInput: (input: string) => void;
+  isProcessing?: boolean;
+  processingLabel?: string | null;
+  useInternet?: boolean;
+  onToggleInternet?: () => void;
+  selectedStandards?: string[];
+  onToggleStandard?: (id: string) => void;
+  onDeepResearch?: (query: string) => void; // Deep research function
+  onSwitchToSetupView?: () => void; // Callback to switch to SetupView (classic mode)
+  onLoadConversation?: (messages: ChatMessage[]) => void; // Callback to load conversation messages
+  projectName?: string; // Project name to show as Central Idea from kickoff (before brainstorming)
+  onLaunchProject?: (brainstormingData: {
+    topic: string;
+    ideas: Idea[];
+    keyInsights: string[];
+    nextSteps: string[];
+    projectPreview: ProjectPreview | null;
+    selectedStandards: string[];
+    messages: ChatMessage[];
+    useInternet: boolean;
+    conversationId: string | null;
+  }) => Promise<void> | void; // Callback to launch project (proceed to workspace)
+  onProjectPreviewChange?: (preview: ProjectPreview | null) => void; // Callback when projectPreview changes
+}
 
 const NeuralStreamChat: React.FC<NeuralStreamChatProps> = ({
   messages,
@@ -2230,7 +2258,7 @@ Provide a structured analysis in JSON format:
       toast.error('Failed to send message. Please try again.');
       setIsAnalyzingFiles(false);
     }
-  }, [input, isProcessing, onSendMessage, messages, onLoadConversation, brainstormingContext, layoutMode, liveSession]);
+  }, [input, isProcessing, onSendMessage]);
 
   // Ref to access control bar's stop function
   const controlBarStopRef = useRef<(() => void) | null>(null);

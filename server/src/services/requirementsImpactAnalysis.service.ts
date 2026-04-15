@@ -66,7 +66,7 @@ class RequirementsImpactAnalysisService {
       const reqArtifacts = await Artifact.find({
         projectId,
         type: 'requirement'
-      }).lean() as any;
+      }).lean();
 
       const allRequirements = requirementsValidationService.extractRequirements(reqArtifacts);
       const requirement = allRequirements.find(r => r.id === requirementId);
@@ -76,7 +76,7 @@ class RequirementsImpactAnalysisService {
       }
 
       // Find all linked artifacts via traceRefs
-      const allArtifacts = await Artifact.find({ projectId }).lean() as any;
+      const allArtifacts = await Artifact.find({ projectId }).lean();
       const linkedArtifacts = this.findLinkedArtifacts(requirement, allArtifacts);
 
       // Build dependency graph
@@ -181,8 +181,8 @@ class RequirementsImpactAnalysisService {
     }
 
     // Also search by requirement ID in content
-    // const normalizeId = (id: string) => id.replace(/[-\s_]/g, '').toUpperCase();
-    // const _normalizedReqId = normalizeId(requirement.id);
+    const normalizeId = (id: string) => id.replace(/[-\s_]/g, '').toUpperCase();
+    const normalizedReqId = normalizeId(requirement.id);
     const exactMatch = new RegExp(`\\b${requirement.id.replace(/[-\s]/g, '[-\\s]?')}\\b`, 'i');
 
     for (const artifact of allArtifacts) {
@@ -204,7 +204,7 @@ class RequirementsImpactAnalysisService {
    * Build dependency graph using Knowledge Graph
    */
   private async buildDependencyGraph(
-    _projectId: string,
+    projectId: string,
     requirementId: string,
     linkedArtifacts: IArtifact[],
     allArtifacts: IArtifact[]
@@ -288,7 +288,7 @@ class RequirementsImpactAnalysisService {
         }
       }
     } catch (error: unknown) {
-      logger.debug('Knowledge Graph not available, using traceRefs for dependencies:', (error instanceof Error ? error.message : String(error)));
+      logger.debug('Knowledge Graph not available, using traceRefs for dependencies:', error.message);
       
       // Fallback: use traceRefs to infer dependencies
       for (const artifact of linkedArtifacts) {

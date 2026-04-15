@@ -7,6 +7,7 @@ import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { issueTaskCreationService, DetectedIssue } from '../services/issueTaskCreation.service.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -40,7 +41,7 @@ router.post('/create-task', async (req: AuthRequest, res: Response, next) => {
       success: result.created,
       data: result
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });
@@ -76,7 +77,7 @@ router.post('/create-tasks', async (req: AuthRequest, res: Response, next) => {
         total: results.length
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     next(error);
   }
 });

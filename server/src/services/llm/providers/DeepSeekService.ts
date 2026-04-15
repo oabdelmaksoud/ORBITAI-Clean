@@ -15,27 +15,17 @@ async function getDeepSeekApiKey(): Promise<string> {
   if (dbKey) {
     return dbKey;
   }
-  throw new Error(
-    'DeepSeek API key not configured. Please add it via Admin Console → Settings → API Keys'
-  );
+  throw new Error('DeepSeek API key not configured. Please add it via Admin Console → Settings → API Keys');
 }
 
 export class DeepSeekService {
-  private cachedClient: OpenAI | null = null;
-  private cachedApiKey: string | null = null;
-
-  // Get client dynamically with current API key, reusing if key unchanged
+  // Get client dynamically with current API key
   private async getClient(): Promise<OpenAI> {
     const apiKey = await getDeepSeekApiKey();
-    if (this.cachedClient && this.cachedApiKey === apiKey) {
-      return this.cachedClient;
-    }
-    this.cachedClient = new OpenAI({
+    return new OpenAI({
       apiKey,
-      baseURL: 'https://api.deepseek.com/v1',
+      baseURL: 'https://api.deepseek.com/v1'
     });
-    this.cachedApiKey = apiKey;
-    return this.cachedClient;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -60,20 +50,20 @@ export class DeepSeekService {
       if (configOptions?.systemInstruction) {
         messages.push({
           role: 'system',
-          content: configOptions.systemInstruction,
+          content: configOptions.systemInstruction
         });
       }
 
       messages.push({
         role: 'user',
-        content: prompt,
+        content: prompt
       });
 
       const response = await client.chat.completions.create({
         model,
         messages,
         temperature: configOptions?.temperature || 0.7,
-        max_tokens: configOptions?.maxTokens,
+        max_tokens: configOptions?.maxTokens
       });
 
       const choice = response.choices[0];
@@ -84,8 +74,8 @@ export class DeepSeekService {
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
-        },
+          totalTokens: response.usage?.total_tokens || 0
+        }
       };
     } catch (error: unknown) {
       const apiError = toApiError(error);
@@ -96,7 +86,7 @@ export class DeepSeekService {
 
   async generateStructuredOutput(
     prompt: string,
-    _schema: any,
+    schema: any,
     model: string = 'deepseek-chat'
   ): Promise<any> {
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema. Always return valid JSON.`;
@@ -106,13 +96,13 @@ export class DeepSeekService {
       model,
       {
         responseFormat: { type: 'json_object' },
-        temperature: 0.3,
+        temperature: 0.3
       }
     );
 
     try {
       return JSON.parse(result.text);
-    } catch (error: unknown) {
+    } catch (error) {
       // Try to extract JSON from response
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

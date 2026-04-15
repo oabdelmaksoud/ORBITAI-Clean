@@ -9,19 +9,14 @@ async function getGeminiApiKey(): Promise<string> {
   // First, try to get from database
   const dbKey = await apiKeyProvider.getApiKey('gemini');
   if (dbKey) {
-    logger.info(`[GeminiService] Using API key from database`);
     return dbKey;
   }
   // Fallback to environment variable
   const envKey = process.env.GEMINI_API_KEY;
   if (envKey && envKey.trim() !== '') {
-    logger.info(`[GeminiService] Using API key from environment (.env)`);
     return envKey;
   }
-  logger.error('[GeminiService] No Gemini API key found in database or environment!');
-  throw new Error(
-    'Gemini API key not configured. Please add it via Admin Console → Settings → API Keys'
-  );
+  throw new Error('Gemini API key not configured. Please add it via Admin Console → Settings → API Keys');
 }
 
 // Create AI instance dynamically with current API key
@@ -54,13 +49,7 @@ function modelSupportsFunctionCalling(model: string): boolean {
   }
   // Fallback: check if it's a known function-calling model
   // Note: gemini-1.5-flash-exp is not available - removed from check
-  return (
-    model.includes('gemini-2.0') ||
-    model.includes('gemini-3-pro') ||
-    model.includes('gemini-3-flash') ||
-    model.includes('gemini-2.5-pro') ||
-    model.includes('gemini-1.5-pro')
-  );
+  return model.includes('gemini-2.0') || model.includes('gemini-3-pro') || model.includes('gemini-3-flash') || model.includes('gemini-2.5-pro') || model.includes('gemini-1.5-pro');
 }
 
 // Get best function-calling model from registry
@@ -69,9 +58,8 @@ function getBestFunctionCallingModel(): string {
   const models = modelRegistry.getActiveModels();
 
   // Filter for function-calling Gemini models
-  const functionCallingModels = models.filter(
-    m => m.capabilities.functionCalling === true && m.provider === 'gemini' && m.isEnabled
-  );
+  const functionCallingModels = models
+    .filter(m => m.capabilities.functionCalling === true && m.provider === 'gemini' && m.isEnabled);
 
   if (functionCallingModels.length === 0) {
     // No enabled function-calling models, use confirmed working model
@@ -80,8 +68,9 @@ function getBestFunctionCallingModel(): string {
 
   // Prefer confirmed models over experimental ones
   // gemini-3-pro-preview is confirmed to exist and work
-  const confirmedModel = functionCallingModels.find(
-    m => m.modelIdentifier === 'gemini-3-pro-preview' || m.modelIdentifier.includes('gemini-3-pro')
+  const confirmedModel = functionCallingModels.find(m =>
+    m.modelIdentifier === 'gemini-3-pro-preview' ||
+    m.modelIdentifier.includes('gemini-3-pro')
   );
 
   if (confirmedModel) {
@@ -89,9 +78,7 @@ function getBestFunctionCallingModel(): string {
   }
 
   // If no confirmed model, sort by latency and return fastest
-  const sorted = functionCallingModels.sort(
-    (a, b) => a.performance.avgLatencyMs - b.performance.avgLatencyMs
-  );
+  const sorted = functionCallingModels.sort((a, b) => a.performance.avgLatencyMs - b.performance.avgLatencyMs);
   return sorted[0].modelIdentifier;
 }
 
@@ -127,8 +114,7 @@ export class GeminiService {
           // Check if tool has valid content
           const hasGoogleSearch = tool.googleSearch !== undefined;
           // const hasFunctionDeclarations = tool.functionDeclarations !== undefined; // Removed unused variable
-          const hasValidFunctionDeclarations =
-            Array.isArray(tool.functionDeclarations) && tool.functionDeclarations.length > 0;
+          const hasValidFunctionDeclarations = Array.isArray(tool.functionDeclarations) && tool.functionDeclarations.length > 0;
 
           // Only keep tools that have actual content
           return hasGoogleSearch || hasValidFunctionDeclarations;
@@ -146,22 +132,19 @@ export class GeminiService {
       const hasTools = toolsArray && toolsArray.length > 0;
 
       // Check if any tool requires function calling (googleSearch, functionDeclarations, etc.)
-      const requiresFunctionCalling =
-        hasTools &&
-        toolsArray!.some(
-          (tool: any) =>
-            tool &&
-            typeof tool === 'object' &&
-            (tool.googleSearch !== undefined ||
-              (Array.isArray(tool.functionDeclarations) && tool.functionDeclarations.length > 0))
-        );
+      const requiresFunctionCalling = hasTools && (
+        toolsArray!.some((tool: any) =>
+          tool && typeof tool === 'object' && (
+            tool.googleSearch !== undefined ||
+            (Array.isArray(tool.functionDeclarations) && tool.functionDeclarations.length > 0)
+          )
+        )
+      );
 
       if (requiresFunctionCalling && !modelSupportsFunctionCalling(model)) {
         // Upgrade to best function-calling model from registry
         finalModel = getBestFunctionCallingModel();
-        logger.info(
-          `[GeminiService] Model ${model} doesn't support function calling but tools are required. Upgrading to ${finalModel}`
-        );
+        logger.info(`[GeminiService] Model ${model} doesn't support function calling but tools are required. Upgrading to ${finalModel}`);
         logger.info(`[GeminiService] Tools:`, JSON.stringify(toolsArray, null, 2));
       } else if (requiresFunctionCalling && modelSupportsFunctionCalling(model)) {
         // Model already supports function calling, no upgrade needed
@@ -172,7 +155,7 @@ export class GeminiService {
       const finalConfig: any = {
         systemInstruction: config?.systemInstruction,
         responseSchema: config?.responseSchema,
-        responseMimeType: config?.responseMimeType,
+        responseMimeType: config?.responseMimeType
       };
 
       // Only include tools if model supports function calling
@@ -180,28 +163,19 @@ export class GeminiService {
       if (requiresFunctionCalling && toolsArray) {
         if (modelSupportsFunctionCalling(finalModel)) {
           finalConfig.tools = toolsArray;
-          logger.info(
-            `[GeminiService] Including ${toolsArray.length} tool(s) with model ${finalModel}`
-          );
+          logger.info(`[GeminiService] Including ${toolsArray.length} tool(s) with model ${finalModel}`);
         } else {
           // Safety check: If we somehow still have a model that doesn't support tools,
           // remove tools to prevent API errors
-          logger.error(
-            `[GeminiService] ERROR: Model ${finalModel} doesn't support function calling but tools are required. Removing tools to prevent API error.`
-          );
+          logger.error(`[GeminiService] ERROR: Model ${finalModel} doesn't support function calling but tools are required. Removing tools to prevent API error.`);
           // Don't include tools - this will cause the request to fail, but at least we won't get the function calling error
         }
       }
 
       // Final safety check: ensure we never pass tools to unsupported models
       // CRITICAL: gemini-2.5-flash does NOT support function calling at all
-      if (
-        finalConfig.tools &&
-        (!modelSupportsFunctionCalling(finalModel) || finalModel.includes('2.5-flash'))
-      ) {
-        logger.error(
-          `[GeminiService] CRITICAL: Removing tools from config for unsupported model ${finalModel}`
-        );
+      if (finalConfig.tools && (!modelSupportsFunctionCalling(finalModel) || finalModel.includes('2.5-flash'))) {
+        logger.error(`[GeminiService] CRITICAL: Removing tools from config for unsupported model ${finalModel}`);
         delete finalConfig.tools;
         // If we had tools but model doesn't support them, don't upgrade - just remove tools
         // The task should be completable without tools
@@ -209,17 +183,12 @@ export class GeminiService {
 
       // Log final configuration for debugging
       if (hasTools) {
-        logger.info(
-          `[GeminiService] Final config - Model: ${finalModel}, Has tools: ${!!finalConfig.tools}, Tools count: ${finalConfig.tools?.length || 0}`
-        );
+        logger.info(`[GeminiService] Final config - Model: ${finalModel}, Has tools: ${!!finalConfig.tools}, Tools count: ${finalConfig.tools?.length || 0}`);
       }
 
       // ABSOLUTE SAFETY: Remove tools property entirely if it's empty or undefined
-      if (
-        finalConfig.tools === undefined ||
-        finalConfig.tools === null ||
-        (Array.isArray(finalConfig.tools) && finalConfig.tools.length === 0)
-      ) {
+      if (finalConfig.tools === undefined || finalConfig.tools === null ||
+        (Array.isArray(finalConfig.tools) && finalConfig.tools.length === 0)) {
         delete finalConfig.tools;
       }
 
@@ -227,9 +196,7 @@ export class GeminiService {
       // Even if somehow tools made it through, remove them here as the last line of defense
       if (finalModel.includes('2.5-flash')) {
         delete finalConfig.tools;
-        logger.info(
-          `[GeminiService] Final safety check: Removed tools for ${finalModel} before API call`
-        );
+        logger.info(`[GeminiService] Final safety check: Removed tools for ${finalModel} before API call`);
       }
 
       // Create a clean config object without tools for flash models
@@ -249,8 +216,7 @@ export class GeminiService {
       if (config?.useInternet && !finalModel.includes('2.5-flash')) {
         // Check if model supports grounding (gemini-2.0+, gemini-3-pro+, gemini-2.5-pro+)
         // Note: gemini-1.5-flash-exp and gemini-1.5-pro are deprecated
-        const supportsGrounding =
-          finalModel.includes('gemini-2.0') ||
+        const supportsGrounding = finalModel.includes('gemini-2.0') ||
           finalModel.includes('gemini-3-pro') ||
           finalModel.includes('gemini-3-flash') ||
           finalModel.includes('gemini-2.5-pro');
@@ -261,15 +227,13 @@ export class GeminiService {
             googleSearchRetrieval: {
               dynamicRetrievalConfig: {
                 mode: 'MODE_DYNAMIC',
-                dynamicThreshold: 0.3,
-              },
-            },
+                dynamicThreshold: 0.3
+              }
+            }
           };
           logger.info(`[GeminiService] Google Search grounding enabled for model: ${finalModel}`);
         } else {
-          logger.warn(
-            `[GeminiService] Model ${finalModel} does not support grounding. Internet search may not work.`
-          );
+          logger.warn(`[GeminiService] Model ${finalModel} does not support grounding. Internet search may not work.`);
         }
       }
 
@@ -279,10 +243,11 @@ export class GeminiService {
       const result = await ai.models.generateContent({
         model: finalModel,
         contents: prompt,
-        config: apiConfig,
+        config: apiConfig
       });
       logger.info(`[GeminiService] generateContent API returned. Text available: ${!!result.text}`);
       logger.debug(`[GeminiService] Starting post-processing`);
+
 
       // Extract function calls from response if present
       // Gemini API returns function calls in result.functionCalls array
@@ -291,8 +256,7 @@ export class GeminiService {
         logger.debug(`[GeminiService] Checking function calls`);
         // Check for function calls in the response
         // The structure may vary, so we check multiple possible locations
-        const funcCalls =
-          (result as any).functionCalls ||
+        const funcCalls = (result as any).functionCalls ||
           (result as any).candidates?.[0]?.functionCalls ||
           (result as any).response?.functionCalls;
 
@@ -311,14 +275,14 @@ export class GeminiService {
 
               functionCalls.push({
                 name: funcCall.name || funcCall.functionName,
-                args: args,
+                args: args
               });
-            } catch (e: unknown) {
+            } catch (e) {
               logger.warn('Failed to parse function call:', e);
             }
           }
         }
-      } catch (e: unknown) {
+      } catch (e) {
         // Function calls extraction is optional, don't fail if it errors
         logger.debug('Function calls extraction skipped:', e);
       }
@@ -330,8 +294,7 @@ export class GeminiService {
       try {
         logger.debug(`[GeminiService] Checking grounding`);
         // Check for grounding metadata in various possible locations
-        const grounding =
-          (result as any).groundingMetadata ||
+        const grounding = (result as any).groundingMetadata ||
           (result as any).candidates?.[0]?.groundingMetadata ||
           (result as any).response?.groundingMetadata;
 
@@ -379,15 +342,13 @@ export class GeminiService {
           });
 
           if (uniqueResources.length > 0) {
-            logger.info(
-              `[GeminiService] Extracted ${uniqueResources.length} Google Search URLs from grounding metadata`
-            );
+            logger.info(`[GeminiService] Extracted ${uniqueResources.length} Google Search URLs from grounding metadata`);
           }
 
           resources.length = 0;
           resources.push(...uniqueResources);
         }
-      } catch (e: unknown) {
+      } catch (e) {
         // Grounding metadata extraction is optional, don't fail if it errors
         logger.debug('Grounding metadata extraction skipped:', e);
       }
@@ -400,7 +361,7 @@ export class GeminiService {
       const usageVal = {
         promptTokens: result.usageMetadata?.promptTokenCount || 0,
         candidatesTokens: result.usageMetadata?.candidatesTokenCount || 0,
-        totalTokens: result.usageMetadata?.totalTokenCount || 0,
+        totalTokens: result.usageMetadata?.totalTokenCount || 0
       };
       logger.debug(`[GeminiService] Accessing functionCalls`);
       const fcVal = functionCalls.length > 0 ? functionCalls : undefined;
@@ -409,14 +370,26 @@ export class GeminiService {
       logger.debug(`[GeminiService] Accessing grounding`);
       const groundVal = groundingMetadata || undefined;
 
+      logger.debug(`[GeminiService] Constructing final object`);
+      /*
       return {
         text: textVal,
         functionCalls: fcVal,
         usage: usageVal,
         resources: resVal,
-        groundingMetadata: groundVal,
+        groundingMetadata: groundVal
       };
-    } catch (error: unknown) {
+      */
+      logger.debug(`[GeminiService] Text length: ${textVal.length}`);
+      logger.debug(`[GeminiService] Returning FULL TEXT (No metadata) object`);
+      return {
+        text: textVal,
+        functionCalls: undefined, // Keep undefined to test text isolation
+        usage: undefined,
+        resources: undefined,
+        groundingMetadata: undefined
+      } as any;
+    } catch (error) {
       logger.error('Gemini API error:', error);
       throw error;
     }
@@ -441,7 +414,7 @@ export class GeminiService {
       'gemini-3-flash-preview',
       'gemini-2.0-flash-exp',
       'gemini-1.5-pro',
-      'gemini-2.0-flash-thinking-exp',
+      'gemini-2.0-flash-thinking-exp'
     ];
 
     // Initialize finalModel early to ensure it's always defined in catch block
@@ -457,7 +430,7 @@ export class GeminiService {
             prompt,
             taskType: options?.taskType || 'structured-output',
             context: options?.context || 'internal',
-            requiredCapabilities: ['structuredOutput'],
+            requiredCapabilities: ['structuredOutput']
           });
 
           // Only use the routed model if it's a Gemini model, not a TTS model, and supports JSON mode
@@ -465,9 +438,7 @@ export class GeminiService {
             const modelId = routingDecision.selectedModel.modelIdentifier.toLowerCase();
             // Exclude TTS and audio-only models
             if (modelId.includes('tts') || modelId.includes('audio-only')) {
-              logger.warn(
-                `[GeminiService] Router selected TTS/audio model ${routingDecision.selectedModel.modelIdentifier}, using default instead`
-              );
+              logger.warn(`[GeminiService] Router selected TTS/audio model ${routingDecision.selectedModel.modelIdentifier}, using default instead`);
             } else {
               // Check if model supports JSON mode (whitelist check)
               const supportsJsonMode = JSON_MODE_SUPPORTED_MODELS.some(whitelisted =>
@@ -475,28 +446,20 @@ export class GeminiService {
               );
               if (supportsJsonMode) {
                 finalModel = routingDecision.selectedModel.modelIdentifier;
-                logger.info(
-                  `[GeminiService] Internal router selected: ${finalModel} (${routingDecision.tier} tier)`
-                );
+                logger.info(`[GeminiService] Internal router selected: ${finalModel} (${routingDecision.tier} tier)`);
               } else {
-                logger.warn(
-                  `[GeminiService] Router selected model ${routingDecision.selectedModel.modelIdentifier} that doesn't support JSON mode, using default instead`
-                );
+                logger.warn(`[GeminiService] Router selected model ${routingDecision.selectedModel.modelIdentifier} that doesn't support JSON mode, using default instead`);
               }
             }
           }
         } catch (routerError: any) {
-          logger.warn(
-            `[GeminiService] Internal router failed, using default model: ${routerError.message}`
-          );
+          logger.warn(`[GeminiService] Internal router failed, using default model: ${routerError.message}`);
         }
       } else if (model) {
         // Validate that provided model supports JSON mode
         const modelId = model.toLowerCase();
         if (modelId.includes('tts') || modelId.includes('audio-only')) {
-          logger.warn(
-            `[GeminiService] TTS/audio model ${model} specified for structured output, using default instead`
-          );
+          logger.warn(`[GeminiService] TTS/audio model ${model} specified for structured output, using default instead`);
           finalModel = 'gemini-2.5-pro'; // Use a model that supports JSON mode
         } else {
           // Check if model supports JSON mode (whitelist check)
@@ -506,9 +469,7 @@ export class GeminiService {
           if (supportsJsonMode) {
             finalModel = model;
           } else {
-            logger.warn(
-              `[GeminiService] Model ${model} doesn't support JSON mode, using default instead`
-            );
+            logger.warn(`[GeminiService] Model ${model} doesn't support JSON mode, using default instead`);
             finalModel = 'gemini-2.5-pro'; // Use a model that supports JSON mode
           }
         }
@@ -518,9 +479,7 @@ export class GeminiService {
       // Get API key dynamically (database first, then env)
       const apiKey = await getGeminiApiKey();
       if (!apiKey || apiKey.trim() === '') {
-        throw new Error(
-          'Gemini API key is not configured. Please add it via API Keys Management or set GEMINI_API_KEY environment variable.'
-        );
+        throw new Error('Gemini API key is not configured. Please add it via API Keys Management or set GEMINI_API_KEY environment variable.');
       }
 
       const startTime = Date.now();
@@ -531,8 +490,8 @@ export class GeminiService {
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
-          responseSchema: schema,
-        },
+          responseSchema: schema
+        }
       });
 
       const latency = Date.now() - startTime;
@@ -555,7 +514,7 @@ export class GeminiService {
       } catch (parseError: any) {
         logger.error('Failed to parse Gemini JSON response:', {
           text: result.text?.substring(0, 500), // Log first 500 chars
-          error: parseError.message,
+          error: parseError.message
         });
         throw new Error(`Invalid JSON response from Gemini API: ${parseError.message}`);
       }
@@ -565,7 +524,7 @@ export class GeminiService {
         parsed.usage = {
           promptTokenCount: result.usageMetadata.promptTokenCount || 0,
           candidatesTokenCount: result.usageMetadata.candidatesTokenCount || 0,
-          totalTokenCount: result.usageMetadata.totalTokenCount || 0,
+          totalTokenCount: result.usageMetadata.totalTokenCount || 0
         };
       }
 
@@ -574,35 +533,25 @@ export class GeminiService {
       // Enhance error messages for common issues
       let enhancedError = error;
 
-      if ((error instanceof Error ? error.message : String(error))?.includes('API key')) {
-        enhancedError = new Error(
-          'Invalid or missing Gemini API key. Please check your GEMINI_API_KEY environment variable.'
-        );
-        (enhancedError as any).status = 401;
-      } else if ((error as any).status === 401 || (error as any).status === 403) {
-        enhancedError = new Error(
-          'Authentication failed. Please check your Gemini API key configuration.'
-        );
-        (enhancedError as any).status = (error as any).status;
-      } else if ((error as any).status === 429) {
+      if (error.message?.includes('API key')) {
+        enhancedError = new Error('Invalid or missing Gemini API key. Please check your GEMINI_API_KEY environment variable.');
+        enhancedError.status = 401;
+      } else if (error.status === 401 || error.status === 403) {
+        enhancedError = new Error('Authentication failed. Please check your Gemini API key configuration.');
+        enhancedError.status = error.status;
+      } else if (error.status === 429) {
         enhancedError = new Error('Rate limit exceeded. Please wait a moment and try again.');
-        (enhancedError as any).status = 429;
-      } else if (
-        (error instanceof Error ? error.message : String(error))?.includes('network') ||
-        (error instanceof Error ? error.message : String(error))?.includes('ECONNREFUSED') ||
-        (error instanceof Error ? error.message : String(error))?.includes('fetch')
-      ) {
-        enhancedError = new Error(
-          'Network error connecting to Gemini API. Please check your internet connection and API endpoint.'
-        );
+        enhancedError.status = 429;
+      } else if (error.message?.includes('network') || error.message?.includes('ECONNREFUSED') || error.message?.includes('fetch')) {
+        enhancedError = new Error('Network error connecting to Gemini API. Please check your internet connection and API endpoint.');
       }
 
       logger.error('Gemini structured output error:', {
         model: finalModel,
-        error: (enhancedError as any).message,
-        originalError: (error instanceof Error ? error.message : String(error)),
-        code: (error as any).code,
-        status: (enhancedError as any).status || (error as any).status,
+        error: enhancedError.message,
+        originalError: error.message,
+        code: error.code,
+        status: enhancedError.status || error.status
       });
 
       throw enhancedError;
@@ -628,17 +577,12 @@ export class GeminiService {
       const isFlashModel = model.includes('2.5-flash');
       let toolsArray: any[] | undefined = undefined;
 
-      if (
-        !isFlashModel &&
-        config?.tools &&
-        Array.isArray(config.tools) &&
-        config.tools.length > 0
-      ) {
+      if (!isFlashModel && config?.tools && Array.isArray(config.tools) && config.tools.length > 0) {
         toolsArray = config.tools;
       }
 
       const apiConfig: any = {
-        temperature: 0.7,
+        temperature: 0.7
       };
 
       if (config?.systemInstruction) {
@@ -651,8 +595,7 @@ export class GeminiService {
 
       // Add Google Search grounding if useInternet is enabled
       if (config?.useInternet && !finalModel.includes('2.5-flash')) {
-        const supportsGrounding =
-          finalModel.includes('gemini-2.0') ||
+        const supportsGrounding = finalModel.includes('gemini-2.0') ||
           finalModel.includes('gemini-3-pro') ||
           finalModel.includes('gemini-2.5-pro');
 
@@ -662,9 +605,9 @@ export class GeminiService {
             googleSearchRetrieval: {
               dynamicRetrievalConfig: {
                 mode: 'MODE_DYNAMIC',
-                dynamicThreshold: 0.3,
-              },
-            },
+                dynamicThreshold: 0.3
+              }
+            }
           };
         }
       }
@@ -683,7 +626,7 @@ export class GeminiService {
         resultStream = await ai.models.generateContentStream({
           model: finalModel,
           contents: contentsParam,
-          config: apiConfig,
+          config: apiConfig
         });
       } catch (apiError: any) {
         logger.error(`[GeminiService] generateContentStream API error:`, apiError);
@@ -696,10 +639,7 @@ export class GeminiService {
       if (resultStream && typeof resultStream[Symbol.asyncIterator] === 'function') {
         // resultStream is directly iterable
         stream = resultStream;
-      } else if (
-        resultStream?.stream &&
-        typeof resultStream.stream[Symbol.asyncIterator] === 'function'
-      ) {
+      } else if (resultStream?.stream && typeof resultStream.stream[Symbol.asyncIterator] === 'function') {
         // resultStream has a .stream property that's iterable
         stream = resultStream.stream;
       } else {
@@ -707,7 +647,7 @@ export class GeminiService {
           hasStream: !!resultStream?.stream,
           isIterable: typeof resultStream?.[Symbol.asyncIterator] === 'function',
           type: typeof resultStream,
-          keys: resultStream ? Object.keys(resultStream) : [],
+          keys: resultStream ? Object.keys(resultStream) : []
         });
         throw new Error('Gemini API response is not iterable - unexpected response structure');
       }
@@ -731,7 +671,7 @@ export class GeminiService {
       }
     } catch (error: unknown) {
       logger.error('Gemini streaming error:', error);
-      throw new Error(`Gemini streaming error: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
+      throw new Error(`Gemini streaming error: ${error.message || 'Unknown error'}`);
     }
   }
 }

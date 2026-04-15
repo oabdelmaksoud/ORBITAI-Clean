@@ -6,7 +6,7 @@
 import { logger } from '../utils/logger.js';
 import { Artifact, IArtifact } from '../models/Artifact.model.js';
 import { llmRouter } from './llm/LLMRouter.js';
-// import { Type, Schema } from '@google/genai';
+import { Type, Schema } from '@google/genai';
 
 export interface TestUpdate {
   testId: string;
@@ -50,7 +50,7 @@ class TestMaintenanceService {
       const testArtifacts = await Artifact.find({
         projectId,
         type: 'test-plan'
-      }).lean() as any;
+      }).lean();
 
       if (testArtifacts.length === 0) {
         return {
@@ -191,7 +191,7 @@ class TestMaintenanceService {
   private async updateTestForCodeChanges(
     testArtifact: IArtifact,
     codeArtifact: IArtifact,
-    _codeChanges: { added: string[]; modified: string[]; removed: string[] }
+    codeChanges: { added: string[]; modified: string[]; removed: string[] }
   ): Promise<TestUpdate | null> {
     // Check if test needs updates based on code changes
     const testContent = testArtifact.content || '';
@@ -339,7 +339,7 @@ ${updateType === 'removed'
 Return the updated test code.`;
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -351,7 +351,7 @@ Return the updated test code.`;
 
       return response.content;
     } catch (error: unknown) {
-      logger.warn('Test update generation failed:', (error instanceof Error ? error.message : String(error)));
+      logger.warn('Test update generation failed:', error.message);
       return oldTestCode; // Return original if update fails
     }
   }
@@ -408,7 +408,7 @@ Generate a comprehensive test using Jest that covers:
 Return only the test code.`;
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_generation',
         agentRole: 'Test Agent',
@@ -420,7 +420,7 @@ Return only the test code.`;
 
       return response.content;
     } catch (error: unknown) {
-      logger.warn(`Failed to generate test for ${functionName}:`, (error instanceof Error ? error.message : String(error)));
+      logger.warn(`Failed to generate test for ${functionName}:`, error.message);
       return null;
     }
   }

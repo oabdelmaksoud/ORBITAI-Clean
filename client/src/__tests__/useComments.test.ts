@@ -1,9 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import { useComments } from '../useComments';
 
 // Mock fetch
-global.fetch = vi.fn() as unknown as typeof fetch;
+global.fetch = jest.fn();
 
 describe('useComments', () => {
   const mockComments = [
@@ -42,13 +41,13 @@ describe('useComments', () => {
   ];
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    (global.fetch as ReturnType<typeof vi.fn>).mockClear();
+    jest.clearAllMocks();
+    (global.fetch as jest.Mock).mockClear();
   });
 
   describe('fetchComments', () => {
     it('should fetch comments for resource', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockComments
       });
@@ -64,7 +63,7 @@ describe('useComments', () => {
     });
 
     it('should handle fetch error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Failed to fetch'));
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch'));
 
       const { result } = renderHook(() => useComments());
 
@@ -84,7 +83,7 @@ describe('useComments', () => {
         resourceId: 'project1'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           ...newComment,
@@ -115,7 +114,7 @@ describe('useComments', () => {
         mentions: ['john']
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           ...newComment,
@@ -150,7 +149,7 @@ describe('useComments', () => {
         content: 'This is a reply'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockComments
@@ -182,7 +181,7 @@ describe('useComments', () => {
 
   describe('addReaction', () => {
     it('should add reaction to comment', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockComments
@@ -212,7 +211,7 @@ describe('useComments', () => {
     });
 
     it('should remove reaction if already exists', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockComments
@@ -244,7 +243,7 @@ describe('useComments', () => {
 
   describe('resolveComment', () => {
     it('should resolve comment', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockComments
@@ -272,7 +271,7 @@ describe('useComments', () => {
     });
 
     it('should reopen resolved comment', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [{ ...mockComments[0], resolved: true }]
@@ -304,7 +303,7 @@ describe('useComments', () => {
     it('should update comment content', async () => {
       const updates = { content: 'Updated content' };
 
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockComments
@@ -334,7 +333,7 @@ describe('useComments', () => {
 
   describe('deleteComment', () => {
     it('should delete comment', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>)
+      (global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockComments
@@ -367,7 +366,7 @@ describe('useComments', () => {
         resourceId: 'project1'
       };
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() => 
+      (global.fetch as jest.Mock).mockImplementationOnce(() =>
         new Promise(resolve => setTimeout(() => resolve({
           ok: true,
           json: async () => ({

@@ -5,6 +5,9 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { llmRouterAIService } from './llmRouterAI.service.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface DataModel {
@@ -83,9 +86,7 @@ export class CodeGeneratorService {
 
     try {
       logger.info(`🔧 Starting code generation for: ${request.projectName}`);
-      logger.info(
-        `   Framework: ${request.framework}, Language: ${request.language || 'typescript'}`
-      );
+      logger.info(`   Framework: ${request.framework}, Language: ${request.language || 'typescript'}`);
 
       // Step 1: Validate input
       this.validateRequest(request);
@@ -95,26 +96,26 @@ export class CodeGeneratorService {
 
       switch (request.framework) {
         case 'express':
-          files.push(...(await this.generateExpressCode(request)));
+          files.push(...await this.generateExpressCode(request));
           break;
         case 'fastapi':
-          files.push(...(await this.generateFastApiCode(request)));
+          files.push(...await this.generateFastApiCode(request));
           break;
         case 'gin':
-          files.push(...(await this.generateGinCode(request)));
+          files.push(...await this.generateGinCode(request));
           break;
         case 'django':
-          files.push(...(await this.generateGinCode(request)));
+          files.push(...await this.generateDjangoCode(request));
           break;
         case 'nest':
-          files.push(...(await this.generateGinCode(request)));
+          files.push(...await this.generateNestCode(request));
           break;
         default:
           throw new Error(`Unsupported framework: ${request.framework}`);
       }
 
       // Step 3: Generate supporting files (Docker, config, etc.)
-      files.push(...(await this.generateSupportingFiles(request)));
+      files.push(...await this.generateSupportingFiles(request));
 
       // Step 4: Validate generated code
       const validationReport = await this.validateGeneratedCode(files);
@@ -142,9 +143,7 @@ export class CodeGeneratorService {
         validationReport,
       };
     } catch (error: unknown) {
-      logger.error(
-        `❌ Code generation failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      logger.error(`❌ Code generation failed: ${error.message}`);
       return {
         projectId,
         projectName: request.projectName,
@@ -155,7 +154,7 @@ export class CodeGeneratorService {
         generatedAt: Date.now(),
         validationReport: {
           syntaxValid: false,
-          errors: [error instanceof Error ? error.message : String(error)],
+          errors: [error.message],
           warnings: [],
         },
       };
@@ -190,10 +189,7 @@ export class CodeGeneratorService {
       if (!files.find(f => f.path === `src/routes/${routeGroup}.routes.ts`)) {
         files.push({
           path: `src/routes/${routeGroup}.routes.ts`,
-          content: this.generateExpressRoutes(
-            request,
-            request.apiEndpoints.filter(e => this.extractRouteGroup(e.path) === routeGroup)
-          ),
+          content: this.generateExpressRoutes(request, request.apiEndpoints.filter(e => this.extractRouteGroup(e.path) === routeGroup)),
           fileType: 'typescript',
         });
       }
@@ -223,10 +219,7 @@ export class CodeGeneratorService {
       if (!files.find(f => f.path === `tests/${testFile}.test.ts`)) {
         files.push({
           path: `tests/${testFile}.test.ts`,
-          content: this.generateExpressTests(
-            request,
-            request.apiEndpoints.filter(e => this.extractRouteGroup(e.path) === testFile)
-          ),
+          content: this.generateExpressTests(request, request.apiEndpoints.filter(e => this.extractRouteGroup(e.path) === testFile)),
           fileType: 'typescript',
         });
       }
@@ -281,10 +274,7 @@ export class CodeGeneratorService {
       if (!files.find(f => f.path === `routes/${routeGroup}.py`)) {
         files.push({
           path: `routes/${routeGroup}.py`,
-          content: this.generateFastApiRoutes(
-            request,
-            request.apiEndpoints.filter(e => this.extractRouteGroup(e.path) === routeGroup)
-          ),
+          content: this.generateFastApiRoutes(request, request.apiEndpoints.filter(e => this.extractRouteGroup(e.path) === routeGroup)),
           fileType: 'python',
         });
       }
@@ -512,8 +502,8 @@ export const ${model.name} = mongoose.model<I${model.name}>('${model.name}', ${m
 `;
   }
 
-  private generateExpressRoutes(_request: CodeGenerationRequest, endpoints: ApiEndpoint[]): string {
-    // const _routeGroup = this.extractRouteGroup(endpoints[0].path);
+  private generateExpressRoutes(request: CodeGenerationRequest, endpoints: ApiEndpoint[]): string {
+    const routeGroup = this.extractRouteGroup(endpoints[0].path);
     const routes = endpoints
       .map(e => {
         const method = e.method.toLowerCase();
@@ -522,7 +512,7 @@ export const ${model.name} = mongoose.model<I${model.name}>('${model.name}', ${m
   try {
     // TODO: Implement ${e.description}
     res.json({ message: '${e.description}' });
-  } catch (error: unknown) {
+  } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });`;
@@ -538,7 +528,7 @@ ${routes}
 `;
   }
 
-  private generateAuthMiddleware(_request: CodeGenerationRequest): string {
+  private generateAuthMiddleware(request: CodeGenerationRequest): string {
     return `import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
@@ -557,14 +547,14 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
     req.userId = decoded.userId;
     next();
-  } catch (error: unknown) {
+  } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
   }
 };
 `;
   }
 
-  private generateService(feature: string, _request: CodeGenerationRequest): string {
+  private generateService(feature: string, request: CodeGenerationRequest): string {
     return `/**
  * Service for: ${feature}
  */
@@ -577,7 +567,7 @@ export class ${this.camelToClass(this.featureToService(feature))} {
       // TODO: Implement ${feature}
       logger.info('Executing: ${feature}');
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error('Error in ${feature}:', error);
       throw error;
     }
@@ -588,7 +578,7 @@ export const ${this.featureToService(feature)} = new ${this.camelToClass(this.fe
 `;
   }
 
-  private generateExpressTests(_request: CodeGenerationRequest, endpoints: ApiEndpoint[]): string {
+  private generateExpressTests(request: CodeGenerationRequest, endpoints: ApiEndpoint[]): string {
     const tests = endpoints
       .map(e => {
         return `test('${e.method} ${e.path}', async () => {
@@ -615,7 +605,7 @@ describe('API Endpoints', () => {
       mongoose: '^7.0.0',
       cors: '^2.8.5',
       dotenv: '^16.0.3',
-      jsonwebtoken: '^9.0.0',
+      'jsonwebtoken': '^9.0.0',
       bcrypt: '^5.1.0',
     };
 
@@ -630,25 +620,21 @@ describe('API Endpoints', () => {
       nodemon: '^2.0.22',
     };
 
-    return JSON.stringify(
-      {
-        name: request.projectName.toLowerCase().replace(/\\s+/g, '-'),
-        version: '0.1.0',
-        description: request.description,
-        main: 'dist/index.js',
-        scripts: {
-          build: 'tsc',
-          start: 'node dist/index.js',
-          dev: 'nodemon --exec ts-node src/index.ts',
-          test: 'jest',
-          'test:watch': 'jest --watch',
-        },
-        dependencies: deps,
-        devDependencies: devDeps,
+    return JSON.stringify({
+      name: request.projectName.toLowerCase().replace(/\\s+/g, '-'),
+      version: '0.1.0',
+      description: request.description,
+      main: 'dist/index.js',
+      scripts: {
+        'build': 'tsc',
+        'start': 'node dist/index.js',
+        'dev': 'nodemon --exec ts-node src/index.ts',
+        'test': 'jest',
+        'test:watch': 'jest --watch',
       },
-      null,
-      2
-    );
+      dependencies: deps,
+      devDependencies: devDeps,
+    }, null, 2);
   }
 
   private generateEnvExample(request: CodeGenerationRequest): string {
@@ -660,30 +646,26 @@ NODE_ENV=development
   }
 
   private generateTsConfig(): string {
-    return JSON.stringify(
-      {
-        compilerOptions: {
-          target: 'ES2020',
-          module: 'ESNext',
-          lib: ['ES2020'],
-          outDir: './dist',
-          rootDir: './src',
-          strict: true,
-          esModuleInterop: true,
-          skipLibCheck: true,
-          forceConsistentCasingInFileNames: true,
-          resolveJsonModule: true,
-          moduleResolution: 'node',
-        },
-        include: ['src'],
-        exclude: ['node_modules', 'dist', 'tests'],
+    return JSON.stringify({
+      compilerOptions: {
+        target: 'ES2020',
+        module: 'ESNext',
+        lib: ['ES2020'],
+        outDir: './dist',
+        rootDir: './src',
+        strict: true,
+        esModuleInterop: true,
+        skipLibCheck: true,
+        forceConsistentCasingInFileNames: true,
+        resolveJsonModule: true,
+        moduleResolution: 'node',
       },
-      null,
-      2
-    );
+      include: ['src'],
+      exclude: ['node_modules', 'dist', 'tests'],
+    }, null, 2);
   }
 
-  private generateDockerfile(_request: CodeGenerationRequest): string {
+  private generateDockerfile(request: CodeGenerationRequest): string {
     return `FROM node:18-alpine
 
 WORKDIR /app
@@ -767,7 +749,7 @@ docker run -p 3000:3000 ${request.projectName.toLowerCase()}
 `;
   }
 
-  private generateGitHubActions(_request: CodeGenerationRequest): string {
+  private generateGitHubActions(request: CodeGenerationRequest): string {
     return `name: CI/CD
 
 on:
@@ -839,11 +821,11 @@ ${fieldDefs}
 `;
   }
 
-  private generateFastApiRoutes(_request: CodeGenerationRequest, endpoints: ApiEndpoint[]): string {
+  private generateFastApiRoutes(request: CodeGenerationRequest, endpoints: ApiEndpoint[]): string {
     const routeGroup = this.extractRouteGroup(endpoints[0].path);
     const routes = endpoints
       .map(e => {
-        const method = e.method.toLowerCase();
+        const method = e.method.lower();
         const pathPart = '/' + e.path.split('/').slice(2).join('/').replace(/^\//, '');
         return `@app.${method}("${pathPart}")
 async def ${this.pathToHandler(e.path)}():
@@ -860,7 +842,7 @@ ${routes}
 `;
   }
 
-  private generatePythonService(feature: string, _request: CodeGenerationRequest): string {
+  private generatePythonService(feature: string, request: CodeGenerationRequest): string {
     return `"""
 Service for: ${feature}
 """
@@ -880,7 +862,7 @@ class ${this.camelToClass(this.featureToService(feature))}:
 `;
   }
 
-  private generatePythonRequirements(_request: CodeGenerationRequest): string {
+  private generatePythonRequirements(request: CodeGenerationRequest): string {
     const deps = [
       'fastapi==0.104.0',
       'uvicorn==0.24.0',
@@ -894,7 +876,7 @@ class ${this.camelToClass(this.featureToService(feature))}:
     return deps.join('\n');
   }
 
-  private generateGinMain(_request: CodeGenerationRequest): string {
+  private generateGinMain(request: CodeGenerationRequest): string {
     return `package main
 
 import (
@@ -927,7 +909,7 @@ ${fields}
 `;
   }
 
-  private generateGinRoutes(_request: CodeGenerationRequest): string {
+  private generateGinRoutes(request: CodeGenerationRequest): string {
     return `package routes
 
 import (
@@ -940,7 +922,7 @@ func SetupRoutes(r *gin.Engine) {
 `;
   }
 
-  private generateGinHandler(endpoint: ApiEndpoint, _request: CodeGenerationRequest): string {
+  private generateGinHandler(endpoint: ApiEndpoint, request: CodeGenerationRequest): string {
     return `package handlers
 
 import (
@@ -972,21 +954,17 @@ require (
   private validateRequest(request: CodeGenerationRequest): void {
     if (!request.projectName) throw new Error('Project name is required');
     if (!request.framework) throw new Error('Framework is required');
-    if (!request.dataModels || request.dataModels.length === 0)
-      throw new Error('At least one data model is required');
-    if (!request.apiEndpoints || request.apiEndpoints.length === 0)
-      throw new Error('At least one API endpoint is required');
+    if (!request.dataModels || request.dataModels.length === 0) throw new Error('At least one data model is required');
+    if (!request.apiEndpoints || request.apiEndpoints.length === 0) throw new Error('At least one API endpoint is required');
   }
 
-  private async validateGeneratedCode(
-    files: GeneratedFile[]
-  ): Promise<{ syntaxValid: boolean; errors: string[]; warnings: string[] }> {
+  private async validateGeneratedCode(files: GeneratedFile[]): Promise<{ syntaxValid: boolean; errors: string[]; warnings: string[] }> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     // Basic validation
     for (const file of files) {
-      if (file.fileType === 'typescript' || file.fileType as string === 'javascript') {
+      if (file.fileType === 'typescript' || file.fileType === 'javascript') {
         if (!file.content.includes('export') && !file.content.includes('import')) {
           warnings.push(`${file.path}: Missing exports/imports`);
         }
@@ -1017,17 +995,12 @@ require (
   }
 
   private requiresAuth(request: CodeGenerationRequest): boolean {
-    return (
-      request.apiEndpoints.some(e => e.authenticated !== false) ||
-      request.features.some(f => f.toLowerCase().includes('auth'))
-    );
+    return request.apiEndpoints.some(e => e.authenticated !== false) ||
+           request.features.some(f => f.toLowerCase().includes('auth'));
   }
 
   private featureToService(feature: string): string {
-    return feature
-      .toLowerCase()
-      .replace(/\\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    return feature.toLowerCase().replace(/\\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   }
 
   private fieldTypeToMongoose(type: string): string {
@@ -1087,25 +1060,15 @@ require (
   }
 
   private pathToHandler(path: string): string {
-    return path
-      .split('/')
-      .filter(p => p)
-      .map((p, i) => (i === 0 ? p : this.pascalCase(p)))
-      .join('');
+    return path.split('/').filter(p => p).map((p, i) => i === 0 ? p : this.pascalCase(p)).join('');
   }
 
   private camelToClass(name: string): string {
-    return name
-      .split('-')
-      .map(p => this.pascalCase(p))
-      .join('');
+    return name.split('-').map(p => this.pascalCase(p)).join('');
   }
 
   private pascalCase(str: string): string {
-    return str
-      .split(/[-_]/)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join('');
+    return str.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
   }
 
   private getExampleValue(type: string): string {

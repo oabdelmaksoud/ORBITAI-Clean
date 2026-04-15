@@ -25,7 +25,7 @@ router.use(requireAdmin);
  * GET /api/admin/system/details
  * Get comprehensive system details for admin dashboard
  */
-router.get('/details', async (_req: AdminRequest, res, next) => {
+router.get('/details', async (req: AdminRequest, res, next) => {
   try {
     // Get all data in parallel
     const [
@@ -352,7 +352,7 @@ router.get('/details', async (_req: AdminRequest, res, next) => {
  * GET /api/admin/system/config
  * Get system configuration (legacy endpoint)
  */
-router.get('/config', async (_req: AdminRequest, res, next) => {
+router.get('/config', async (req: AdminRequest, res, next) => {
   try {
     const dbConnected = mongoose.connection.readyState === 1;
     
@@ -424,7 +424,7 @@ router.get('/config', async (_req: AdminRequest, res, next) => {
  * GET /api/admin/system/stats
  * Get system statistics (legacy endpoint)
  */
-router.get('/stats', async (_req: AdminRequest, res, next) => {
+router.get('/stats', async (req: AdminRequest, res, next) => {
   try {
     const [totalUsers, totalProjects, totalTasks, totalArtifacts] = await Promise.all([
       User.countDocuments(),

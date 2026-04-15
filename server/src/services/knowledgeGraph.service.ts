@@ -7,6 +7,7 @@
 import { weaviateService } from './weaviate.service.js';
 import { embeddingService } from './embedding.service.js';
 import { logger } from '../utils/logger.js';
+import { config } from '../config/env.js';
 
 export interface Entity {
   id: string;
@@ -41,10 +42,8 @@ export interface GraphPath {
 
 class KnowledgeGraphService {
   private initialized: boolean = false;
-  // @ts-ignore TS6133
-  private _entityClass: string = 'KnowledgeEntity';
-  // @ts-ignore TS6133
-  private _relationshipClass: string = 'KnowledgeRelationship';
+  private entityClass: string = 'KnowledgeEntity';
+  private relationshipClass: string = 'KnowledgeRelationship';
 
   /**
    * Initialize knowledge graph service
@@ -287,7 +286,7 @@ class KnowledgeGraphService {
               });
             }
           }
-        } catch (error: unknown) {
+        } catch (error) {
           // Skip malformed relationships
           continue;
         }
@@ -374,7 +373,7 @@ class KnowledgeGraphService {
   /**
    * Extract entities and relationships from text
    */
-  async extractFromText(_text: string): Promise<{ entities: Entity[]; relationships: Relationship[] }> {
+  async extractFromText(text: string): Promise<{ entities: Entity[]; relationships: Relationship[] }> {
     // This is a simplified extraction
     // In production, you'd use an LLM or NER model for entity extraction
     

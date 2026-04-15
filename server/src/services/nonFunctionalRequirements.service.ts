@@ -61,7 +61,7 @@ class NonFunctionalRequirementsService {
       const reqArtifacts = await Artifact.find({
         projectId,
         type: 'requirement'
-      }).lean() as any;
+      }).lean();
 
       if (reqArtifacts.length === 0) {
         return {
@@ -83,7 +83,7 @@ class NonFunctionalRequirementsService {
       }
 
       const requirements = requirementsValidationService.extractRequirements(reqArtifacts);
-      const allArtifacts = await Artifact.find({ projectId }).lean() as any;
+      const allArtifacts = await Artifact.find({ projectId }).lean();
 
       // Filter NFRs
       const nfrs = requirements.filter(req => 
@@ -225,7 +225,7 @@ class NonFunctionalRequirementsService {
       const artifactContent = (artifact.content || '').toLowerCase();
       const artifactTitle = artifact.title.toLowerCase();
       const nfrId = nfr.id.toLowerCase();
-      // const _nfrDesc = nfr.description.toLowerCase();
+      const nfrDesc = nfr.description.toLowerCase();
 
       // Check if artifact references this NFR
       const referencesNFR = artifactContent.includes(nfrId) ||

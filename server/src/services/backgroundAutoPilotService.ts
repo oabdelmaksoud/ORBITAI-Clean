@@ -9,6 +9,7 @@ import { Project } from '../models/Project.model.js';
 import { geminiService } from './gemini.service.js';
 import { evaluationService } from './evaluation.service.js';
 import { usageTracker } from './llm/UsageTracker.js';
+import { llmRouter } from './llm/LLMRouter.js';
 
 interface BackgroundAutoPilot {
   id: string;
@@ -120,7 +121,7 @@ class BackgroundAutoPilotService {
         }
 
         // Check budget
-        if (project.budget && project.budget.spent >= ((project as any).budget.total)) {
+        if (project.budget && project.budget.spent >= project.budget.total) {
           logger.info(`[Background AutoPilot ${autoPilotId}] Budget cap reached, stopping`);
           await this.stopBackgroundAutoPilot(autoPilotId, 'budget');
           break;
@@ -259,7 +260,7 @@ Please complete this task and provide your output.`;
           inputTokens: result.usage?.promptTokens || 0,
           outputTokens: result.usage?.candidatesTokens || 0,
           requestType: 'agent-task',
-          context: 'background-autopilot' as any,
+          context: 'background-autopilot',
           success: true,
           latencyMs: latency,
           metadata: {
@@ -342,7 +343,7 @@ Please complete this task and provide your output.`;
             if (!project.tasks[taskIndex].logs) {
               project.tasks[taskIndex].logs = [];
             }
-            project.tasks[taskIndex].logs.push(`[Background AutoPilot] Task failed: ${(error instanceof Error ? error.message : String(error))}`);
+            project.tasks[taskIndex].logs.push(`[Background AutoPilot] Task failed: ${error.message}`);
             await project.save();
           }
         }
@@ -355,7 +356,7 @@ Please complete this task and provide your output.`;
   /**
    * Advance to next phase
    */
-  private async advancePhase(autoPilot: BackgroundAutoPilot, _project: any): Promise<boolean> {
+  private async advancePhase(autoPilot: BackgroundAutoPilot, project: any): Promise<boolean> {
     try {
       logger.info(`[Background AutoPilot ${autoPilot.id}] Attempting to advance phase from ${autoPilot.currentPhase}`);
       
@@ -394,7 +395,7 @@ Please complete this task and provide your output.`;
   /**
    * Start next sprint
    */
-  private async startNextSprint(autoPilot: BackgroundAutoPilot, _project: any): Promise<void> {
+  private async startNextSprint(autoPilot: BackgroundAutoPilot, project: any): Promise<void> {
     logger.info(`[Background AutoPilot ${autoPilot.id}] Starting next sprint logic would go here`);
     // Increment sprint
     autoPilot.currentSprint = (autoPilot.currentSprint || 1) + 1;

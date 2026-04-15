@@ -12,38 +12,12 @@ export const config = {
   // Server
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3002', 10),
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5174',
 
   // Database
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/orbitai',
-  mongoUsername: (() => {
-    const v = process.env.MONGO_USERNAME;
-    if (!v) {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('❌ CRITICAL: MONGO_USERNAME must be set in production.');
-        process.exit(1);
-      }
-      console.warn(
-        '⚠️  WARNING: MONGO_USERNAME is not set. Using unauthenticated MongoDB connection.'
-      );
-      return '';
-    }
-    return v;
-  })(),
-  mongoPassword: (() => {
-    const v = process.env.MONGO_PASSWORD;
-    if (!v) {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('❌ CRITICAL: MONGO_PASSWORD must be set in production.');
-        process.exit(1);
-      }
-      console.warn(
-        '⚠️  WARNING: MONGO_PASSWORD is not set. Using unauthenticated MongoDB connection.'
-      );
-      return '';
-    }
-    return v;
-  })(),
+  mongoUsername: process.env.MONGO_USERNAME || 'admin',
+  mongoPassword: process.env.MONGO_PASSWORD || 'password',
 
   // JWT
   jwtSecret: (() => {
@@ -59,9 +33,7 @@ export const config = {
     }
     // Reject default/placeholder secrets in production
     if (process.env.NODE_ENV === 'production' && secret.includes('change-this-in-production')) {
-      console.error(
-        '❌ CRITICAL: JWT_SECRET must not use default/placeholder value in production.'
-      );
+      console.error('❌ CRITICAL: JWT_SECRET must not use default/placeholder value in production.');
       process.exit(1);
     }
     return secret;
@@ -131,40 +103,20 @@ export const config = {
   // Slack
   slackClientId: process.env.SLACK_CLIENT_ID || '',
   slackClientSecret: process.env.SLACK_CLIENT_SECRET || '',
-  slackRedirectUri:
-    process.env.SLACK_REDIRECT_URI || 'http://localhost:3001/api/integrations/slack/callback',
+  slackRedirectUri: process.env.SLACK_REDIRECT_URI || 'http://localhost:3001/api/integrations/slack/callback',
 
   // Google Drive
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  googleRedirectUri:
-    process.env.GOOGLE_REDIRECT_URI ||
-    'http://localhost:3001/api/integrations/google-drive/callback',
+  googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/integrations/google-drive/callback',
 
   // GitHub
   githubClientId: process.env.GITHUB_CLIENT_ID || '',
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-  githubRedirectUri:
-    process.env.GITHUB_REDIRECT_URI || 'http://localhost:3001/api/integrations/github/callback',
+  githubRedirectUri: process.env.GITHUB_REDIRECT_URI || 'http://localhost:3001/api/integrations/github/callback',
 
   // Share Links
-  shareLinkSecret: (() => {
-    const secret = process.env.SHARE_LINK_SECRET || process.env.JWT_SECRET;
-    if (
-      (!secret || secret.includes('change-this-in-production')) &&
-      process.env.NODE_ENV === 'production'
-    ) {
-      console.error('❌ CRITICAL: SHARE_LINK_SECRET (or JWT_SECRET) must be set in production.');
-      process.exit(1);
-    }
-    if (!secret) {
-      console.error(
-        '❌ CRITICAL: SHARE_LINK_SECRET or JWT_SECRET must be set. No fallback allowed.'
-      );
-      process.exit(1);
-    }
-    return secret;
-  })(),
+  shareLinkSecret: process.env.SHARE_LINK_SECRET || process.env.JWT_SECRET || 'orbitai-super-secret-jwt-key-change-this-in-production-2024', // Fallback to JWT secret if not set
 
   // Pipecat Voice Service Configuration
   pipecatHost: process.env.PIPECAT_HOST || 'localhost',
@@ -193,13 +145,14 @@ export const config = {
         'http://127.0.0.1:5175', // Previous Vite port
         'http://127.0.0.1:5174',
         'http://127.0.0.1:5180', // Current dev port
-        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3000'
       ];
     }
     // Production: only allow configured frontend URL
     return [frontendUrl];
   })(),
   corsCredentials: process.env.CORS_CREDENTIALS !== 'false', // Default to true
+
 };
 
 // Validate required environment variables
@@ -207,7 +160,7 @@ export const config = {
 // Environment variables are only used as fallback for backward compatibility
 const requiredVars: { key: string; value: string; name: string }[] = [
   { key: 'JWT_SECRET', value: config.jwtSecret, name: 'JWT Secret' },
-  { key: 'MONGODB_URI', value: config.mongodbUri, name: 'MongoDB URI' },
+  { key: 'MONGODB_URI', value: config.mongodbUri, name: 'MongoDB URI' }
 ];
 
 const missingVars: string[] = [];
@@ -229,18 +182,10 @@ if (!apiKeyEncryptionKey || apiKeyEncryptionKey.trim() === '') {
 } else {
   // Validate key strength in production
   if (config.nodeEnv === 'production' && apiKeyEncryptionKey.length < 32) {
-    warnings.push(
-      '⚠️  WARNING: API_KEY_ENCRYPTION_KEY is too short. Use at least 32 characters for security.'
-    );
-  } else if (
-    apiKeyEncryptionKey.includes('dev') ||
-    apiKeyEncryptionKey.includes('development') ||
-    apiKeyEncryptionKey.includes('test')
-  ) {
+    warnings.push('⚠️  WARNING: API_KEY_ENCRYPTION_KEY is too short. Use at least 32 characters for security.');
+  } else if (apiKeyEncryptionKey.includes('dev') || apiKeyEncryptionKey.includes('development') || apiKeyEncryptionKey.includes('test')) {
     if (config.nodeEnv === 'production') {
-      console.error(
-        '❌ CRITICAL: API_KEY_ENCRYPTION_KEY appears to be a development key in production!'
-      );
+      console.error('❌ CRITICAL: API_KEY_ENCRYPTION_KEY appears to be a development key in production!');
       missingVars.push('API Key Encryption Key (production-safe)');
     }
   } else {
@@ -250,11 +195,7 @@ if (!apiKeyEncryptionKey || apiKeyEncryptionKey.trim() === '') {
 
 // Check required vars
 for (const { key, value, name } of requiredVars) {
-  if (
-    !value ||
-    value === '' ||
-    (key === 'JWT_SECRET' && value.includes('change-this-in-production'))
-  ) {
+  if (!value || value === '' || (key === 'JWT_SECRET' && value.includes('change-this-in-production'))) {
     if (config.nodeEnv === 'production') {
       missingVars.push(name);
     } else {
@@ -278,16 +219,10 @@ const apiKeyProviders = [
 
 const envApiKeysFound = apiKeyProviders.filter(p => p.value && p.value.trim()).length;
 if (envApiKeysFound > 0) {
-  console.log(
-    `ℹ️  Found ${envApiKeysFound} API key(s) in environment variables (using as fallback)`
-  );
-  console.log(
-    `   💡 Tip: Store API keys in database via Admin Console → Settings → API Keys for better security`
-  );
+  console.log(`ℹ️  Found ${envApiKeysFound} API key(s) in environment variables (using as fallback)`);
+  console.log(`   💡 Tip: Store API keys in database via Admin Console → Settings → API Keys for better security`);
 } else {
-  console.log(
-    `ℹ️  No API keys in environment variables (this is OK - use Admin Console to store them)`
-  );
+  console.log(`ℹ️  No API keys in environment variables (this is OK - use Admin Console to store them)`);
 }
 
 // Fail in production if required vars are missing

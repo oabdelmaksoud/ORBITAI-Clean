@@ -3,6 +3,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { Deployment } from '../models/Deployment.model.js';
 import { Project } from '../models/Project.model.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
+import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { checkFeatureAccess } from '../middleware/featureCheck.js';
 import { webSocketService } from '../services/websocket.service.js';
@@ -52,25 +53,23 @@ router.post('/', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest
     const projectsToDeploy = projectIds || (projectId ? [projectId] : []);
 
     if (projectsToDeploy.length === 0 || !platform || !environment) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        error: 'projectId(s), platform, and environment are required',
+        error: 'projectId(s), platform, and environment are required'
       });
-      return;
     }
 
     // Verify all projects exist and user has access
     const projects = await Project.find({
       _id: { $in: projectsToDeploy },
-      userId: userId,
+      userId: userId
     });
 
     if (projects.length !== projectsToDeploy.length) {
-      res.status(403).json({
+      return res.status(403).json({
         success: false,
-        error: 'Some projects not found or access denied',
+        error: 'Some projects not found or access denied'
       });
-      return;
     }
 
     // Create deployments for all projects
@@ -98,7 +97,7 @@ router.post('/', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest
           platform: deployment.platform,
           status: deployment.status,
           environment: deployment.environment,
-        },
+        }
       });
 
       // Start deployment process (async)
@@ -107,9 +106,7 @@ router.post('/', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest
       });
     });
 
-    logger.info(
-      `Created ${deployments.length} deployment(s) for ${projectsToDeploy.length} project(s)`
-    );
+    logger.info(`Created ${deployments.length} deployment(s) for ${projectsToDeploy.length} project(s)`);
 
     res.json({
       success: true,
@@ -133,19 +130,17 @@ router.get('/:id', checkFeatureAccess('cloud_deployment'), async (req: AuthReque
 
     const deployment = await Deployment.findById(id);
     if (!deployment) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        error: 'Deployment not found',
+        error: 'Deployment not found'
       });
-      return;
     }
 
     if (deployment.userId !== userId) {
-      res.status(403).json({
+      return res.status(403).json({
         success: false,
-        error: 'Access denied',
+        error: 'Access denied'
       });
-      return;
     }
 
     res.json({
@@ -161,94 +156,81 @@ router.get('/:id', checkFeatureAccess('cloud_deployment'), async (req: AuthReque
  * POST /api/deployments/:id/stop
  * Stop a deployment
  */
-router.post(
-  '/:id/stop',
-  checkFeatureAccess('cloud_deployment'),
-  async (req: AuthRequest, res, next) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user?.id || '';
+router.post('/:id/stop', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id || '';
 
-      const deployment = await Deployment.findById(id);
-      if (!deployment) {
-        res.status(404).json({
-          success: false,
-          error: 'Deployment not found',
-        });
-        return;
-      }
-
-      if (deployment.userId !== userId) {
-        res.status(403).json({
-          success: false,
-          error: 'Access denied',
-        });
-        return;
-      }
-
-      if (deployment.status !== 'deploying' && deployment.status !== 'pending') {
-        res.status(400).json({
-          success: false,
-          error: 'Deployment cannot be stopped in current status',
-        });
-        return;
-      }
-
-      deployment.status = 'stopped';
-      deployment.completedAt = new Date();
-      await deployment.save();
-
-      logger.info(`Stopped deployment ${id}`);
-
-      res.json({
-        success: true,
-        message: 'Deployment stopped',
-        deployment,
+    const deployment = await Deployment.findById(id);
+    if (!deployment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Deployment not found'
       });
-    } catch (error: unknown) {
-      next(error);
     }
+
+    if (deployment.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      });
+    }
+
+    if (deployment.status !== 'deploying' && deployment.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        error: 'Deployment cannot be stopped in current status'
+      });
+    }
+
+    deployment.status = 'stopped';
+    deployment.completedAt = new Date();
+    await deployment.save();
+
+    logger.info(`Stopped deployment ${id}`);
+
+    res.json({
+      success: true,
+      message: 'Deployment stopped',
+      deployment,
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * GET /api/deployments/:id/logs
  * Get deployment logs
  */
-router.get(
-  '/:id/logs',
-  checkFeatureAccess('cloud_deployment'),
-  async (req: AuthRequest, res, next) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user?.id || '';
+router.get('/:id/logs', checkFeatureAccess('cloud_deployment'), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id || '';
 
-      const deployment = await Deployment.findById(id);
-      if (!deployment) {
-        res.status(404).json({
-          success: false,
-          error: 'Deployment not found',
-        });
-        return;
-      }
-
-      if (deployment.userId !== userId) {
-        res.status(403).json({
-          success: false,
-          error: 'Access denied',
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        logs: deployment.logs || [],
+    const deployment = await Deployment.findById(id);
+    if (!deployment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Deployment not found'
       });
-    } catch (error: unknown) {
-      next(error);
     }
+
+    if (deployment.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      });
+    }
+
+    res.json({
+      success: true,
+      logs: deployment.logs || [],
+    });
+  } catch (error: unknown) {
+    next(error);
   }
-);
+});
 
 /**
  * Start deployment process (real deployment service)
@@ -269,16 +251,19 @@ async function startDeployment(deploymentId: string): Promise<void> {
       type: 'deployment.status',
       deploymentId,
       status: 'deploying',
-      log: startLog,
+      log: startLog
     });
 
     // Use real deployment service
     try {
-      const deploymentResult = await deploymentService.deployProject(deployment.projectId, {
-        platform: deployment.platform as any,
-        environment: deployment.environment as any,
-        envVars: (deployment as any).envVars || {},
-      });
+      const deploymentResult = await deploymentService.deployProject(
+        deployment.projectId,
+        {
+          platform: deployment.platform as any,
+          environment: deployment.environment as any,
+          envVars: deployment.envVars || {}
+        }
+      );
 
       // Update deployment with results
       deployment.status = deploymentResult.success ? 'success' : 'failed';
@@ -297,7 +282,7 @@ async function startDeployment(deploymentId: string): Promise<void> {
         status: deployment.status,
         url: deployment.url,
         error: deployment.error,
-        logs: deployment.logs,
+        logs: deployment.logs
       });
     } catch (deployError: any) {
       // Deployment service error
@@ -312,7 +297,7 @@ async function startDeployment(deploymentId: string): Promise<void> {
         deploymentId,
         status: 'failed',
         error: deployment.error,
-        logs: deployment.logs,
+        logs: deployment.logs
       });
     }
   } catch (error: unknown) {

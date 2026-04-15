@@ -2,18 +2,8 @@ import express from 'express';
 import { geminiService } from '../services/gemini.service.js';
 import { logger } from '../utils/logger.js';
 import { apiKeyProvider } from '../services/apiKeyProvider.service.js';
-import { config } from '../config/env.js';
 
 const router = express.Router();
-
-// Guard: test routes are only available in development mode
-router.use((_req, res, next) => {
-  if (config.nodeEnv !== 'development') {
-    res.status(404).json({ success: false, error: { message: 'Not found' } });
-    return;
-  }
-  next();
-});
 
 // Test Gemini API connection
 router.get('/gemini', async (_req, res, _next): Promise<void> => {
@@ -25,9 +15,9 @@ router.get('/gemini', async (_req, res, _next): Promise<void> => {
         success: false,
         message: 'Gemini API key is not configured',
         error: {
-          message: 'Gemini API key not found. Add it via Admin Console → Settings → API Keys',
+          message: 'Gemini API key not found. Add it via Admin Console → Settings → API Keys'
         },
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
       return;
     }
@@ -37,7 +27,10 @@ router.get('/gemini', async (_req, res, _next): Promise<void> => {
     const testPrompt = 'Say "Hello, Gemini API is working!" in one sentence.';
 
     const startTime = Date.now();
-    const result = await geminiService.generateContent(testPrompt, 'gemini-2.5-flash');
+    const result = await geminiService.generateContent(
+      testPrompt,
+      'gemini-2.5-flash'
+    );
     const latency = Date.now() - startTime;
 
     logger.info(`Gemini API test completed in ${latency}ms`);
@@ -49,9 +42,9 @@ router.get('/gemini', async (_req, res, _next): Promise<void> => {
         prompt: testPrompt,
         response: result.text,
         latency: `${latency}ms`,
-        usage: result.usage || null,
+        usage: result.usage || null
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (error: unknown) {
     logger.error('Gemini API test failed:', error);
@@ -60,12 +53,10 @@ router.get('/gemini', async (_req, res, _next): Promise<void> => {
       success: false,
       message: 'Gemini API connection failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -82,10 +73,9 @@ router.get('/e2b', async (_req, res, _next): Promise<void> => {
         success: false,
         message: 'E2B API key is not configured',
         error: {
-          message:
-            'E2B_API_KEY is not set. Add it via Admin Console or set E2B_API_KEY environment variable.',
+          message: 'E2B_API_KEY is not set. Add it via Admin Console or set E2B_API_KEY environment variable.'
         },
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
       return;
     }
@@ -95,7 +85,7 @@ router.get('/e2b', async (_req, res, _next): Promise<void> => {
     const startTime = Date.now();
 
     // Test sandbox creation and a simple command
-    // const _sandbox = await e2bService.getSandbox();
+    const sandbox = await e2bService.getSandbox();
     const result = await e2bService.runCommand('echo "E2B Sandbox is working!"');
     const latency = Date.now() - startTime;
 
@@ -108,9 +98,9 @@ router.get('/e2b', async (_req, res, _next): Promise<void> => {
         command: 'echo "E2B Sandbox is working!"',
         output: result.output,
         latency: `${latency}ms`,
-        sandboxActive: true,
+        sandboxActive: true
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
     // Clean up
@@ -122,12 +112,10 @@ router.get('/e2b', async (_req, res, _next): Promise<void> => {
       success: false,
       message: 'E2B API connection failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -136,12 +124,11 @@ router.get('/e2b', async (_req, res, _next): Promise<void> => {
 router.get('/mcp', async (_req, res, _next): Promise<void> => {
   try {
     const { mcpService } = await import('../services/mcp.service.js');
-    // @ts-ignore TS2307 - path resolved at runtime
     const { DEFAULT_MCP_SERVERS } = await import('../../../constants.js');
 
     logger.info('Testing MCP tool discovery...');
 
-    const activeServers = DEFAULT_MCP_SERVERS.filter((s: any) => s.status === 'active');
+    const activeServers = DEFAULT_MCP_SERVERS.filter(s => s.status === 'active');
     const allTools = await mcpService.getAllTools(activeServers);
 
     const toolsByServer: Record<string, any[]> = {};
@@ -155,9 +142,9 @@ router.get('/mcp', async (_req, res, _next): Promise<void> => {
       test: {
         servers: activeServers.length,
         totalTools: Array.from(allTools.values()).reduce((sum, tools) => sum + tools.length, 0),
-        toolsByServer,
+        toolsByServer
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (error: unknown) {
     logger.error('MCP test failed:', error);
@@ -166,12 +153,10 @@ router.get('/mcp', async (_req, res, _next): Promise<void> => {
       success: false,
       message: 'MCP test failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -179,11 +164,9 @@ router.get('/mcp', async (_req, res, _next): Promise<void> => {
 // Test all API keys and services
 router.get('/all', async (_req, res, _next): Promise<void> => {
   try {
-    // @ts-ignore TS6133
-    const { _config } = await import('../config/env.js');
+    const { config } = await import('../config/env.js');
     const { e2bService } = await import('../services/e2b.service.js');
     const { mcpService } = await import('../services/mcp.service.js');
-    // @ts-ignore TS2307 - path resolved at runtime
     const { DEFAULT_MCP_SERVERS } = await import('../../../constants.js');
 
     const { apiKeyProvider } = await import('../services/apiKeyProvider.service.js');
@@ -193,16 +176,16 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
     const results: Record<string, any> = {
       gemini: {
         configured: geminiConfigured,
-        status: 'not tested',
+        status: 'not tested'
       },
       e2b: {
         configured: e2bConfigured,
-        status: 'not tested',
+        status: 'not tested'
       },
       mcp: {
         servers: DEFAULT_MCP_SERVERS.length,
-        status: 'not tested',
-      },
+        status: 'not tested'
+      }
     };
 
     // Test Gemini
@@ -213,7 +196,7 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
         results.gemini.response = geminiTest.text.substring(0, 50);
       } catch (error: unknown) {
         results.gemini.status = 'error';
-        results.gemini.error = error instanceof Error ? error.message : String(error);
+        results.gemini.error = error.message;
       }
     } else {
       results.gemini.status = 'not configured';
@@ -233,7 +216,7 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
         }
       } catch (error: unknown) {
         results.e2b.status = 'error';
-        results.e2b.error = error instanceof Error ? error.message : String(error);
+        results.e2b.error = error.message;
       }
     } else {
       results.e2b.status = 'not configured';
@@ -241,28 +224,24 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
 
     // Test MCP
     try {
-      const activeServers = DEFAULT_MCP_SERVERS.filter((s: any) => s.status === 'active');
+      const activeServers = DEFAULT_MCP_SERVERS.filter(s => s.status === 'active');
       const allTools = await mcpService.getAllTools(activeServers);
       results.mcp.status = 'working';
-      results.mcp.tools = Array.from(allTools.values()).reduce(
-        (sum, tools) => sum + tools.length,
-        0
-      );
+      results.mcp.tools = Array.from(allTools.values()).reduce((sum, tools) => sum + tools.length, 0);
     } catch (error: unknown) {
       results.mcp.status = 'error';
-      results.mcp.error = error instanceof Error ? error.message : String(error);
+      results.mcp.error = error.message;
     }
 
-    const allWorking =
-      results.gemini.status === 'working' &&
-      (results.e2b.status === 'working' || results.e2b.status === 'not configured') &&
-      results.mcp.status === 'working';
+    const allWorking = results.gemini.status === 'working' &&
+                      (results.e2b.status === 'working' || results.e2b.status === 'not configured') &&
+                      results.mcp.status === 'working';
 
     res.json({
       success: allWorking,
       message: allWorking ? 'All services operational!' : 'Some services have issues',
       results,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (error: unknown) {
     logger.error('Comprehensive test failed:', error);
@@ -271,12 +250,10 @@ router.get('/all', async (_req, res, _next): Promise<void> => {
       success: false,
       message: 'Comprehensive test failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -288,7 +265,7 @@ router.get('/gemini/structured', async (_req, res, _next): Promise<void> => {
     if (!hasKey) {
       res.status(500).json({
         success: false,
-        message: 'Gemini API key is not configured. Add it via Admin Console → Settings → API Keys',
+        message: 'Gemini API key is not configured. Add it via Admin Console → Settings → API Keys'
       });
       return;
     }
@@ -301,9 +278,9 @@ router.get('/gemini/structured', async (_req, res, _next): Promise<void> => {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        description: { type: 'string' },
+        description: { type: 'string' }
       },
-      required: ['name', 'description'],
+      required: ['name', 'description']
     };
 
     const startTime = Date.now();
@@ -318,9 +295,9 @@ router.get('/gemini/structured', async (_req, res, _next): Promise<void> => {
       test: {
         prompt: prompt,
         response: result,
-        latency: `${latency}ms`,
+        latency: `${latency}ms`
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (error: unknown) {
     logger.error('Gemini structured output test failed:', error);
@@ -329,12 +306,10 @@ router.get('/gemini/structured', async (_req, res, _next): Promise<void> => {
       success: false,
       message: 'Gemini API structured output test failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -343,8 +318,7 @@ router.get('/gemini/structured', async (_req, res, _next): Promise<void> => {
 router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
   try {
     const { mcpService } = await import('../services/mcp.service.js');
-    // @ts-ignore TS6133
-    const { _config } = await import('../config/env.js');
+    const { config } = await import('../config/env.js');
     const { apiKeyProvider } = await import('../services/apiKeyProvider.service.js');
 
     const query = (req.query.q as string) || 'React best practices 2024';
@@ -354,25 +328,25 @@ router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
     // Check configuration (from database)
     const geminiConfigured = await apiKeyProvider.hasApiKey('gemini');
     const engineId = await apiKeyProvider.getGoogleSearchEngineId();
-    const customSearchConfigured = (await apiKeyProvider.hasApiKey('google_search')) && !!engineId;
+    const customSearchConfigured = await apiKeyProvider.hasApiKey('google_search') && !!engineId;
 
     const configInfo = {
       geminiApiKey: geminiConfigured ? 'configured' : 'not configured',
       googleCustomSearchApi: customSearchConfigured ? 'configured' : 'not configured',
       note: geminiConfigured
         ? 'For Gemini models, Google Search uses native grounding (useInternet=true). No Custom Search API needed.'
-        : 'For non-Gemini models, configure Google Search API key and Engine ID via Admin Console → Settings → API Keys',
+        : 'For non-Gemini models, configure Google Search API key and Engine ID via Admin Console → Settings → API Keys'
     };
 
     // Test Google Search tool execution
     let searchResult: any = null;
-    let _error: any = null;
+    let error: unknown = null;
 
     try {
       const startTime = Date.now();
       searchResult = await mcpService.callTool('mcp-sys-3', 'google_search', {
         query,
-        num_results: 3,
+        num_results: 3
       });
       const latency = Date.now() - startTime;
 
@@ -386,12 +360,12 @@ router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
           latency: `${latency}ms`,
           config: configInfo,
           result: searchResult,
-          source: searchResult?.source || 'unknown',
+          source: searchResult?.source || 'unknown'
         },
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } catch (searchError: any) {
-      _error = searchError;
+      error = searchError;
       logger.error('MCP Google Search test failed:', searchError);
 
       res.status(500).json({
@@ -402,10 +376,10 @@ router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
           config: configInfo,
           error: {
             message: searchError.message || 'Unknown error',
-            ...(process.env.NODE_ENV === 'development' && { stack: searchError.stack }),
-          },
+            ...(process.env.NODE_ENV === 'development' && { stack: searchError.stack })
+          }
         },
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     }
   } catch (error: unknown) {
@@ -415,12 +389,10 @@ router.get('/mcp/google-search', async (req, res, _next): Promise<void> => {
       success: false,
       message: 'MCP Google Search test setup failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -439,7 +411,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       configured: geminiConfigured,
       status: 'not tested',
       provider: 'Google',
-      models: ['gemini-2.5-flash', 'gemini-3-pro-preview'],
+      models: ['gemini-2.5-flash', 'gemini-3-pro-preview']
     };
 
     if (geminiConfigured) {
@@ -450,11 +422,10 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.gemini.status = 'working';
         results.gemini.latency = `${latency}ms`;
         results.gemini.response = result.text.substring(0, 50);
-        results.gemini.tokensUsed = result.usage?.totalTokens || 0;
+        results.gemini.tokensUsed = result.usage?.totalTokenCount || 0;
       } catch (error: unknown) {
         results.gemini.status = 'error';
-        results.gemini.error =
-          (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+        results.gemini.error = error.message || 'Unknown error';
       }
     } else {
       results.gemini.status = 'not configured';
@@ -466,7 +437,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       configured: openaiConfigured,
       status: 'not tested',
       provider: 'OpenAI',
-      models: ['gpt-4o', 'gpt-4o-mini'],
+      models: ['gpt-4o', 'gpt-4o-mini']
     };
 
     if (openaiConfigured) {
@@ -482,8 +453,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.openai.tokensUsed = result.usage.totalTokens;
       } catch (error: unknown) {
         results.openai.status = 'error';
-        results.openai.error =
-          (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+        results.openai.error = error.message || 'Unknown error';
       }
     } else {
       results.openai.status = 'not configured';
@@ -495,7 +465,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       configured: anthropicConfigured,
       status: 'not tested',
       provider: 'Anthropic',
-      models: ['claude-3-5-sonnet-20241022'],
+      models: ['claude-3-5-sonnet-20241022']
     };
 
     if (anthropicConfigured) {
@@ -503,10 +473,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         const { AnthropicService } = await import('../services/llm/providers/AnthropicService.js');
         const anthropicService = new AnthropicService();
         const startTime = Date.now();
-        const result = await anthropicService.generateContent(
-          testPrompt,
-          'claude-3-5-sonnet-20241022'
-        );
+        const result = await anthropicService.generateContent(testPrompt, 'claude-3-5-sonnet-20241022');
         const latency = Date.now() - startTime;
         results.anthropic.status = 'working';
         results.anthropic.latency = `${latency}ms`;
@@ -514,8 +481,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.anthropic.tokensUsed = result.usage.totalTokens;
       } catch (error: unknown) {
         results.anthropic.status = 'error';
-        results.anthropic.error =
-          (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+        results.anthropic.error = error.message || 'Unknown error';
       }
     } else {
       results.anthropic.status = 'not configured';
@@ -527,7 +493,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       configured: deepseekConfigured,
       status: 'not tested',
       provider: 'DeepSeek',
-      models: ['deepseek-chat', 'deepseek-coder'],
+      models: ['deepseek-chat', 'deepseek-coder']
     };
 
     if (deepseekConfigured) {
@@ -543,8 +509,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.deepseek.tokensUsed = result.usage.totalTokens;
       } catch (error: unknown) {
         results.deepseek.status = 'error';
-        results.deepseek.error =
-          (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+        results.deepseek.error = error.message || 'Unknown error';
       }
     } else {
       results.deepseek.status = 'not configured';
@@ -556,7 +521,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       configured: grokConfigured,
       status: 'not tested',
       provider: 'xAI (Grok)',
-      models: ['grok-3'],
+      models: ['grok-3']
     };
 
     if (grokConfigured) {
@@ -572,8 +537,7 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         results.grok.tokensUsed = result.usage.totalTokens;
       } catch (error: unknown) {
         results.grok.status = 'error';
-        results.grok.error =
-          (error instanceof Error ? error.message : String(error)) || 'Unknown error';
+        results.grok.error = error.message || 'Unknown error';
       }
     } else {
       results.grok.status = 'not configured';
@@ -592,10 +556,10 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
         configured,
         working,
         errors,
-        notConfigured: Object.keys(results).length - configured,
+        notConfigured: Object.keys(results).length - configured
       },
       results,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (error: unknown) {
     logger.error('LLM providers test failed:', error);
@@ -604,12 +568,10 @@ router.get('/llm-providers', async (_req, res, _next): Promise<void> => {
       success: false,
       message: 'LLM providers test failed',
       error: {
-        message: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error instanceof Error ? error.stack : undefined,
-        }),
+        message: error.message || 'Unknown error',
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 });

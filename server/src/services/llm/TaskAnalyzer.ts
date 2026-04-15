@@ -2,7 +2,7 @@
  * Task Analyzer - Analyzes tasks to determine requirements and characteristics
  */
 
-import { TaskComplexity} from './models/ModelRegistry.js';
+import { TaskComplexity, ModelCapabilities } from './models/ModelRegistry.js';
 
 export type TaskType = 
   | 'chat' 
@@ -392,7 +392,7 @@ export function buildRoutingSignals(
   
   // Adjust based on budget remaining
   if (routingContext?.packageLimits?.maxMonthlyBudget && routingContext?.projectState?.budgetUsed !== undefined) {
-    // const _budgetRemaining = routingContext.packageLimits.maxMonthlyBudget - routingContext.projectState.budgetUsed;
+    const budgetRemaining = routingContext.packageLimits.maxMonthlyBudget - routingContext.projectState.budgetUsed;
     const budgetUsageRatio = routingContext.projectState.budgetUsed / routingContext.packageLimits.maxMonthlyBudget;
     
     // Increase cost pressure if budget is low

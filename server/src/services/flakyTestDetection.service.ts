@@ -177,7 +177,7 @@ Identify the most likely causes for this flaky test.`;
     };
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'test_analysis',
         agentRole: 'Test Agent',
@@ -192,7 +192,7 @@ Identify the most likely causes for this flaky test.`;
       const parsed = JSON.parse(response.content);
       return parsed.causes || [];
     } catch (error: unknown) {
-      logger.warn('LLM cause identification failed:', (error instanceof Error ? error.message : String(error)));
+      logger.warn('LLM cause identification failed:', error.message);
       return ['Unknown cause - requires manual investigation'];
     }
   }
@@ -201,8 +201,8 @@ Identify the most likely causes for this flaky test.`;
    * Suggest fixes
    */
   private async suggestFixes(
-    _testName: string,
-    _testFile: string,
+    testName: string,
+    testFile: string,
     failurePattern: IFlakyTest['failurePattern'],
     causes: string[]
   ): Promise<IFlakyTest['fixes']> {

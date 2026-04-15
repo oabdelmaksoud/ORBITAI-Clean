@@ -6,14 +6,15 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-import { RunnableSequence } from '@langchain/core/runnables';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { RunnableSequence, RunnablePassthrough } from '@langchain/core/runnables';
+import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 // MemoryVectorStore not available in this version, using alternative approach
 // import { MemoryVectorStore } from '@langchain/community/vectorstores/memory';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { Document } from '@langchain/core/documents';
 import { weaviateService } from './weaviate.service.js';
+import { embeddingService } from './embedding.service.js';
 import { vectorSearchService } from './vectorSearch.service.js';
 import { logger } from '../utils/logger.js';
 import { apiKeyProvider } from './apiKeyProvider.service.js';
@@ -44,12 +45,9 @@ export interface ChainOutput {
 }
 
 class LangChainService {
-  // @ts-ignore TS6133
-  private _llm: any = null;
-  // @ts-ignore TS6133
-  private _embeddings: any = null;
-  // @ts-ignore TS6133
-  private _vectorStore: any = null; // MemoryVectorStore not available
+  private llm: any = null;
+  private embeddings: any = null;
+  private vectorStore: any = null; // MemoryVectorStore not available
   private initialized: boolean = false;
 
   /**
@@ -64,33 +62,31 @@ class LangChainService {
       const geminiKey = await apiKeyProvider.getApiKey('gemini');
 
       if (openaiKey) {
-        this._llm = new ChatOpenAI({
+        this.llm = new ChatOpenAI({
           modelName: 'gpt-4o',
           temperature: 0.7,
           openAIApiKey: openaiKey,
         });
-        this._embeddings = new OpenAIEmbeddings({
+        this.embeddings = new OpenAIEmbeddings({
           openAIApiKey: openaiKey,
         });
       } else if (geminiKey) {
-        this._llm = new ChatGoogleGenerativeAI({
-          model: 'gemini-3-pro-preview',
+        this.llm = new ChatGoogleGenerativeAI({
+          modelName: 'gemini-3-pro-preview',
           temperature: 0.7,
           apiKey: geminiKey,
-        } as any);
-        this._embeddings = new GoogleGenerativeAIEmbeddings({
+        });
+        this.embeddings = new GoogleGenerativeAIEmbeddings({
           modelName: 'models/embedding-001',
           apiKey: geminiKey,
         });
       } else {
-        throw new Error(
-          'No LLM API key configured. Add API keys via Admin Console → Settings → API Keys'
-        );
+        throw new Error('No LLM API key configured. Add API keys via Admin Console → Settings → API Keys');
       }
 
       // MemoryVectorStore not available, using weaviateService or vectorSearchService instead
-      // this._vectorStore = await MemoryVectorStore.fromDocuments([], this.embeddings);
-      this._vectorStore = null;
+      // this.vectorStore = await MemoryVectorStore.fromDocuments([], this.embeddings);
+      this.vectorStore = null;
 
       this.initialized = true;
       logger.info('✅ LangChain service initialized');
@@ -125,14 +121,12 @@ class LangChainService {
       });
     } else if (geminiKey) {
       chainLLM = new ChatGoogleGenerativeAI({
-        model: chainConfig.model || 'gemini-3-pro-preview',
+        modelName: chainConfig.model || 'gemini-3-pro-preview',
         temperature,
         apiKey: geminiKey,
-      } as any);
+      });
     } else {
-      throw new Error(
-        'No LLM API key configured. Add API keys via Admin Console → Settings → API Keys'
-      );
+      throw new Error('No LLM API key configured. Add API keys via Admin Console → Settings → API Keys');
     }
 
     // Create prompt template
@@ -171,8 +165,9 @@ class LangChainService {
     try {
       const response = await chain.invoke(input);
 
-      const output =
-        typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const output = typeof response.content === 'string'
+        ? response.content
+        : JSON.stringify(response.content);
 
       return {
         output,
@@ -184,9 +179,7 @@ class LangChainService {
       };
     } catch (error: unknown) {
       logger.error('Chain execution failed:', error);
-      throw new Error(
-        `Chain execution failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(`Chain execution failed: ${error.message}`);
     }
   }
 
@@ -198,9 +191,7 @@ class LangChainService {
       await this.initialize();
     }
 
-    const systemPrompt =
-      chainConfig.systemPrompt ||
-      'You are a helpful AI assistant. Answer questions based on the provided context.';
+    const systemPrompt = chainConfig.systemPrompt || 'You are a helpful AI assistant. Answer questions based on the provided context.';
 
     const openaiKey = await apiKeyProvider.getApiKey('openai');
     const geminiKey = await apiKeyProvider.getApiKey('gemini');
@@ -214,14 +205,12 @@ class LangChainService {
       });
     } else if (geminiKey) {
       chainLLM = new ChatGoogleGenerativeAI({
-        model: chainConfig.model || 'gemini-3-pro-preview',
+        modelName: chainConfig.model || 'gemini-3-pro-preview',
         temperature: chainConfig.temperature ?? 0.7,
         apiKey: geminiKey,
-      } as any);
+      });
     } else {
-      throw new Error(
-        'No LLM API key configured. Add API keys via Admin Console → Settings → API Keys'
-      );
+      throw new Error('No LLM API key configured. Add API keys via Admin Console → Settings → API Keys');
     }
 
     // Create RAG chain with retrieval
@@ -256,21 +245,16 @@ class LangChainService {
   /**
    * Add documents to vector store
    */
-  async addDocuments(
-    documents: Array<{ content: string; metadata?: Record<string, any> }>
-  ): Promise<void> {
+  async addDocuments(documents: Array<{ content: string; metadata?: Record<string, any> }>): Promise<void> {
     if (!this.initialized) {
       await this.initialize();
     }
 
     try {
-      const docs = documents.map(
-        doc =>
-          new Document({
-            pageContent: doc.content,
-            metadata: doc.metadata || {},
-          })
-      );
+      const docs = documents.map(doc => new Document({
+        pageContent: doc.content,
+        metadata: doc.metadata || {},
+      }));
 
       // Use vectorSearchService instead of MemoryVectorStore
       for (const doc of docs) {
@@ -290,10 +274,7 @@ class LangChainService {
   /**
    * Create a sequential chain (multiple steps)
    */
-  async createSequentialChain(
-    steps: Array<{ name: string; prompt: string }>,
-    chainConfig: ChainConfig = {}
-  ): Promise<any> {
+  async createSequentialChain(steps: Array<{ name: string; prompt: string }>, chainConfig: ChainConfig = {}): Promise<any> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -310,14 +291,12 @@ class LangChainService {
       });
     } else if (geminiKey) {
       chainLLM = new ChatGoogleGenerativeAI({
-        model: chainConfig.model || 'gemini-3-pro-preview',
+        modelName: chainConfig.model || 'gemini-3-pro-preview',
         temperature: chainConfig.temperature ?? 0.7,
         apiKey: geminiKey,
-      } as any);
+      });
     } else {
-      throw new Error(
-        'No LLM API key configured. Add API keys via Admin Console → Settings → API Keys'
-      );
+      throw new Error('No LLM API key configured. Add API keys via Admin Console → Settings → API Keys');
     }
 
     // Build sequential chain
@@ -347,15 +326,14 @@ class LangChainService {
       const stream = await chain.stream(input);
 
       for await (const chunk of stream) {
-        const content =
-          typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content);
+        const content = typeof chunk.content === 'string'
+          ? chunk.content
+          : JSON.stringify(chunk.content);
         yield content;
       }
     } catch (error: unknown) {
       logger.error('Chain streaming failed:', error);
-      throw new Error(
-        `Chain streaming failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(`Chain streaming failed: ${error.message}`);
     }
   }
 }

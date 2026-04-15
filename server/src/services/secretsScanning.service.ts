@@ -8,15 +8,7 @@ import { llmRouter } from './llm/LLMRouter.js';
 import { Type, Schema } from '@google/genai';
 
 export interface SecretFinding {
-  type:
-    | 'api_key'
-    | 'password'
-    | 'token'
-    | 'credential'
-    | 'private_key'
-    | 'database_url'
-    | 'aws_key'
-    | 'other';
+  type: 'api_key' | 'password' | 'token' | 'credential' | 'private_key' | 'database_url' | 'aws_key' | 'other';
   severity: 'critical' | 'high' | 'medium' | 'low';
   value: string; // Masked value
   location: string; // File path or artifact ID
@@ -34,30 +26,30 @@ export interface SecretFinding {
 const SECRET_PATTERNS = {
   api_key: [
     /api[_-]?key\s*[=:]\s*['"]([a-zA-Z0-9_\-]{20,})['"]/gi,
-    /apikey\s*[=:]\s*['"]([a-zA-Z0-9_\-]{20,})['"]/gi,
+    /apikey\s*[=:]\s*['"]([a-zA-Z0-9_\-]{20,})['"]/gi
   ],
   password: [
     /password\s*[=:]\s*['"]([^'"]{8,})['"]/gi,
     /pwd\s*[=:]\s*['"]([^'"]{8,})['"]/gi,
-    /pass\s*[=:]\s*['"]([^'"]{8,})['"]/gi,
+    /pass\s*[=:]\s*['"]([^'"]{8,})['"]/gi
   ],
   token: [
     /token\s*[=:]\s*['"]([a-zA-Z0-9_\-]{32,})['"]/gi,
     /bearer\s+([a-zA-Z0-9_\-\.]{32,})/gi,
-    /access[_-]?token\s*[=:]\s*['"]([a-zA-Z0-9_\-]{32,})['"]/gi,
+    /access[_-]?token\s*[=:]\s*['"]([a-zA-Z0-9_\-]{32,})['"]/gi
   ],
   aws_key: [
     /aws[_-]?access[_-]?key[_-]?id\s*[=:]\s*['"](AKIA[0-9A-Z]{16})['"]/gi,
-    /aws[_-]?secret[_-]?access[_-]?key\s*[=:]\s*['"]([a-zA-Z0-9/+=]{40})['"]/gi,
+    /aws[_-]?secret[_-]?access[_-]?key\s*[=:]\s*['"]([a-zA-Z0-9/+=]{40})['"]/gi
   ],
   database_url: [
     /(?:postgres|mysql|mongodb|redis):\/\/[^:]+:[^@]+@/gi,
-    /connection[_-]?string\s*[=:]\s*['"]([^'"]*:[^'"]*@[^'"]+)['"]/gi,
+    /connection[_-]?string\s*[=:]\s*['"]([^'"]*:[^'"]*@[^'"]+)['"]/gi
   ],
   private_key: [
     /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/gi,
-    /-----BEGIN\s+EC\s+PRIVATE\s+KEY-----/gi,
-  ],
+    /-----BEGIN\s+EC\s+PRIVATE\s+KEY-----/gi
+  ]
 };
 
 class SecretsScanningService {
@@ -115,7 +107,7 @@ class SecretsScanningService {
               line: i + 1,
               description: `Hardcoded ${type} found in code`,
               recommendation: `Remove hardcoded ${type} and use secure storage`,
-              secureAlternative: this.getSecureAlternative(type as string, 'unknown'),
+              secureAlternative: this.getSecureAlternative(type as string, language)
             });
           }
         }
@@ -173,26 +165,26 @@ Return as JSON array.`;
               description: { type: Type.STRING },
               recommendation: { type: Type.STRING },
               secureMethod: { type: Type.STRING },
-              example: { type: Type.STRING },
+              example: { type: Type.STRING }
             },
-            required: ['type', 'severity', 'description', 'recommendation'],
-          },
-        },
+            required: ['type', 'severity', 'description', 'recommendation']
+          }
+        }
       },
-      required: ['findings'],
+      required: ['findings']
     };
 
     try {
-      const response = await (llmRouter as any).routeAndExecute({
+      const response = await llmRouter.routeAndExecute({
         prompt,
         taskType: 'security_audit',
         agentRole: 'QA/Audit Agent',
         context: {
           agentRole: 'QA/Audit Agent',
-          tools: [],
+          tools: []
         },
         requiredOutputFormat: 'json',
-        schema,
+        schema
       });
 
       const parsed = JSON.parse(response.content);
@@ -207,14 +199,11 @@ Return as JSON array.`;
         secureAlternative: {
           method: this.parseSecureMethod(finding.secureMethod),
           example: finding.example || '',
-          implementation: this.generateImplementation(finding.secureMethod, language),
-        },
+          implementation: this.generateImplementation(finding.secureMethod, language)
+        }
       }));
     } catch (error: unknown) {
-      logger.warn(
-        'LLM secret scanning failed:',
-        error instanceof Error ? error.message : String(error)
-      );
+      logger.warn('LLM secret scanning failed:', error.message);
       return [];
     }
   }
@@ -244,14 +233,11 @@ Return as JSON array.`;
    */
   private getSecureAlternative(
     type: string,
-    _language: string
+    language: string
   ): SecretFinding['secureAlternative'] {
-    const method =
-      type === 'aws_key'
-        ? 'secrets_manager'
-        : type === 'private_key'
-          ? 'vault'
-          : 'environment_variable';
+    const method = type === 'aws_key' ? 'secrets_manager' :
+                   type === 'private_key' ? 'vault' :
+                   'environment_variable';
 
     let example = '';
     let implementation = '';
@@ -303,7 +289,7 @@ Return as JSON array.`;
   /**
    * Generate implementation example
    */
-  private generateImplementation(method: string, _language: string): string {
+  private generateImplementation(method: string, language: string): string {
     // Implementation examples would be generated here
     return `// Secure implementation using ${method}`;
   }
