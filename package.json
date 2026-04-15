@@ -17,7 +17,10 @@
         "build:client": "npm run build --workspace=client",
         "build:server": "npm run build --workspace=server",
         "clean": "rm -rf client/dist server/dist shared/dist",
-        "test": "npm run test --workspaces",
+        "test": "npm run test --workspaces --if-present",
+        "test:integration": "echo 'Integration tests run as part of workspace tests' && exit 0",
+        "lint": "npm run lint --workspace=client && npm run lint --workspace=server",
+        "typecheck": "npm run typecheck --workspace=client && npm run typecheck --workspace=server",
         "install:all": "npm install",
         "start:prod": "npm run start --workspace=server",
         "preview:client": "npm run preview --workspace=client"

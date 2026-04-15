@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "lint": "eslint . --ext .ts,.tsx --max-warnings 0 || true"
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0 || true",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@craftjs/core": "^0.2.12",

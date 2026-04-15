@@ -42,7 +42,8 @@ jobs:
           MONGODB_TEST_URI: mongodb://localhost:27017/orbitai-test
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
           file: ./coverage/lcov.info
           flags: unittests
@@ -81,6 +82,8 @@ jobs:
 
       - name: Build application
         run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run E2E tests
         run: npm run test:e2e
