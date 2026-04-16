@@ -4,12 +4,9 @@
  * Week 2 Implementation - Deployment Automation
  */
 
+import { infrastructureAsCodeService } from './infrastructureAsCode.service.js';
 import { logger } from '../utils/logger.js';
-import { codeGeneratorService } from './codeGenerator.service.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import fetch from 'node-fetch';
 
 export interface DeploymentConfig {
   projectId: string;
@@ -110,26 +107,37 @@ class DeploymentOrchestratorService {
 
       // Step 3.5: Generate Infrastructure-as-Code
       try {
-        const iacTemplates = await infrastructureAsCodeService.generateTemplates({
-          projectName: config.projectName,
-          platform: config.platform === 'aws' ? 'aws' : 
-                    config.platform === 'gcp' ? 'gcp' :
-                    config.platform === 'azure' ? 'azure' : 'aws',
-          resources: {
-            compute: { type: 'ec2', count: 1 },
-            database: { type: 'rds' },
-            storage: { type: 's3' },
-            networking: { vpc: true, loadBalancer: true }
+        const iacTemplates = await infrastructureAsCodeService.generateTemplates(
+          {
+            projectName: config.projectName,
+            platform:
+              config.platform === 'aws'
+                ? 'aws'
+                : config.platform === 'gcp'
+                  ? 'gcp'
+                  : config.platform === 'azure'
+                    ? 'azure'
+                    : 'aws',
+            resources: {
+              compute: { type: 'ec2', count: 1 },
+              database: { type: 'rds' },
+              storage: { type: 's3' },
+              networking: { vpc: true, loadBalancer: true },
+            },
+            environment: config.environment || 'production',
           },
-          environment: config.environment || 'production'
-        }, ['terraform']);
+          ['terraform']
+        );
 
         if (iacTemplates.length > 0) {
           logs.push(`✅ Generated ${iacTemplates.length} IaC template(s)`);
           // IaC templates would be added to the code repository
         }
       } catch (error: unknown) {
-        logger.warn('IaC generation failed (non-critical):', error.message);
+        logger.warn(
+          'IaC generation failed (non-critical):',
+          error instanceof Error ? error.message : String(error)
+        );
       }
 
       // Step 4: Deploy to platform
@@ -162,7 +170,7 @@ class DeploymentOrchestratorService {
             logs: ['Stub: Azure deployment'],
             metadata: { platform: 'azure', region: config.region || 'global' },
             deployedAt: Date.now(),
-            estimatedCost: 20
+            estimatedCost: 20,
           };
           break;
         case 'digitalocean':
@@ -176,7 +184,7 @@ class DeploymentOrchestratorService {
             logs: ['Stub: DigitalOcean deployment'],
             metadata: { platform: 'digitalocean', region: config.region || 'nyc3' },
             deployedAt: Date.now(),
-            estimatedCost: 12
+            estimatedCost: 12,
           };
           break;
         default:
@@ -217,15 +225,17 @@ class DeploymentOrchestratorService {
         estimatedCost: this.estimateMonthlyCost(config.platform),
       };
     } catch (error: unknown) {
-      logger.error(`❌ Deployment failed: ${error.message}`);
-      logs.push(`❌ Error: ${error.message}`);
+      logger.error(
+        `❌ Deployment failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+      logs.push(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
 
       return {
         deploymentId,
         projectId: config.projectId,
         platform: config.platform,
         status: 'failed',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         logs,
       };
     }
@@ -237,7 +247,9 @@ class DeploymentOrchestratorService {
   private async createGithubRepository(config: GithubRepoConfig): Promise<any> {
     try {
       if (!this.githubToken) {
-        throw new Error('GITHUB_TOKEN not configured. Add it in Admin Console → Settings → API Keys');
+        throw new Error(
+          'GITHUB_TOKEN not configured. Add it in Admin Console → Settings → API Keys'
+        );
       }
 
       logger.info(`📦 Creating GitHub repository: ${config.name}`);
@@ -245,8 +257,8 @@ class DeploymentOrchestratorService {
       const response = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
+          Authorization: `Bearer ${this.githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -260,8 +272,8 @@ class DeploymentOrchestratorService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`GitHub API error: ${error.message}`);
+        const errorBody = (await response.json()) as { message?: string };
+        throw new Error(`GitHub API error: ${errorBody.message ?? 'Unknown error'}`);
       }
 
       const repo = (await response.json()) as any;
@@ -276,7 +288,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -285,7 +297,7 @@ class DeploymentOrchestratorService {
    * Push generated code to GitHub
    */
   private async pushCodeToGithub(
-    codeArtifactId: string,
+    _codeArtifactId: string,
     repoUrl: string,
     projectName: string
   ): Promise<any> {
@@ -301,7 +313,10 @@ class DeploymentOrchestratorService {
       // For now, we'll create the files via GitHub API
       const files = [
         { path: 'README.md', content: this.generateGithubReadme(projectName) },
-        { path: 'MANIFEST.json', content: '{"version":"1.0","generated":"' + new Date().toISOString() + '"}' },
+        {
+          path: 'MANIFEST.json',
+          content: '{"version":"1.0","generated":"' + new Date().toISOString() + '"}',
+        },
         {
           path: '.github/workflows/ci.yml',
           content: this.generateGithubActionsWorkflow(),
@@ -322,7 +337,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -330,7 +345,11 @@ class DeploymentOrchestratorService {
   /**
    * Create file in GitHub repository
    */
-  private async createGitHubFile(repoUrl: string, filePath: string, content: string): Promise<void> {
+  private async createGitHubFile(
+    repoUrl: string,
+    filePath: string,
+    content: string
+  ): Promise<void> {
     const [owner, repo] = repoUrl.replace('https://github.com/', '').split('/');
 
     const response = await fetch(
@@ -338,7 +357,7 @@ class DeploymentOrchestratorService {
       {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${this.githubToken}`,
+          Authorization: `Bearer ${this.githubToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -368,25 +387,28 @@ class DeploymentOrchestratorService {
       const projectName = config.projectName.toLowerCase().replace(/\s+/g, '-');
 
       // Step 1: Import project from GitHub
-      const importResponse = await fetch('https://api.vercel.com/v13/deployments?teamId=undefined', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.vercelToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: projectName,
-          gitRepository: {
-            type: 'github',
-            repo: githubRepoUrl.replace('https://github.com/', ''),
+      const importResponse = await fetch(
+        'https://api.vercel.com/v13/deployments?teamId=undefined',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.vercelToken}`,
+            'Content-Type': 'application/json',
           },
-          framework: 'other',
-          buildCommand: 'npm run build',
-          outputDirectory: 'dist',
-          installCommand: 'npm install',
-          environmentVariables: config.envVars || {},
-        }),
-      });
+          body: JSON.stringify({
+            name: projectName,
+            gitRepository: {
+              type: 'github',
+              repo: githubRepoUrl.replace('https://github.com/', ''),
+            },
+            framework: 'other',
+            buildCommand: 'npm run build',
+            outputDirectory: 'dist',
+            installCommand: 'npm install',
+            environmentVariables: config.envVars || {},
+          }),
+        }
+      );
 
       if (!importResponse.ok) {
         const error = await importResponse.json();
@@ -411,7 +433,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -419,11 +441,14 @@ class DeploymentOrchestratorService {
   /**
    * Poll Vercel deployment status
    */
-  private async pollVercelDeployment(deploymentId: string, maxAttempts: number = 60): Promise<string> {
+  private async pollVercelDeployment(
+    deploymentId: string,
+    maxAttempts: number = 60
+  ): Promise<string> {
     for (let i = 0; i < maxAttempts; i++) {
       const response = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}`, {
         headers: {
-          'Authorization': `Bearer ${this.vercelToken}`,
+          Authorization: `Bearer ${this.vercelToken}`,
         },
       });
 
@@ -447,7 +472,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to Railway
    */
-  private async deployToRailway(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToRailway(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       if (!this.railwayToken) {
         throw new Error('RAILWAY_API_TOKEN not configured');
@@ -469,7 +494,7 @@ class DeploymentOrchestratorService {
       const response = await fetch('https://api.railway.app/graphql', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.railwayToken}`,
+          Authorization: `Bearer ${this.railwayToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -504,7 +529,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -512,7 +537,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to AWS
    */
-  private async deployToAws(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToAws(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       if (!this.awsAccessKey || !this.awsSecretKey) {
         throw new Error('AWS credentials not configured');
@@ -525,12 +550,12 @@ class DeploymentOrchestratorService {
       // then implement the SDK calls to create/update an EB environment.
       throw new Error(
         'AWS Elastic Beanstalk deployment is not yet implemented. ' +
-        'AWS SDK integration is pending — contributions welcome.'
+          'AWS SDK integration is pending — contributions welcome.'
       );
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -538,7 +563,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to Google Cloud
    */
-  private async deployToGcp(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToGcp(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       if (!this.gcpProjectId) {
         throw new Error('GCP_PROJECT_ID not configured');
@@ -551,12 +576,12 @@ class DeploymentOrchestratorService {
       // then implement Cloud Build + Cloud Run deploy steps.
       throw new Error(
         'Google Cloud Run deployment is not yet implemented. ' +
-        'GCP SDK integration is pending — contributions welcome.'
+          'GCP SDK integration is pending — contributions welcome.'
       );
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -564,7 +589,7 @@ class DeploymentOrchestratorService {
   /**
    * Deploy to Render
    */
-  private async deployToRender(githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
+  private async deployToRender(_githubRepoUrl: string, config: DeploymentConfig): Promise<any> {
     try {
       logger.info('🚀 Deploying to Render...');
 
@@ -587,7 +612,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -603,7 +628,7 @@ class DeploymentOrchestratorService {
       const url = liveUrl.startsWith('http') ? liveUrl : `https://${liveUrl}`;
 
       // Check health endpoint
-      const response = await fetch(`${url}/health`, { timeout: 5000 });
+      const response = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
 
       if (!response.ok) {
         throw new Error(`Health check failed: ${response.status}`);
@@ -619,7 +644,7 @@ class DeploymentOrchestratorService {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }

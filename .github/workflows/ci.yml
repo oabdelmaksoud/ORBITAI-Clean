@@ -78,7 +78,7 @@ jobs:
 
       - name: Run backend tests with coverage
         working-directory: ./server
-        run: npm run test:coverage || npm test -- --passWithNoTests
+        run: npm run test:coverage
         env:
           CI: true
 

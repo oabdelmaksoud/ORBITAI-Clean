@@ -95,7 +95,7 @@ router.post('/workflows/:id/execute', async (req, res, _next) => {
       res.setHeader('Connection', 'keep-alive');
 
       const result = await langgraphService.executeWorkflow(id, input, { stream: true });
-      
+
       if (result && typeof result === 'object' && Symbol.asyncIterator in result) {
         for await (const state of result as AsyncGenerator<any, void, unknown>) {
           res.write(`data: ${JSON.stringify({ state })}\n\n`);
@@ -137,7 +137,12 @@ router.post('/workflows/agent', async (req, res, _next) => {
       return;
     }
 
-    const workflow = await langgraphService.createAgentWorkflow(workflowId, workflowName, systemPrompt, model);
+    const workflow = await langgraphService.createAgentWorkflow(
+      workflowId,
+      workflowName,
+      systemPrompt,
+      model
+    );
 
     res.json({
       success: true,
@@ -215,11 +220,9 @@ router.post('/workflows/rag', async (req, res, _next) => {
 
     // Build retrieval handler backed by vectorSearch service
     const retrievalHandler = async (state: GraphState): Promise<Partial<GraphState>> => {
-      const searchQuery = (state as any).query as string || query;
+      const searchQuery = ((state as any).query as string) || query;
       const results = await vectorSearchService.vectorSearch(searchQuery, limit, filters);
-      const context = results
-        .map((d: any, i: number) => `[${i + 1}] ${d.content}`)
-        .join('\n\n');
+      const context = results.map((d: any, i: number) => `[${i + 1}] ${d.content}`).join('\n\n');
       return { ...state, context, retrievedDocs: results };
     };
 
@@ -300,16 +303,3 @@ router.get('/workflows', async (req, res, _next) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -53,16 +53,20 @@ const SecurityScanResults: React.FC<SecurityScanResultsProps> = ({ projectId, ar
   const [error, setError] = useState<string | null>(null);
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterTool, setFilterTool] = useState<string>('all');
+  // Feature flag: backend endpoint not yet implemented (TODO #44)
+  const isBackendAvailable = false;
 
   useEffect(() => {
-    loadScans();
+    if (isBackendAvailable) {
+      loadScans();
+    }
   }, [projectId, artifactId]);
 
   const loadScans = async () => {
+    if (!isBackendAvailable) return;
     setLoading(true);
     try {
-      // In a real implementation, this would fetch scan results from the backend
-      // For now, we'll simulate it
+      // TODO(#44): Implement GET /api/projects/:projectId/security-scans
       setResults([]);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load scan results');
@@ -71,18 +75,12 @@ const SecurityScanResults: React.FC<SecurityScanResultsProps> = ({ projectId, ar
     }
   };
 
-  const runScan = async (tools: string[] = ['llm']) => {
+  const runScan = async (_tools: string[] = ['llm']) => {
+    if (!isBackendAvailable) return;
     setScanning(true);
-    setError(null);
     try {
-      // This would trigger a security scan via the backend
-      // For now, we'll show a placeholder
-      setTimeout(() => {
-        setScanning(false);
-        // In real implementation, reload scans after completion
-      }, 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to run security scan');
+      // TODO(#44): Implement POST /api/projects/:projectId/security-scans
+    } finally {
       setScanning(false);
     }
   };
@@ -223,6 +221,14 @@ const SecurityScanResults: React.FC<SecurityScanResultsProps> = ({ projectId, ar
       </div>
 
       {/* Issues List */}
+      {!isBackendAvailable && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+          <p className="text-sm text-blue-800">
+            Security scanning is coming soon. The backend integration is currently under development.
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-8">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-2" />
@@ -232,9 +238,11 @@ const SecurityScanResults: React.FC<SecurityScanResultsProps> = ({ projectId, ar
         <div className="text-center py-8 text-gray-500">
           {totalSummary.total === 0 ? (
             <>
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
-              <p>No security issues found.</p>
-              <p className="text-sm mt-2">Click "Run Scan" to perform a security scan.</p>
+              <Shield className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p>No scan results available.</p>
+              {isBackendAvailable && (
+                <p className="text-sm mt-2">Click "Run Scan" to perform a security scan.</p>
+              )}
             </>
           ) : (
             <p>No issues match the selected filters.</p>

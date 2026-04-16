@@ -38,17 +38,20 @@ const AgentHealthMonitoring: React.FC<AgentHealthMonitoringProps> = ({ projectId
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<AgentHealthMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Feature flag: backend endpoint not yet implemented (TODO #44)
+  const isBackendAvailable = false;
 
   useEffect(() => {
-    if (agentId || agentRole) {
+    if (isBackendAvailable && (agentId || agentRole)) {
       loadMetrics();
     }
   }, [agentId, agentRole, projectId]);
 
   const loadMetrics = async () => {
+    if (!isBackendAvailable) return;
     setLoading(true);
     try {
-      // In real implementation, fetch from backend
+      // TODO(#44): Implement GET /api/agents/:agentId/health
       setMetrics(null);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load agent health metrics');
@@ -167,9 +170,19 @@ const AgentHealthMonitoring: React.FC<AgentHealthMonitoringProps> = ({ projectId
         </div>
       ) : (
         <div className="text-center py-8 text-gray-500">
-          <Activity className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-          <p>No agent health data available.</p>
-          <p className="text-sm mt-2">Select an agent to view health metrics.</p>
+          {!isBackendAvailable ? (
+            <>
+              <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p className="font-medium text-gray-600">Agent health monitoring is coming soon.</p>
+              <p className="text-sm mt-2">The backend integration is currently under development.</p>
+            </>
+          ) : (
+            <>
+              <Activity className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p>No agent health data available.</p>
+              <p className="text-sm mt-2">Select an agent to view health metrics.</p>
+            </>
+          )}
         </div>
       )}
     </div>

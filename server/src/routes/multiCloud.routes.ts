@@ -22,14 +22,14 @@ router.post('/deploy', authenticateToken, checkFeatureAccess('multi-cloud'), asy
 
 // POST /api/multi-cloud/load-balancer
 router.post('/load-balancer', authenticateToken, checkFeatureAccess('multi-cloud'), async (_req, res) => {
-  res.status(501).json({ success: false, error: 'Not yet implemented: load balancer configuration' });
+  res.status(503).set('Retry-After', '86400').json({ success: false, error: 'Load balancer configuration is not yet available.' });
 });
 
 // GET /api/multi-cloud/status/:deploymentId
 router.get('/status/:deploymentId', authenticateToken, checkFeatureAccess('multi-cloud'), async (req, res, next) => {
   try {
     // For now, just return not implemented
-    res.status(501).json({ error: 'Not implemented' });
+    res.status(503).set('Retry-After', '86400').json({ success: false, error: 'This multi-cloud feature is not yet available.' });
   } catch (err) {
     next(err);
   }
@@ -39,7 +39,7 @@ router.get('/status/:deploymentId', authenticateToken, checkFeatureAccess('multi
 router.post('/failover/:deploymentId', authenticateToken, checkFeatureAccess('multi-cloud'), async (req, res, next) => {
   try {
     // For now, just return not implemented
-    res.status(501).json({ error: 'Not implemented' });
+    res.status(503).set('Retry-After', '86400').json({ success: false, error: 'This multi-cloud feature is not yet available.' });
   } catch (err) {
     next(err);
   }
@@ -49,7 +49,7 @@ router.post('/failover/:deploymentId', authenticateToken, checkFeatureAccess('mu
 router.get('/costs/:deploymentId', authenticateToken, checkFeatureAccess('multi-cloud'), async (req, res, next) => {
   try {
     // For now, just return not implemented
-    res.status(501).json({ error: 'Not implemented' });
+    res.status(503).set('Retry-After', '86400').json({ success: false, error: 'This multi-cloud feature is not yet available.' });
   } catch (err) {
     next(err);
   }
@@ -59,7 +59,7 @@ router.get('/costs/:deploymentId', authenticateToken, checkFeatureAccess('multi-
 router.get('/health', authenticateToken, checkFeatureAccess('multi-cloud'), async (req, res, next) => {
   try {
     // For now, just return not implemented
-    res.status(501).json({ error: 'Not implemented' });
+    res.status(503).set('Retry-After', '86400').json({ success: false, error: 'This multi-cloud feature is not yet available.' });
   } catch (err) {
     next(err);
   }

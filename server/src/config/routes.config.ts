@@ -1,5 +1,4 @@
-import { Express } from 'express';
-import { rateLimiter, adminRateLimiter, featureFlagsCheckRateLimiter } from '../middleware/rateLimiter.js';
+import { adminRateLimiter, featureFlagsCheckRateLimiter, rateLimiter } from '../middleware/rateLimiter.js';
 
 import route_0 from '../routes/adminAuth.routes.js';
 import route_1 from '../routes/audit.routes.js';
@@ -58,6 +57,7 @@ import route_53 from '../routes/publicPackages.routes.js';
 import route_54 from '../routes/publicPageContent.routes.js';
 import route_55 from '../routes/demo.routes.js';
 import route_56 from '../routes/cua.routes.js';
+// Core versioned routes (canonical /api/v1/ paths)
 import route_57 from '../routes/auth.routes.js';
 import route_58 from '../routes/userSettings.routes.js';
 import route_59 from '../routes/project.routes.js';
@@ -67,23 +67,9 @@ import route_62 from '../routes/artifact.routes.js';
 import route_63 from '../routes/health.routes.js';
 import route_64 from '../routes/config.routes.js';
 import route_65 from '../routes/test.routes.js';
-
 import route_67 from '../routes/anomalyDetection.routes.js';
 import route_68 from '../routes/autoConfiguration.routes.js';
 import route_69 from '../routes/codebase.routes.js';
-import route_70 from '../routes/auth.routes.js';
-import route_71 from '../routes/userSettings.routes.js';
-import route_72 from '../routes/project.routes.js';
-import route_73 from '../routes/agent.routes.js';
-import route_74 from '../routes/task.routes.js';
-import route_75 from '../routes/artifact.routes.js';
-import route_76 from '../routes/health.routes.js';
-import route_77 from '../routes/config.routes.js';
-import route_78 from '../routes/test.routes.js';
-
-import route_80 from '../routes/anomalyDetection.routes.js';
-import route_81 from '../routes/autoConfiguration.routes.js';
-import route_82 from '../routes/codebase.routes.js';
 import route_83 from '../routes/projectExport.routes.js';
 import route_84 from '../routes/mcp.routes.js';
 import route_85 from '../routes/mcpServer.routes.js';
@@ -105,15 +91,12 @@ import route_100 from '../routes/terminal.routes.js';
 import route_101 from '../routes/chat.routes.js';
 import route_102 from '../routes/projectFolder.routes.js';
 import route_103 from '../routes/brainstormingRoom.routes.js';
-import route_104 from '../routes/brainstormingRoom.routes.js';
 import route_105 from '../routes/ideationMap.routes.js';
-import route_106 from '../routes/ideationMap.routes.js';
 import route_107 from '../routes/transcription.routes.js';
 import route_108 from '../routes/requirements.routes.js';
 import route_109 from '../routes/compliance.routes.js';
 import route_110 from '../routes/technicalDebt.routes.js';
 import route_111 from '../routes/issueTaskCreation.routes.js';
-import route_112 from '../routes/issueTaskCreation.routes.js';
 import route_113 from '../routes/aiSuggestions.routes.js';
 import route_114 from '../routes/notebook.routes.js';
 import route_115 from '../routes/aiAgentAssignment.routes.js';
@@ -151,10 +134,25 @@ export interface RouteConfig {
 }
 
 export const routes: RouteConfig[] = [
+  // ── Admin Auth ───────────────────────────────────────────────
   {
     path: '/api/admin-auth',
     router: route_0,
     filename: 'adminAuth.routes',
+    middleware: adminRateLimiter,
+  },
+
+  // ── Admin Management ─────────────────────────────────────────
+  {
+    path: '/api/admin',
+    router: route_52,
+    filename: 'admin.routes',
+    middleware: adminRateLimiter,
+  },
+  {
+    path: '/api/admin',
+    router: route_3,
+    filename: 'adminEnhanced.routes',
     middleware: adminRateLimiter,
   },
   {
@@ -170,15 +168,15 @@ export const routes: RouteConfig[] = [
     middleware: featureFlagsCheckRateLimiter,
   },
   {
-    path: '/api/admin',
-    router: route_3,
-    filename: 'adminEnhanced.routes',
-    middleware: adminRateLimiter,
-  },
-  {
     path: '/api/admin/system',
     router: route_4,
     filename: 'adminSystemDetails.routes',
+    middleware: adminRateLimiter,
+  },
+  {
+    path: '/api/admin/system-control',
+    router: route_35,
+    filename: 'adminSystemControl.routes',
     middleware: adminRateLimiter,
   },
   {
@@ -203,11 +201,18 @@ export const routes: RouteConfig[] = [
     path: '/api/admin/api-keys',
     router: route_8,
     filename: 'apiKeys.routes',
+    middleware: adminRateLimiter,
   },
   {
     path: '/api/admin/financial',
     router: route_9,
     filename: 'financialLive.routes',
+    middleware: adminRateLimiter,
+  },
+  {
+    path: '/api/admin/financial-advanced',
+    router: route_31,
+    filename: 'financialAdvanced.routes',
     middleware: adminRateLimiter,
   },
   {
@@ -229,7 +234,7 @@ export const routes: RouteConfig[] = [
     middleware: adminRateLimiter,
   },
   {
-    path: '/api/admin/agent-knowledge',
+    path: '/api/admin/agent-knowledge/learning',
     router: route_13,
     filename: 'agentKnowledgeLearning.routes',
     middleware: adminRateLimiter,
@@ -337,12 +342,6 @@ export const routes: RouteConfig[] = [
     middleware: adminRateLimiter,
   },
   {
-    path: '/api/admin/financial',
-    router: route_31,
-    filename: 'financialAdvanced.routes',
-    middleware: adminRateLimiter,
-  },
-  {
     path: '/api/admin/performance',
     router: route_32,
     filename: 'performance.routes',
@@ -358,12 +357,6 @@ export const routes: RouteConfig[] = [
     path: '/api/admin/database',
     router: route_34,
     filename: 'adminDatabase.routes',
-    middleware: adminRateLimiter,
-  },
-  {
-    path: '/api/admin/system',
-    router: route_35,
-    filename: 'adminSystemControl.routes',
     middleware: adminRateLimiter,
   },
   {
@@ -409,13 +402,13 @@ export const routes: RouteConfig[] = [
     middleware: adminRateLimiter,
   },
   {
-    path: '/api/admin/llm-router',
+    path: '/api/admin/llm-router/ab-tests',
     router: route_43,
     filename: 'routerABTest.routes',
     middleware: adminRateLimiter,
   },
   {
-    path: '/api/admin/llm-router',
+    path: '/api/admin/llm-router/benchmarks',
     router: route_44,
     filename: 'modelBenchmark.routes',
     middleware: adminRateLimiter,
@@ -444,6 +437,8 @@ export const routes: RouteConfig[] = [
     filename: 'internalRouting.routes',
     middleware: adminRateLimiter,
   },
+
+  // ── Public / Unauthenticated ──────────────────────────────────
   {
     path: '/api/pages',
     router: route_49,
@@ -453,17 +448,13 @@ export const routes: RouteConfig[] = [
     path: '/api/support',
     router: route_50,
     filename: 'supportTickets.routes',
+    middleware: rateLimiter,
   },
   {
-    path: '/api/support',
+    path: '/api/support/chat',
     router: route_51,
     filename: 'supportChat.routes',
-  },
-  {
-    path: '/api/admin',
-    router: route_52,
-    filename: 'admin.routes',
-    middleware: adminRateLimiter,
+    middleware: rateLimiter,
   },
   {
     path: '/api/packages/public',
@@ -475,18 +466,26 @@ export const routes: RouteConfig[] = [
     router: route_54,
     filename: 'publicPageContent.routes',
   },
-  {
-    path: '/api/demo',
-    router: route_55,
-    filename: 'demo.routes',
-  },
-  {
-    path: '/api/cua',
-    router: route_56,
-    filename: 'cua.routes',
-  },
+  // Demo routes: only available outside production
+  ...(process.env.NODE_ENV !== 'production'
+    ? [
+        {
+          path: '/api/demo',
+          router: route_55,
+          filename: 'demo.routes',
+        } as const,
+      ]
+    : []),
+
+  // ── Core Application Routes (canonical /api/v1/ paths) ───────
   {
     path: '/api/v1/auth',
+    router: route_57,
+    filename: 'auth.routes',
+  },
+  // Legacy unversioned aliases (kept for client backward-compatibility)
+  {
+    path: '/api/auth',
     router: route_57,
     filename: 'auth.routes',
   },
@@ -496,7 +495,17 @@ export const routes: RouteConfig[] = [
     filename: 'userSettings.routes',
   },
   {
+    path: '/api/user/settings',
+    router: route_58,
+    filename: 'userSettings.routes',
+  },
+  {
     path: '/api/v1/projects',
+    router: route_59,
+    filename: 'project.routes',
+  },
+  {
+    path: '/api/projects',
     router: route_59,
     filename: 'project.routes',
   },
@@ -506,7 +515,17 @@ export const routes: RouteConfig[] = [
     filename: 'agent.routes',
   },
   {
+    path: '/api/agents',
+    router: route_60,
+    filename: 'agent.routes',
+  },
+  {
     path: '/api/v1/tasks',
+    router: route_61,
+    filename: 'task.routes',
+  },
+  {
+    path: '/api/tasks',
     router: route_61,
     filename: 'task.routes',
   },
@@ -516,7 +535,17 @@ export const routes: RouteConfig[] = [
     filename: 'artifact.routes',
   },
   {
+    path: '/api/artifacts',
+    router: route_62,
+    filename: 'artifact.routes',
+  },
+  {
     path: '/api/v1/health',
+    router: route_63,
+    filename: 'health.routes',
+  },
+  {
+    path: '/api/health',
     router: route_63,
     filename: 'health.routes',
   },
@@ -526,13 +555,27 @@ export const routes: RouteConfig[] = [
     filename: 'config.routes',
   },
   {
+    path: '/api/config',
+    router: route_64,
+    filename: 'config.routes',
+  },
+  {
     path: '/api/v1/test',
     router: route_65,
     filename: 'test.routes',
   },
-
+  {
+    path: '/api/test',
+    router: route_65,
+    filename: 'test.routes',
+  },
   {
     path: '/api/v1/anomalies',
+    router: route_67,
+    filename: 'anomalyDetection.routes',
+  },
+  {
+    path: '/api/anomalies',
     router: route_67,
     filename: 'anomalyDetection.routes',
   },
@@ -542,76 +585,41 @@ export const routes: RouteConfig[] = [
     filename: 'autoConfiguration.routes',
   },
   {
+    path: '/api/auto-config',
+    router: route_68,
+    filename: 'autoConfiguration.routes',
+  },
+  {
     path: '/api/v1/codebase',
     router: route_69,
     filename: 'codebase.routes',
   },
   {
-    path: '/api/auth',
-    router: route_70,
-    filename: 'auth.routes',
-  },
-  {
-    path: '/api/user/settings',
-    router: route_71,
-    filename: 'userSettings.routes',
-  },
-  {
-    path: '/api/projects',
-    router: route_72,
-    filename: 'project.routes',
-  },
-  {
-    path: '/api/agents',
-    router: route_73,
-    filename: 'agent.routes',
-  },
-  {
-    path: '/api/tasks',
-    router: route_74,
-    filename: 'task.routes',
-  },
-  {
-    path: '/api/artifacts',
-    router: route_75,
-    filename: 'artifact.routes',
-  },
-  {
-    path: '/api/health',
-    router: route_76,
-    filename: 'health.routes',
-  },
-  {
-    path: '/api/config',
-    router: route_77,
-    filename: 'config.routes',
-  },
-  {
-    path: '/api/test',
-    router: route_78,
-    filename: 'test.routes',
-  },
-
-  {
-    path: '/api/anomalies',
-    router: route_80,
-    filename: 'anomalyDetection.routes',
-  },
-  {
-    path: '/api/auto-config',
-    router: route_81,
-    filename: 'autoConfiguration.routes',
-  },
-  {
     path: '/api/codebase',
-    router: route_82,
+    router: route_69,
     filename: 'codebase.routes',
   },
+
+  // ── CUA ──────────────────────────────────────────────────────
+  {
+    path: '/api/cua',
+    router: route_56,
+    filename: 'cua.routes',
+  },
+
+  // ── Project Utilities ────────────────────────────────────────
   {
     path: '/api/project-export',
     router: route_83,
     filename: 'projectExport.routes',
   },
+  {
+    path: '/api/project-folders',
+    router: route_102,
+    filename: 'projectFolder.routes',
+  },
+
+  // ── MCP ──────────────────────────────────────────────────────
   {
     path: '/api/mcp',
     router: route_84,
@@ -622,6 +630,8 @@ export const routes: RouteConfig[] = [
     router: route_85,
     filename: 'mcpServer.routes',
   },
+
+  // ── Background / Automation ──────────────────────────────────
   {
     path: '/api/sync',
     router: route_86,
@@ -642,6 +652,8 @@ export const routes: RouteConfig[] = [
     router: route_89,
     filename: 'backgroundAutoPilot.routes',
   },
+
+  // ── AI / ML Frameworks ───────────────────────────────────────
   {
     path: '/api/llamaindex',
     router: route_90,
@@ -672,6 +684,8 @@ export const routes: RouteConfig[] = [
     router: route_95,
     filename: 'autogen.routes',
   },
+
+  // ── Standards / SDLC ────────────────────────────────────────
   {
     path: '/api/standards',
     router: route_96,
@@ -687,6 +701,8 @@ export const routes: RouteConfig[] = [
     router: route_98,
     filename: 'sdlc.routes',
   },
+
+  // ── Content & Collaboration ──────────────────────────────────
   {
     path: '/api/templates',
     router: route_99,
@@ -703,28 +719,13 @@ export const routes: RouteConfig[] = [
     filename: 'chat.routes',
   },
   {
-    path: '/api/project-folders',
-    router: route_102,
-    filename: 'projectFolder.routes',
-  },
-  {
     path: '/api/brainstorming-rooms',
     router: route_103,
     filename: 'brainstormingRoom.routes',
   },
   {
-    path: '/api/v1/brainstorming-rooms',
-    router: route_104,
-    filename: 'brainstormingRoom.routes',
-  },
-  {
     path: '/api/ideation-map',
     router: route_105,
-    filename: 'ideationMap.routes',
-  },
-  {
-    path: '/api/v1/ideation-map',
-    router: route_106,
     filename: 'ideationMap.routes',
   },
   {
@@ -753,11 +754,6 @@ export const routes: RouteConfig[] = [
     filename: 'issueTaskCreation.routes',
   },
   {
-    path: '/api/issues',
-    router: route_112,
-    filename: 'issueTaskCreation.routes',
-  },
-  {
     path: '/api/ai',
     router: route_113,
     filename: 'aiSuggestions.routes',
@@ -773,20 +769,46 @@ export const routes: RouteConfig[] = [
     filename: 'aiAgentAssignment.routes',
   },
   {
+    path: '/api/collaboration',
+    router: route_128,
+    filename: 'collaboration.routes',
+  },
+
+  // ── Deployments & Hosting ────────────────────────────────────
+  {
     path: '/api/deployments',
     router: route_116,
     filename: 'deployments.routes',
-  },
-  {
-    path: '/api/payment',
-    router: route_117,
-    filename: 'payment.routes',
   },
   {
     path: '/api/hosting',
     router: route_118,
     filename: 'hosting.routes',
   },
+  {
+    path: '/api/v1/deployments',
+    router: deploymentRoutes,
+    filename: 'deploymentOrchestrator.routes',
+  },
+  {
+    path: '/api/mobile-deployment',
+    router: mobileDeploymentRoutes,
+    filename: 'mobileDeployment.routes',
+  },
+  {
+    path: '/api/multi-cloud',
+    router: multiCloudRoutes,
+    filename: 'multiCloud.routes',
+  },
+
+  // ── Payment ──────────────────────────────────────────────────
+  {
+    path: '/api/payment',
+    router: route_117,
+    filename: 'payment.routes',
+  },
+
+  // ── Media / Generation ───────────────────────────────────────
   {
     path: '/api/images',
     router: route_119,
@@ -803,10 +825,39 @@ export const routes: RouteConfig[] = [
     filename: 'gameMechanics.routes',
   },
   {
+    path: '/api/speech',
+    router: route_130,
+    filename: 'speech.routes',
+  },
+  {
+    path: '/api/files',
+    router: route_129,
+    filename: 'fileUpload.routes',
+  },
+
+  // ── Code Generation ──────────────────────────────────────────
+  {
     path: '/api/tools',
     router: route_122,
     filename: 'dynamicTooling.routes',
   },
+  {
+    path: '/api/v1/code-generation',
+    router: codeGeneratorRoutes,
+    filename: 'codeGenerator.routes',
+  },
+  {
+    path: '/api/frontend-generation',
+    router: frontendCodeGeneratorRoutes,
+    filename: 'frontendCodeGenerator.routes',
+  },
+  {
+    path: '/api/code-validation',
+    router: codeValidationRoutes,
+    filename: 'codeValidation.routes',
+  },
+
+  // ── Integrations ─────────────────────────────────────────────
   {
     path: '/api/integrations',
     router: route_123,
@@ -832,21 +883,8 @@ export const routes: RouteConfig[] = [
     router: route_127,
     filename: 'msteams.routes',
   },
-  {
-    path: '/api/collaboration',
-    router: route_128,
-    filename: 'collaboration.routes',
-  },
-  {
-    path: '/api/files',
-    router: route_129,
-    filename: 'fileUpload.routes',
-  },
-  {
-    path: '/api/speech',
-    router: route_130,
-    filename: 'speech.routes',
-  },
+
+  // ── Analytics & Assessment ───────────────────────────────────
   {
     path: '/api/maturity-assessment',
     router: route_131,
@@ -857,53 +895,10 @@ export const routes: RouteConfig[] = [
     router: route_132,
     filename: 'company.routes',
   },
-  {
-    path: '/api/v1/code-generation',
-    router: codeGeneratorRoutes,
-    filename: 'codeGenerator.routes',
-  },
-  {
-    path: '/api/code-generation',
-    router: codeGeneratorRoutes,
-    filename: 'codeGenerator.routes',
-  },
-  {
-    path: '/api/frontend-generation',
-    router: frontendCodeGeneratorRoutes,
-    filename: 'frontendCodeGenerator.routes',
-  },
-  {
-    path: '/api/code-validation',
-    router: codeValidationRoutes,
-    filename: 'codeValidation.routes',
-  },
-  {
-    path: '/api/mobile-deployment',
-    router: mobileDeploymentRoutes,
-    filename: 'mobileDeployment.routes',
-  },
-  {
-    path: '/api/multi-cloud',
-    router: multiCloudRoutes,
-    filename: 'multiCloud.routes',
-  },
-  {
-    path: '/api/v1/deployments',
-    router: deploymentRoutes,
-    filename: 'deploymentOrchestrator.routes',
-  },
-  {
-    path: '/api/deployments',
-    router: deploymentRoutes,
-    filename: 'deploymentOrchestrator.routes',
-  },
+
+  // ── LLM Usage ────────────────────────────────────────────────
   {
     path: '/api/v1/llm-usage',
-    router: llmUsageUserRoutes,
-    filename: 'llmUsage.routes',
-  },
-  {
-    path: '/api/llm-usage',
     router: llmUsageUserRoutes,
     filename: 'llmUsage.routes',
   },
