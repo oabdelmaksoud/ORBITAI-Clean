@@ -123,7 +123,7 @@ export const useProjectManagement = ({
             setProjectList(filteredMetas);
         } catch (e: any) {
             const isConnectionError = e.message?.includes('Failed to fetch') || e.message?.includes('ERR_CONNECTION_REFUSED');
-            if (!isConnectionError && (import.meta as any).env?.DEV) {
+            if (!isConnectionError && import.meta.env?.DEV) {
                 console.debug("Failed to load project list", e);
             }
             setProjectList([]);
@@ -272,7 +272,7 @@ export const useProjectManagement = ({
                         };
                         // Cache it
                         projectStorage.saveProject(loadedState.id, loadedState).catch(err => {
-                            if ((import.meta as any).env?.DEV) console.warn('Failed to cache project:', err);
+                            if (import.meta.env?.DEV) console.warn('Failed to cache project:', err);
                         });
                     }
                 } catch (dbError: any) {

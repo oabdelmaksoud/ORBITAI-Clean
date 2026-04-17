@@ -533,7 +533,7 @@ const AppContent: React.FC = () => {
 
   // Debug logging for superadmin role
   useEffect(() => {
-    if (userRole === 'superadmin' && (import.meta as any).env?.DEV) {
+    if (userRole === 'superadmin' && import.meta.env?.DEV) {
       // Debug: Reduced console noise
       // console.debug('[App] Superadmin detected - role:', userRole);
     }
@@ -820,7 +820,7 @@ const AppContent: React.FC = () => {
   // Debug: Log when tempSelectedStandards changes
   useEffect(() => {
     // Debug: Standards state change (reduced console noise)
-    // if ((import.meta as any).env?.DEV) {
+    // if (import.meta.env?.DEV) {
     //   console.debug('[Standards] tempSelectedStandards state changed:', {
     //     count: tempSelectedStandards.length,
     //     standards: tempSelectedStandards,
@@ -1196,13 +1196,13 @@ const AppContent: React.FC = () => {
 
                   // Ensure tasks and artifacts arrays exist (safety check)
                   if (!Array.isArray(loadedState.tasks)) {
-                    if ((import.meta as any).env?.DEV) {
+                    if (import.meta.env?.DEV) {
                       console.debug('[Project Load] Initializing missing tasks array');
                     }
                     loadedState.tasks = [];
                   }
                   if (!Array.isArray(loadedState.artifacts)) {
-                    if ((import.meta as any).env?.DEV) {
+                    if (import.meta.env?.DEV) {
                       console.debug('[Project Load] Initializing missing artifacts array');
                     }
                     loadedState.artifacts = [];
@@ -1515,11 +1515,11 @@ const AppContent: React.FC = () => {
       if (inputTrimmed.length > 2 && !isSystemMessage) {
         setIsGeneratingSuggestions(true);
         try {
-          if ((import.meta as any).env?.DEV) {
+          if (import.meta.env?.DEV) {
             console.log('[Suggestions] Generating suggestions for input:', setupInput.substring(0, 50));
           }
           const suggestions = await generateQuickSuggestions(setupInput, setupMessages);
-          if ((import.meta as any).env?.DEV) {
+          if (import.meta.env?.DEV) {
             console.log('[Suggestions] Received', suggestions.length, 'suggestions');
           }
           // Map simple output to UI format
@@ -1531,9 +1531,9 @@ const AppContent: React.FC = () => {
           // Always update suggestions (even if empty, to clear previous ones)
           // generateQuickSuggestions now returns fallback suggestions when backend returns 0
           setDynamicSuggestions(formatted);
-          if ((import.meta as any).env?.DEV && formatted.length > 0) {
+          if (import.meta.env?.DEV && formatted.length > 0) {
             console.log('[Suggestions] Formatted suggestions:', formatted.map(s => s.label));
-          } else if ((import.meta as any).env?.DEV && formatted.length === 0) {
+          } else if (import.meta.env?.DEV && formatted.length === 0) {
             console.log('[Suggestions] No suggestions available (input too short or error)');
           }
         } catch (error) {
@@ -2324,7 +2324,7 @@ const AppContent: React.FC = () => {
             // Add to preview
             preview.gameMechanics = mechanicsResult;
 
-            if ((import.meta as any).env?.DEV) {
+            if (import.meta.env?.DEV) {
               console.log('[Game Mechanics Generated]:', {
                 engine: gameEngine,
                 filesCount: mechanicsResult.files.length
@@ -2339,7 +2339,7 @@ const AppContent: React.FC = () => {
 
       setProcessingProgress(90);
 
-      if ((import.meta as any).env?.DEV) {
+      if (import.meta.env?.DEV) {
         console.log('[Jump to Preview] Preview generated:', {
           hasPreview: !!preview,
           projectName: preview?.projectName
@@ -2948,7 +2948,7 @@ const AppContent: React.FC = () => {
           setProcessingProgress(40);
 
           const preview = await generateProjectPreview(userText, [...updatedMessages, aiResponse], state.useInternet, projectPreview);
-          if ((import.meta as any).env?.DEV) {
+          if (import.meta.env?.DEV) {
             console.log('[Preview] Received preview data:', {
               hasPreview: !!preview,
               hasArchitectureDiagram: !!preview?.architectureDiagram,
@@ -2966,11 +2966,11 @@ const AppContent: React.FC = () => {
             // Only auto-populate if field is empty or still has default value
             if (!setupProjectName.trim() || setupProjectName.trim() === '') {
               setSetupProjectName(preview.projectName.trim());
-              if ((import.meta as any).env?.DEV) {
+              if (import.meta.env?.DEV) {
                 console.log('[Project Name] Auto-populated AI-suggested name:', preview.projectName);
               }
             }
-          } else if ((import.meta as any).env?.DEV) {
+          } else if (import.meta.env?.DEV) {
             console.log('[Project Name] Skipping auto-populate:', {
               hasManuallyEdited: hasManuallyEditedProjectName,
               currentName: setupProjectName,
@@ -3077,7 +3077,7 @@ const AppContent: React.FC = () => {
         setProcessingProgress(40);
 
         const preview = await generateProjectPreview(userText, updatedMessages, state.useInternet, projectPreview);
-        if ((import.meta as any).env?.DEV) {
+        if (import.meta.env?.DEV) {
           console.log('[Preview] Received preview data:', {
             hasPreview: !!preview,
             hasArchitectureDiagram: !!preview?.architectureDiagram,
@@ -3093,11 +3093,11 @@ const AppContent: React.FC = () => {
         if (!hasManuallyEditedProjectName && preview.projectName && preview.projectName.trim()) {
           if (!setupProjectName.trim() || setupProjectName.trim() === '') {
             setSetupProjectName(preview.projectName.trim());
-            if ((import.meta as any).env?.DEV) {
+            if (import.meta.env?.DEV) {
               console.log('[Project Name] Auto-populated AI-suggested name:', preview.projectName);
             }
           }
-        } else if ((import.meta as any).env?.DEV) {
+        } else if (import.meta.env?.DEV) {
           console.log('[Project Name] Skipping auto-populate:', {
             hasManuallyEdited: hasManuallyEditedProjectName,
             currentName: setupProjectName,
@@ -3288,7 +3288,7 @@ const AppContent: React.FC = () => {
         ? projectPreview.recommendedStandards
         : (tempSelectedStandards || []);
 
-      if ((import.meta as any).env?.DEV) {
+      if (import.meta.env?.DEV) {
         console.log('[Standards] Assigning standards to project:', {
           fromPreview: projectPreview?.recommendedStandards,
           fromTemp: tempSelectedStandards,
@@ -3318,7 +3318,7 @@ const AppContent: React.FC = () => {
               'success'
             );
 
-            if ((import.meta as any).env?.DEV) {
+            if (import.meta.env?.DEV) {
               console.log('[Intelligent Assignment]', intelligentResult);
             }
           } catch (intelligentError) {
@@ -3339,7 +3339,7 @@ const AppContent: React.FC = () => {
         dispatch({ type: 'ADD_AGENTS', payload: agentAssignment.agents });
         addLog(`Orchestrator assigned ${agentAssignment.agents.length} system agents based on AI analysis: ${agentAssignment.reasoning}`, AgentRole.ORCHESTRATOR, 'action');
 
-        if ((import.meta as any).env?.DEV) {
+        if (import.meta.env?.DEV) {
           console.log('[Agent Assignment]', {
             agents: agentAssignment.agents.map(a => a.role),
             reasoning: agentAssignment.reasoning,
@@ -4319,14 +4319,14 @@ const AppContent: React.FC = () => {
       // If we have a previous valid artifact, keep it to prevent disappearing
       if (lastValidArtifactRef.current) {
         // Debug: Flow tab (reduced console noise)
-        // if ((import.meta as any).env?.DEV) {
+        // if (import.meta.env?.DEV) {
         //   console.log('[Flow Tab] No architectureDiagram in preview, using cached artifact');
         // }
         return lastValidArtifactRef.current;
       }
       // Silently handle missing architecture diagram - not an error
       // Debug: Flow tab (reduced console noise)
-      // if ((import.meta as any).env?.DEV) {
+      // if (import.meta.env?.DEV) {
       //   console.debug('[Flow Tab] No architectureDiagram in preview');
       // }
       return null;
@@ -4337,13 +4337,13 @@ const AppContent: React.FC = () => {
       // If we have a previous valid artifact, keep it
       if (lastValidArtifactRef.current) {
         // Debug: Flow tab (reduced console noise)
-        // if ((import.meta as any).env?.DEV) {
+        // if (import.meta.env?.DEV) {
         //   console.log('[Flow Tab] Architecture diagram is empty after cleaning, using cached artifact');
         // }
         return lastValidArtifactRef.current;
       }
       // Debug: Flow tab (reduced console noise)
-      // if ((import.meta as any).env?.DEV) {
+      // if (import.meta.env?.DEV) {
       //   console.log('[Flow Tab] Architecture diagram is empty after cleaning:', {
       //     original: architectureDiagramContent?.substring(0, 100),
       //     cleaned: cleaned
@@ -4352,7 +4352,7 @@ const AppContent: React.FC = () => {
       return null;
     }
     // Debug: Flow tab (reduced console noise)
-    // if ((import.meta as any).env?.DEV) {
+    // if (import.meta.env?.DEV) {
     //   console.log('[Flow Tab] Architecture diagram is valid, length:', cleaned.length);
     // }
     // Create new artifact and cache it

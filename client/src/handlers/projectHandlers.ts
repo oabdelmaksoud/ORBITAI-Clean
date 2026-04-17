@@ -316,7 +316,7 @@ export const createProjectHandlers = (deps: ProjectHandlerDeps) => {
                         const verifyProject = await projectStorage.getProject(s.id);
                         if (!verifyProject) {
                             // Project doesn't exist - create it instead
-                            if ((import.meta as any).env?.DEV) {
+                            if (import.meta.env?.DEV) {
                                 console.log('[Save Project] Project not found in database (stale cache), creating new project');
                             }
                             savedProject = await projectsApi.create({
@@ -335,7 +335,7 @@ export const createProjectHandlers = (deps: ProjectHandlerDeps) => {
                     } catch (dbError: any) {
                         // If update fails with 404, project was deleted - create it instead
                         if (dbError.status === 404) {
-                            if ((import.meta as any).env?.DEV) {
+                            if (import.meta.env?.DEV) {
                                 console.log('[Save Project] Project not found during update, creating new project');
                             }
                             savedProject = await projectsApi.create({
