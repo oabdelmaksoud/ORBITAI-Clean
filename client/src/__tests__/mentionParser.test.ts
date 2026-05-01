@@ -6,7 +6,7 @@ import {
   findMentionAtCursor,
   checkIncompleteMention,
   completeMention
-} from '../mentionParser';
+} from '../utils/mentionParser';
 
 describe('mentionParser', () => {
   describe('parseMentions', () => {
