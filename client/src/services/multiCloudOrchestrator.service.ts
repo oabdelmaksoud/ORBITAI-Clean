@@ -126,7 +126,7 @@ export class MultiCloudOrchestratorService {
   }
 
   // Monitor all deployments
-  async monitorDeployments(): Promise<any> {
+  async monitorDeployments(deploymentId?: string): Promise<any> {
     // TODO: Implement monitoring logic (poll platform APIs)
     return { status: 'not implemented' };
   }

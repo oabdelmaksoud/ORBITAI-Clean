@@ -1,6 +1,9 @@
 // multiCloud.routes.ts: REST API endpoints for multi-cloud orchestration
 import { Router } from 'express';
+import { MultiCloudOrchestratorService } from '../services/multiCloudOrchestrator.service';
 const router = Router();
+
+const orchestratorService = new MultiCloudOrchestratorService();
 
 // TODO: Wire up orchestrator, load balancer, failover services
 
@@ -15,8 +18,13 @@ router.post('/multi-cloud/load-balancer', async (req, res) => {
 });
 
 router.get('/multi-cloud/status/:deploymentId', async (req, res) => {
-  // TODO: Call MultiCloudOrchestratorService.monitorDeployments
-  res.json({ status: 'not implemented' });
+  try {
+    const { deploymentId } = req.params;
+    const status = await orchestratorService.monitorDeployments(deploymentId);
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to monitor deployment' });
+  }
 });
 
 router.post('/multi-cloud/failover/:deploymentId', async (req, res) => {
