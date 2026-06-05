@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.6 / 5 — all 16 dimensions at 4+; 9 now at 5 (tools/context/memory/cost/eval/providers/MCP/planning/multi-agent).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.6 / 5 — all 16 at 4+; 10 now at 5 (tools/context/memory/cost/eval/providers/MCP/planning/multi-agent/state).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -33,7 +33,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 8 | Multi-agent orchestration | 1 | **5** | `agentExecutionEngine`: `runAgent`/`runSequence` + **dynamic team formation** (`formTeam`/`runTeam` self-organize agents into planner→implementer→reviewer pipelines), records `AgentExecution` (feeds analytics). `/execute` runs; `/run-sequence` orchestrates. |
 | 9 | Planning / reflection | 1 | **5** | `planningService`: injected execution plan + **iterative reflect→revise loop** (`refineUntilSatisfied`, converges when no revision needed, bounded by `PLANNING_MAX_REVISIONS`), wired into execute-task. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
-| 11 | State & resumability | 2 | **4** | `executionRecovery` re-queues tasks orphaned `In Progress` by a process death → `Pending` at boot (2-min threshold, `HARNESS_RECOVERY_ENABLED`), so interrupted runs resume with their persisted progress/output. Not 5: per-step checkpoint store for mid-run resume. |
+| 11 | State & resumability | 2 | **5** | Boot recovery (`executionRecovery` re-queues orphaned `In Progress` runs) **plus a per-step checkpoint store** (`executionCheckpoint` save/load/clear + `isStepComplete`) so a resumed run continues from its last completed step instead of restarting. |
 | 12 | Resilience | 2 | **4** | Provider + Codex timeouts (WI-6a/b); failover now wired for end-user requests too (`HARNESS_ENDUSER_FALLBACK`), and `pickFallbackModel` excludes the failed provider so failover moves to a different backend. Not 5: multi-hop fallback chain + circuit-breaker-aware selection. |
 | 13 | Observability | 2 | **4** | Per-request `traceId` via AsyncLocalStorage stamped on every log line + returned as `x-trace-id`; run-level correlation across the agent path. Not 5: OTel spans + a `RoutingDecisionLog` writer. |
 | 14 | Evaluation & quality | 3 | **5** | Fail-closed on error (score 0); judge model configurable via `EVAL_JUDGE_MODEL` (judge-family diversity vs the generator); a 13-case golden-set regression test pins the eval contract and runs in the CI gate. |
