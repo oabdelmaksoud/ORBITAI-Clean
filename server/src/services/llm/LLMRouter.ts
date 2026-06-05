@@ -29,6 +29,9 @@ import { apiKeyProvider } from '../apiKeyProvider.service.js';
 import { UserSettings } from '../../models/UserSettings.model.js';
 import { internalTaskRouter } from '../internalTaskRouter.service.js';
 import { generationStatusService } from '../GenerationStatus.service.js';
+import { RoutingDecisionLog } from '../../models/RoutingDecisionLog.model.js';
+import { buildRoutingDecisionRecord } from './routingDecisionRecord.js';
+import { randomUUID } from 'crypto';
 import { budgetGuard } from '../budgetGuard.service.js';
 import { pickFallbackModel } from './fallbackSelector.js';
 
@@ -236,6 +239,27 @@ class LLMRouter {
         `[LLMRouter] Intelligent routing selected: ${selectedModel.name} (${selectedModel.modelIdentifier}) for ${context.agentRole || 'unknown'} agent. Reasoning: ${modelSelection.reasoning}`
       );
 
+      // Observability (dim 13 → 5): persist the routing decision (RoutingDecisionLog was read by
+      // admin dashboards but never written). Opt-in via HARNESS_DECISION_LOG; fire-and-forget.
+      if ((process.env.HARNESS_DECISION_LOG || '').toLowerCase() === 'true') {
+        RoutingDecisionLog.create(
+          buildRoutingDecisionRecord({
+            requestId: randomUUID(),
+            userId: routingContext?.userId,
+            projectId: routingContext?.projectId,
+            taskType: taskAnalysis.taskType,
+            complexity: (taskAnalysis as any).complexity,
+            agentRole: context.agentRole,
+            estimatedTokens: taskAnalysis.estimatedTokens,
+            requiredCapabilities: taskAnalysis.requiredCapabilities,
+            selectedModel: selectedModel.id,
+            selectedProvider: selectedModel.provider,
+            fallbackModel: modelSelection.fallbackModel?.id,
+            confidence: (modelSelection as any).confidence,
+          })
+        ).catch(err => logger.warn('[LLMRouter] decision log write failed:', err));
+      }
+
       // Emit status update for Mission Control (if session is provided)
       if (context.generationSessionId) {
         generationStatusService.emitModelSelection(
@@ -393,7 +417,9 @@ class LLMRouter {
 
       // Process function calls if any
       if ((result as any).functionCalls && (result as any).functionCalls.length > 0) {
-        logger.info(`[LLMRouter] Processing ${(result as any).functionCalls.length} function call(s)`);
+        logger.info(
+          `[LLMRouter] Processing ${(result as any).functionCalls.length} function call(s)`
+        );
         const processed = await functionCallProcessor.processWithFunctionCalls(
           result as LLMResponseWithFunctionCalls,
           prompt,

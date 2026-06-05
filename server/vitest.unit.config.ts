@@ -35,6 +35,7 @@ export default defineConfig({
       'src/services/llm/__tests__/routing-enhancements.test.ts',
       'src/services/llm/providers/__tests__/AnthropicService.toolcall.test.ts',
       'src/services/llm/providers/__tests__/ILLMProvider.test.ts',
+      'src/services/llm/__tests__/routingDecisionRecord.test.ts',
       'src/middleware/__tests__/denyGuests.test.ts',
       'src/utils/__tests__/secretCrypto.test.ts',
       'src/utils/__tests__/requestContext.test.ts',
