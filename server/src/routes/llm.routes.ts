@@ -15,10 +15,14 @@ import { evaluationService } from '../services/evaluation.service.js';
 import { detectProjectType } from '../utils/llmRouteHelpers.js';
 import { embeddingService } from '../services/embedding.service.js';
 import { toApiError } from '../errors/ApiError.js';
+import previewRouter from './llm/preview.routes.js';
 
 export const path = '/api/llm';
 
 const router = express.Router();
+
+// Project preview + prototype generation (split module; must be mounted on /api/llm)
+router.use(previewRouter);
 
 
 // Optional authentication - allows unauthenticated requests but extracts user if available
@@ -426,7 +430,7 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
  */
 router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res, _next) => {
   try {
-    const { task, projectState, useInternet, mcpServers, selectedStandards } = req.body;
+    const { task, projectState, projectContext, useInternet, mcpServers, selectedStandards, standards, tools: clientTools, functionDeclarations } = req.body;
 
     if (!task) {
       res.status(400).json({
@@ -438,9 +442,27 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
 
     logger.info(`[LLMRouter] Executing task: ${task.title}`);
 
-    // Build tools for function calling
-    // Build tools for function calling
-    const tools: any[] = []; // Function definitions would be built here
+    // WI-1: forward the tool declarations the client already builds, so the model can call tools.
+    // Gated behind HARNESS_TOOLS_ENABLED until the MCP exec hardening (WI-2) lands.
+    // `functionDeclarations` (flat [{ name, description, parameters }]) is the source of truth; it is
+    // wrapped into the [{ functionDeclarations }] shape the router's provider converters expect.
+    // `clientTools` is only trusted when already wrapped, since its shape is built client-side.
+    const toolsEnabled = (process.env.HARNESS_TOOLS_ENABLED || '').toLowerCase() === 'true';
+    const looksWrapped = (arr: any[]): boolean => arr.every((t) => t && Array.isArray(t.functionDeclarations));
+    const tools: any[] = !toolsEnabled
+      ? []
+      : Array.isArray(functionDeclarations) && functionDeclarations.length
+        ? [{ functionDeclarations }]
+        : Array.isArray(clientTools) && clientTools.length && looksWrapped(clientTools)
+          ? clientTools
+          : [];
+    if (tools.length > 0) {
+      logger.info(`[LLMRouter] execute-task: forwarding ${functionDeclarations?.length ?? clientTools?.length ?? 0} tool declaration(s) to the model`);
+    }
+
+    // Contract reconciliation: the client sends `standards` (string[]); the server historically read
+    // `selectedStandards`. Fall back across both so standards actually reach evaluation.
+    const standardsList = selectedStandards ?? standards ?? [];
 
     const result = await llmRouter.executeWithFallback({
       prompt: task.description || task.title,
@@ -497,8 +519,8 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
           taskDescription: task.description || '',
           agentRole: task.assignedTo || 'Implementation Agent',
           output: outputText,
-          standards: selectedStandards || [],
-          projectContext: projectState?.description || ''
+          standards: standardsList,
+          projectContext: projectState?.description || projectContext || ''
         });
         logger.info(`[LLMRouter] Evaluation completed for task "${task.title}" - Score: ${evaluation.score}/100`);
       } catch (evalError: any) {

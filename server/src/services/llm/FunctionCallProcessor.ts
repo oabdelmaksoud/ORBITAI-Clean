@@ -47,7 +47,9 @@ export interface ProcessedResponse {
 }
 
 export class FunctionCallProcessor {
-  private maxIterations = 5; // Maximum function call iterations to prevent infinite loops
+  // WI-6a: configurable iteration cap (env FCP_MAX_ITERATIONS, default 5). Genuinely agentic
+  // multi-step tasks frequently need more than 5 tool turns; a hardcoded cap silently truncates them.
+  private maxIterations = Number(process.env.FCP_MAX_ITERATIONS) || 5;
 
   /**
    * Process LLM response with iterative function calling
@@ -282,21 +284,22 @@ export class FunctionCallProcessor {
     systemInstruction?: string,
     functionResponses?: FunctionCallResponse[]
   ): Promise<LLMResponseWithFunctionCalls> {
-    // For OpenAI, we need to use the OpenAI client directly with proper message format
-    // Since openAIService.generateContent doesn't support function calling yet,
-    // we'll extract function calls from text as fallback
+    // WI-3a: OpenAIService natively converts tool declarations and parses tool_calls, returning
+    // structured `functionCalls`. Pass the tools through and read the native result instead of the
+    // create_mcp_server-only text regex (which silently dropped every other tool on continuation turns).
     const result = await openAIService.generateContent(prompt, model, {
       systemInstruction,
-      temperature: 0.7
+      temperature: 0.7,
+      tools: tools.length > 0 ? tools : undefined
     });
 
-    // Extract function calls from text (fallback method)
-    // In production, this should use OpenAI's native function calling API
-    const functionCalls = this.extractFunctionCallsFromText(result.text);
+    const functionCalls = (result.functionCalls && result.functionCalls.length > 0)
+      ? result.functionCalls
+      : undefined;
 
     return {
       text: result.text,
-      functionCalls: functionCalls.length > 0 ? functionCalls : undefined,
+      functionCalls,
       usage: {
         promptTokens: result.usage.promptTokens,
         candidatesTokens: result.usage.completionTokens,
