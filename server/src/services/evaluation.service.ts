@@ -32,7 +32,7 @@ export class EvaluationService {
         agentRole,
         output,
         standards = [],
-        projectContext = ''
+        projectContext = '',
       } = context;
 
       // Skip evaluation if output is too short or empty
@@ -40,19 +40,21 @@ export class EvaluationService {
         logger.warn(`Skipping evaluation for task "${taskTitle}" - output too short`);
         return {
           score: 50,
-          reasoning: 'Output is too short to evaluate meaningfully. Please provide more substantial output.',
+          reasoning:
+            'Output is too short to evaluate meaningfully. Please provide more substantial output.',
           criteria: ['Output Length'],
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
       // Build evaluation prompt - Agent-to-Agent conversation format
       // QA/Audit Agent evaluates the output from another agent
-      const standardsText = standards.length > 0 
-        ? `\n\nStandards to check:\n${standards.map(s => `- ${s}`).join('\n')}`
-        : '';
+      const standardsText =
+        standards.length > 0
+          ? `\n\nStandards to check:\n${standards.map(s => `- ${s}`).join('\n')}`
+          : '';
 
-      const projectContextText = projectContext 
+      const projectContextText = projectContext
         ? `\n\nProject Context:\n${projectContext.substring(0, 500)}`
         : '';
 
@@ -108,75 +110,98 @@ Remember: Your evaluation will be used to refine the task and improve the output
         properties: {
           score: {
             type: Type.NUMBER,
-            description: 'Overall quality score from 0-100'
+            description: 'Overall quality score from 0-100',
           },
           reasoning: {
             type: Type.STRING,
-            description: 'Detailed explanation of the evaluation, including strengths and weaknesses, written as feedback to the original agent'
+            description:
+              'Detailed explanation of the evaluation, including strengths and weaknesses, written as feedback to the original agent',
           },
           criteria: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: 'List of specific criteria that were evaluated (e.g., "Completeness", "Accuracy", "Code Quality", "Documentation", "Security", "Standards Compliance")'
+            description:
+              'List of specific criteria that were evaluated (e.g., "Completeness", "Accuracy", "Code Quality", "Documentation", "Security", "Standards Compliance")',
           },
           strengths: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: 'List of specific strengths found in the output'
+            description: 'List of specific strengths found in the output',
           },
           weaknesses: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: 'List of specific weaknesses or areas for improvement'
+            description: 'List of specific weaknesses or areas for improvement',
           },
           refinementSuggestions: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: 'Actionable suggestions for the original agent to improve the output'
+            description: 'Actionable suggestions for the original agent to improve the output',
           },
           processImprovements: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: 'Process improvement insights or patterns identified during evaluation'
-          }
+            description: 'Process improvement insights or patterns identified during evaluation',
+          },
         },
-        required: ['score', 'reasoning', 'criteria']
+        required: ['score', 'reasoning', 'criteria'],
       };
 
       // Use QA/Audit Agent for evaluation - enables agent-to-agent conversation
       // This supports neural conversation between agents and process improvement
       const startTime = Date.now();
-      
+
+      // Judge-family diversity (anti self-grading bias):
+      // The judge model is configurable via EVAL_JUDGE_MODEL. For an unbiased
+      // evaluation the judge should ideally come from a DIFFERENT model family
+      // than the generator under test. When the generator is Gemini, grading with
+      // a Gemini judge introduces self-grading bias (a model tends to favor outputs
+      // that resemble its own). Operators can point EVAL_JUDGE_MODEL at a non-Gemini
+      // judge (e.g. an OpenAI/Anthropic-backed model exposed via the LLM router) to
+      // diversify the judge family. The default is kept at 'gemini-2.5-flash' for
+      // backward compatibility, and the call still fails CLOSED (score 0) on error.
+      const judgeModel = process.env.EVAL_JUDGE_MODEL || 'gemini-2.5-flash';
+
       // The evaluation prompt already includes QA/Audit Agent context
       // Use structured output with model selection optimized for QA/Audit Agent role
       // The prompt itself establishes the agent-to-agent conversation context
       const result = await geminiService.generateStructuredOutput(
         evaluationPrompt,
         evaluationSchema,
-        'gemini-2.5-flash' // Fast model for evaluation, but with QA/Audit Agent context in prompt
+        judgeModel // Configurable judge (EVAL_JUDGE_MODEL); default keeps gemini-2.5-flash
       );
 
       const latency = Date.now() - startTime;
-      logger.info(`Evaluation completed in ${latency}ms for task "${taskTitle}" - Score: ${result.score}/100`);
+      logger.info(
+        `Evaluation completed in ${latency}ms for task "${taskTitle}" - Score: ${result.score}/100`
+      );
 
       // Enhance reasoning with strengths/weaknesses, refinement suggestions, and process improvements
       let enhancedReasoning = result.reasoning || 'Evaluation completed by QA/Audit Agent.';
-      
+
       if (result.strengths && Array.isArray(result.strengths) && result.strengths.length > 0) {
         enhancedReasoning += `\n\n**Strengths:**\n${result.strengths.map(s => `• ${s}`).join('\n')}`;
       }
-      
+
       if (result.weaknesses && Array.isArray(result.weaknesses) && result.weaknesses.length > 0) {
         enhancedReasoning += `\n\n**Areas for Improvement:**\n${result.weaknesses.map(w => `• ${w}`).join('\n')}`;
       }
-      
+
       // Add refinement suggestions for agent-to-agent conversation
-      if (result.refinementSuggestions && Array.isArray(result.refinementSuggestions) && result.refinementSuggestions.length > 0) {
+      if (
+        result.refinementSuggestions &&
+        Array.isArray(result.refinementSuggestions) &&
+        result.refinementSuggestions.length > 0
+      ) {
         enhancedReasoning += `\n\n**Refinement Suggestions for ${agentRole}:**\n${result.refinementSuggestions.map(s => `• ${s}`).join('\n')}`;
       }
-      
+
       // Add process improvement insights
-      if (result.processImprovements && Array.isArray(result.processImprovements) && result.processImprovements.length > 0) {
+      if (
+        result.processImprovements &&
+        Array.isArray(result.processImprovements) &&
+        result.processImprovements.length > 0
+      ) {
         enhancedReasoning += `\n\n**Process Improvement Insights:**\n${result.processImprovements.map(p => `• ${p}`).join('\n')}`;
       }
 
@@ -184,17 +209,17 @@ Remember: Your evaluation will be used to refine the task and improve the output
       const score = Math.max(0, Math.min(100, Math.round(result.score || 50)));
 
       // Ensure criteria is an array
-      const criteria = Array.isArray(result.criteria) && result.criteria.length > 0
-        ? result.criteria
-        : ['Completeness', 'Accuracy', 'Relevance', 'Quality'];
+      const criteria =
+        Array.isArray(result.criteria) && result.criteria.length > 0
+          ? result.criteria
+          : ['Completeness', 'Accuracy', 'Relevance', 'Quality'];
 
       return {
         score,
         reasoning: enhancedReasoning,
         criteria,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-
     } catch (error: unknown) {
       logger.error('Evaluation failed:', error);
 
@@ -205,7 +230,7 @@ Remember: Your evaluation will be used to refine the task and improve the output
         score: 0,
         reasoning: `Evaluation could not be completed (${message}). Score withheld pending re-evaluation.`,
         criteria: ['Evaluation Error'],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -219,7 +244,7 @@ Remember: Your evaluation will be used to refine the task and improve the output
         score: 50,
         reasoning: 'Output is too short to evaluate.',
         criteria: ['Output Length'],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
@@ -227,7 +252,7 @@ Remember: Your evaluation will be used to refine the task and improve the output
     const hasContent = output.length > 100;
     const hasStructure = output.includes('\n') || output.includes('```') || output.includes('#');
     const hasDetails = output.split(' ').length > 50;
-    
+
     let score = 50; // Base score
     if (hasContent) score += 15;
     if (hasStructure) score += 15;
@@ -237,25 +262,9 @@ Remember: Your evaluation will be used to refine the task and improve the output
       score: Math.min(100, score),
       reasoning: `Quick evaluation: ${hasContent ? 'Has content' : 'Limited content'}, ${hasStructure ? 'Well-structured' : 'Needs structure'}, ${hasDetails ? 'Detailed' : 'Needs more detail'}.`,
       criteria: ['Content Length', 'Structure', 'Detail Level'],
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 }
 
 export const evaluationService = new EvaluationService();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
