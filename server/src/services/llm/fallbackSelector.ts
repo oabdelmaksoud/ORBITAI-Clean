@@ -35,3 +35,29 @@ export function pickFallbackModel(
     null
   );
 }
+
+/**
+ * Ordered multi-hop fallback chain (dim 12 → 5): default provider → Gemini → the rest, deduped by
+ * provider so each hop tries a different backend, excluding the just-failed provider, capped at `max`.
+ */
+export function pickFallbackChain(
+  activeModels: FallbackCandidate[],
+  opts: { defaultProvider?: string; excludeProvider?: string; max?: number } = {}
+): FallbackCandidate[] {
+  if (!Array.isArray(activeModels) || activeModels.length === 0) return [];
+  const { defaultProvider = 'gemini', excludeProvider, max = 3 } = opts;
+  const pool = excludeProvider ? activeModels.filter(m => m.provider !== excludeProvider) : [...activeModels];
+
+  const seen = new Set<string>();
+  const ordered: FallbackCandidate[] = [];
+  const push = (m?: FallbackCandidate): void => {
+    if (m && !seen.has(m.provider)) {
+      seen.add(m.provider);
+      ordered.push(m);
+    }
+  };
+  push(pool.find(m => m.provider === defaultProvider));
+  push(pool.find(m => m.provider === 'gemini'));
+  for (const m of pool) push(m);
+  return ordered.slice(0, Math.max(1, max));
+}

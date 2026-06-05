@@ -33,7 +33,7 @@ import { RoutingDecisionLog } from '../../models/RoutingDecisionLog.model.js';
 import { buildRoutingDecisionRecord } from './routingDecisionRecord.js';
 import { randomUUID } from 'crypto';
 import { budgetGuard } from '../budgetGuard.service.js';
-import { pickFallbackModel } from './fallbackSelector.js';
+import { pickFallbackModel, pickFallbackChain } from './fallbackSelector.js';
 
 import { llmCircuitBreaker } from './CircuitBreaker.js';
 import { toApiError } from '../../errors/ApiError.js';
@@ -508,29 +508,42 @@ class LLMRouter {
           logger.warn(`[LLMRouter] Failed to track usage error:`, err);
         });
 
-      // Use fallback model from routing engine if available, otherwise throw error
-      if (fallbackModel) {
-        logger.warn(
-          `[LLMRouter] Routing failed, using fallback model: ${fallbackModel.modelIdentifier}`
-        );
-        return this.executeWithSpecificModel(
-          prompt,
-          fallbackModel.modelIdentifier,
-          {
-            systemInstruction: context.systemInstruction,
-            tools: context.tools,
-            useInternet: params.useInternet,
-          },
-          false,
-          routingContext,
-          requestType,
-          contextType,
-          routerType
-        ); // Don't allow further fallback
+      // Resilience (dim 12 → 5): try a multi-hop fallback CHAIN (distinct providers), not just one.
+      const chainModels = modelRegistry.getActiveModels();
+      const chainDefaultProvider = config.defaultLLMProvider || 'gemini';
+      const fallbackChain = pickFallbackChain(chainModels, {
+        defaultProvider: chainDefaultProvider,
+        excludeProvider: lastFailedProvider,
+        max: Number(process.env.LLM_FALLBACK_HOPS) || 3,
+      });
+      for (const candidate of fallbackChain) {
+        if (!candidate.modelIdentifier) continue;
+        try {
+          logger.warn(`[LLMRouter] Routing failed, trying fallback: ${candidate.modelIdentifier}`);
+          return await this.executeWithSpecificModel(
+            prompt,
+            candidate.modelIdentifier,
+            {
+              systemInstruction: context.systemInstruction,
+              tools: context.tools,
+              useInternet: params.useInternet,
+            },
+            false, // each hop does not recurse; the chain itself provides the hops
+            routingContext,
+            requestType,
+            contextType,
+            routerType
+          );
+        } catch (hopError) {
+          logger.warn(
+            `[LLMRouter] Fallback ${candidate.modelIdentifier} failed, trying next hop:`,
+            toApiError(hopError).message
+          );
+        }
       }
 
-      // If no fallback available, throw error - routing must work
-      throw new Error(`LLM routing failed and no fallback model available: ${apiError.message}`);
+      // No fallback in the chain succeeded - routing must work, so surface the error.
+      throw new Error(`LLM routing failed and all fallbacks exhausted: ${apiError.message}`);
     }
   }
 
