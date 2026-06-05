@@ -18,6 +18,7 @@ import { evaluationService } from '../services/evaluation.service.js';
 import { agentMemory } from '../services/agentMemory.service.js';
 import { contextManager } from '../services/contextManager.service.js';
 import { requestContext } from '../utils/requestContext.js';
+import { planningService } from '../services/planning.service.js';
 import { randomUUID } from 'crypto';
 import { detectProjectType } from '../utils/llmRouteHelpers.js';
 import { embeddingService } from '../services/embedding.service.js';
@@ -520,7 +521,11 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
       agentRoleForRun,
       task.description || task.title
     );
-    const systemInstruction = `You are executing a task: ${task.title}${memoryContext}`;
+    // Planning (dim 9): decompose the task into an ordered plan and inject it so the agent executes
+    // against concrete steps rather than improvising. No-op (empty) when HARNESS_PLANNING_ENABLED is off.
+    const plan = await planningService.createPlan(task.title, task.description || '', agentRoleForRun);
+    const planContext = planningService.formatPlanForPrompt(plan);
+    const systemInstruction = `You are executing a task: ${task.title}${planContext}${memoryContext}`;
 
     const result = await llmRouter.executeWithFallback({
       prompt: task.description || task.title,
@@ -568,7 +573,29 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
 
     // Parse output for detected issues and create tasks
     let createdTasks: any[] = [];
-    const outputText = result.text || '';
+    let outputText = result.text || '';
+
+    // Reflection (dim 9): one bounded self-critique -> revise pass (gated; no-op when disabled).
+    if (outputText.trim()) {
+      const reflection = await planningService.reflect(task.title, outputText, agentRoleForRun);
+      if (reflection.needsRevision) {
+        try {
+          const revised = await llmRouter.executeWithFallback({
+            prompt: `Revise your previous output for task "${task.title}" to address this critique:\n${reflection.critique}\n\nPrevious output:\n${outputText}`,
+            context: { agentRole: agentRoleForRun, taskType: 'code-generation', systemInstruction },
+            routingContext: { userId: (req as any).user?.id, projectId: projectState?.id },
+            requestType: 'task-execution',
+            contextType: 'workspace',
+          });
+          if (revised.text && revised.text.trim()) {
+            outputText = revised.text;
+            logger.info(`[LLMRouter] Applied a reflection revision for task "${task.title}"`);
+          }
+        } catch (reviseError) {
+          logger.warn('[Planning] Revision pass failed, keeping original output:', reviseError);
+        }
+      }
+    }
 
     // ⭐ CALCULATE QUALITY SCORE ⭐
     // This is where the AI Quality Score is calculated
