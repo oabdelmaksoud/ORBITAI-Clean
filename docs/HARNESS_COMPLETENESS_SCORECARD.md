@@ -17,7 +17,46 @@
 
 ---
 
-## Scorecard
+## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
+
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 2.7 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+
+| # | Dimension | Was | Now | What changed |
+|---|---|:--:|:--:|---|
+| 1 | Agent loop | 2 | **4** | Reachable on `/execute-task` (WI-1, flag-gated), parallel tool exec (WI-6b), configurable cap (WI-6a). Not 5: results still stringified into the continuation prompt (WI-3c deferred). |
+| 2 | Tool system | 1 | **4** | Real registry: allowlist + arg validation + dispatch (WI-4). Not 5: lightweight (not full JSON-schema) validation; no dynamic registration. |
+| 3 | Tool protocol (MCP) | 2 | **4** | User/agent MCP tools now callable from the loop (WI-5). Not 5: still no MCP *server*; discovery via stored names. |
+| 4 | Providers | 3 | **4** | Native tool-calling across Gemini + OpenAI (WI-3a) + Anthropic (WI-3b). Not 5: streaming still only 2/12; no shared interface. |
+| 5 | Model routing | 3 | 3 | Unchanged — AI/ML layer still gated/dead. |
+| 6 | Context management | 2 | 2 | Unchanged — needs token-budget + compaction. |
+| 7 | Memory (cross-session) | 1 | 1 | Unchanged — needs RAG retrieval into prompts. |
+| 8 | Multi-agent orchestration | 1 | 1 | Unchanged — needs a real execution engine. |
+| 9 | Planning / reflection | 1 | 1 | Unchanged. |
+| 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
+| 11 | State & resumability | 2 | 2 | Unchanged — needs checkpointing. |
+| 12 | Resilience | 2 | **3** | Per-request provider timeout added (WI-6b) + Codex timeout (WI-6a). Not 4: fallback chains still dead. |
+| 13 | Observability | 2 | 2 | Unchanged — no run-level trace yet. |
+| 14 | Evaluation & quality | 3 | 3 | Unchanged. |
+| 15 | Testing (of the harness) | 1 | **3** | 25 new tests (loop, registry, providers, security). Not 5: broad coverage + CI gate still needed. |
+| 16 | Cost governance | 2 | 2 | Unchanged — tracking only, no enforcement. |
+
+### What "everything at scope 5" still requires (not done this pass)
+These are each a dedicated effort, not a quick edit — listing them honestly rather than claiming 5:
+- **WI-3c message threading** → loop 4→5 (carry a real `messages[]` history instead of stringifying tool results).
+- **Memory (RAG)** → dim 7: embed + retrieve `AgentKnowledge` into agent prompts at runtime.
+- **Multi-agent engine** → dim 8: replace the dead orchestration cluster with a real sub-agent runtime.
+- **Planning/reflection** → dim 9: task decomposition + self-critique loop.
+- **Context compaction** → dim 6: token-budget + summarization.
+- **Resumability** → dim 11: checkpoint execution state; re-queue interrupted runs at boot.
+- **Routing AI** → dim 5: wire or delete the gated RL/predictive/auto-tune stack.
+- **Observability** → dim 13: per-run `traceId`, write `RoutingDecisionLog`.
+- **Cost enforcement** → dim 16: spend caps that block a run.
+- **Eval integrity** → dim 14: stop fail-open-to-70; golden-set regression in CI.
+- **Resilience** → dim 12: wire the fallback-chain machinery (currently dead).
+
+---
+
+## Scorecard (original baseline assessment)
 
 | # | Dimension | Score | What exists (wired) | Most important gap |
 |---|---|:---:|---|---|
