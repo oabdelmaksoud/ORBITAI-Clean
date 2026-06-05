@@ -23,7 +23,7 @@ import { apiVersioning } from './middleware/apiVersioning.js';
 import { redisService } from './services/redis.service.js';
 import { queueService } from './services/queue.service.js';
 import { securityHeaders, generateNonce } from './middleware/securityHeaders.js';
-import { requestTimeout } from './middleware/timeout.js';
+import { requestTimeout, routeTimeout } from './middleware/timeout.js';
 import { webSocketService } from './services/websocket.service.js';
 import { forceJsonResponse } from './middleware/forceJsonResponse.js';
 import { offlineModeMiddleware } from './middleware/offlineMode.js';
@@ -112,6 +112,8 @@ app.use(
       'Content-Type',
       'Authorization',
       'x-user-id',
+      'bypass-tunnel-reminder',
+      'ngrok-skip-browser-warning',
     ],
     exposedHeaders: ['Content-Range', 'X-Total-Count'],
     maxAge: 86400, // 24 hours
@@ -131,9 +133,13 @@ app.use('/cua-recordings', express.static(path.join(__dirname, '../../public/cua
 // Offline Mode Middleware - specific for handling DB disconnects
 app.use(offlineModeMiddleware);
 
-// Request timeout middleware (60 seconds default for most routes)
-// P0 FIX: Reduced from 20 minutes to 60 seconds - LLM routes override as needed
-app.use(requestTimeout(60000)); // 60 seconds default
+// Request timeout: 60s default; blueprint/preview generation needs many LLM steps (Codex CLI)
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path.endsWith('/generate-preview')) {
+    return routeTimeout(600000)(req, res, next); // match client TIMEOUTS.preview (10 min)
+  }
+  return requestTimeout(60000)(req, res, next);
+});
 
 // Force JSON responses for all API routes (must be before routes)
 app.use(forceJsonResponse);
@@ -380,6 +386,32 @@ async function startServer() {
         .then(({ backupScheduler }) => backupScheduler.start())
         .then(() => logger.info('✅ Backup scheduler initialized'))
         .catch(error => logger.warn('Backup scheduler failed:', error.message)),
+
+      // Crash recovery (harness dim 11): reset tasks orphaned in 'In Progress'
+      // by a previous process death back to a resumable state so they get re-picked.
+      // Boot-only and safe here because the in-memory execution loops have not started
+      // yet. Disable with HARNESS_RECOVERY_ENABLED=false.
+      (process.env.HARNESS_RECOVERY_ENABLED === 'false'
+        ? Promise.resolve().then(() =>
+            logger.info('Execution recovery skipped (HARNESS_RECOVERY_ENABLED=false)')
+          )
+        : import('./services/executionRecovery.service.js')
+            .then(({ recoverInterruptedRuns }) =>
+              // Defer briefly so the DB connection is settled, mirroring the
+              // cleanupStuckImprovements boot pattern above.
+              setTimeout(() => {
+                recoverInterruptedRuns().catch((error: unknown) => {
+                  logger.warn(
+                    'Failed to recover interrupted runs:',
+                    toApiError(error).message
+                  );
+                });
+              }, 2000)
+            )
+            .then(() => logger.info('✅ Execution recovery scheduled'))
+            .catch(error =>
+              logger.warn('Execution recovery service failed:', error.message)
+            )),
     ];
 
     // Wait for all parallel initializations

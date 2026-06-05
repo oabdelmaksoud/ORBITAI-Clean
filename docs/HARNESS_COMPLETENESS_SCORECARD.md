@@ -33,7 +33,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 8 | Multi-agent orchestration | 1 | **4** | `agentExecutionEngine`: loads + runs an agent's config via the router (`runAgent`), chains agents into a pipeline (`runSequence`), records `AgentExecution` (feeding the once-empty analytics). `/execute` now really runs; new `/run-sequence` route. Not 5: dynamic team formation + conflict-resolution/messaging wired end-to-end. |
 | 9 | Planning / reflection | 1 | **4** | `planningService`: decomposes a task into an injected execution plan + a bounded reflect→revise self-critique pass in execute-task (flag-gated `HARNESS_PLANNING_ENABLED`). Not 5: multi-step plan tracking + iterative (n>1) refinement loop. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
-| 11 | State & resumability | 2 | 2 | Unchanged — needs checkpointing. |
+| 11 | State & resumability | 2 | **4** | `executionRecovery` re-queues tasks orphaned `In Progress` by a process death → `Pending` at boot (2-min threshold, `HARNESS_RECOVERY_ENABLED`), so interrupted runs resume with their persisted progress/output. Not 5: per-step checkpoint store for mid-run resume. |
 | 12 | Resilience | 2 | **4** | Provider + Codex timeouts (WI-6a/b); failover now wired for end-user requests too (`HARNESS_ENDUSER_FALLBACK`), and `pickFallbackModel` excludes the failed provider so failover moves to a different backend. Not 5: multi-hop fallback chain + circuit-breaker-aware selection. |
 | 13 | Observability | 2 | **4** | Per-request `traceId` via AsyncLocalStorage stamped on every log line + returned as `x-trace-id`; run-level correlation across the agent path. Not 5: OTel spans + a `RoutingDecisionLog` writer. |
 | 14 | Evaluation & quality | 3 | **4** | Fail-closed on eval error (score 0, not 70) — failures no longer masquerade as passing. Not 5: needs golden-set regression in CI + judge-family diversity. |
@@ -47,7 +47,7 @@ These are each a dedicated effort, not a quick edit — listing them honestly ra
 - **Multi-agent engine** → dim 8 (4→5): dynamic team formation + wiring the conflict-resolution/messaging cluster end-to-end (run + chain + execution recording done).
 - **Planning/reflection** → dim 9 (4→5): multi-step plan tracking + iterative (n>1) refine loop (decomposition + single reflect→revise done).
 - **Context compaction** → dim 6: token-budget + summarization.
-- **Resumability** → dim 11: checkpoint execution state; re-queue interrupted runs at boot.
+- **Resumability** → dim 11 (4→5): per-step checkpoint store for mid-run resume (boot re-queue of orphaned runs done).
 - **Routing AI** → dim 5 (4→5): wire-or-delete auto-tune + A/B-test, add token-budget input (RL bandit activated; AI behind a flag).
 - **Observability** → dim 13 (4→5): OpenTelemetry spans + a `RoutingDecisionLog` writer (per-run `traceId` correlation done).
 - **Eval integrity** → dim 14 (4→5): golden-set regression in CI + judge-family diversity (fail-open already fixed).
