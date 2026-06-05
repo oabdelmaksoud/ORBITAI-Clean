@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { authenticateToken, denyGuests, AuthRequest } from '../middleware/auth.js';
 import { MCPServer } from '../models/MCPServer.model.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
@@ -28,8 +28,8 @@ router.get('/', async (req: AuthRequest, res, next) => {
       $or: [
         { source: 'system' }, // System servers available to all
         { 'metadata.createdBy': userId }, // User's servers
-        { source: 'agent', 'metadata.createdFor': projectId } // Agent-created servers for this project
-      ]
+        { source: 'agent', 'metadata.createdFor': projectId }, // Agent-created servers for this project
+      ],
     };
 
     if (status) {
@@ -51,14 +51,14 @@ router.get('/', async (req: AuthRequest, res, next) => {
         source: s.source,
         tools: s.tools,
         config: {
-          type: s.config.type
+          type: s.config.type,
           // Don't expose sensitive config details
         },
         metadata: s.metadata,
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
-        lastUsed: s.lastUsed
-      }))
+        lastUsed: s.lastUsed,
+      })),
     });
   } catch (error) {
     next(error);
@@ -94,12 +94,17 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
         status: server.status,
         source: server.source,
         tools: server.tools,
-        config: server.config,
+        config: {
+          ...server.config,
+          // Never expose the secret on read — redact it explicitly here since
+          // this handler serializes the raw config object.
+          ...(server.config?.apiKey ? { apiKey: '***' } : {}),
+        },
         metadata: server.metadata,
         createdAt: server.createdAt,
         updatedAt: server.updatedAt,
-        lastUsed: server.lastUsed
-      }
+        lastUsed: server.lastUsed,
+      },
     });
   } catch (error) {
     next(error);
@@ -110,7 +115,7 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
  * POST /api/mcp-servers
  * Create a new MCP server (user or agent-created)
  */
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', denyGuests, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user!.id;
     const { name, description, config, tools, source = 'user', metadata } = req.body;
@@ -120,9 +125,10 @@ router.post('/', async (req: AuthRequest, res, next) => {
     }
 
     // Generate unique ID
-    const id = source === 'agent' 
-      ? `mcp-agent-${Date.now()}-${Math.random().toString(36).substring(7)}`
-      : `mcp-user-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const id =
+      source === 'agent'
+        ? `mcp-agent-${Date.now()}-${Math.random().toString(36).substring(7)}`
+        : `mcp-user-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Discover tools if not provided
     let serverTools = tools || [];
@@ -144,14 +150,14 @@ router.post('/', async (req: AuthRequest, res, next) => {
         command: config.command,
         args: config.args,
         headers: config.headers,
-        apiKey: config.apiKey // Should be encrypted in production
+        apiKey: config.apiKey, // Should be encrypted in production
       },
       metadata: {
         createdBy: userId,
         createdFor: metadata?.createdFor || metadata?.projectId,
         tags: metadata?.tags || [],
-        notes: metadata?.notes
-      }
+        notes: metadata?.notes,
+      },
     });
 
     await server.save();
@@ -168,11 +174,11 @@ router.post('/', async (req: AuthRequest, res, next) => {
         source: server.source,
         tools: server.tools,
         config: {
-          type: server.config.type
+          type: server.config.type,
         },
         metadata: server.metadata,
-        createdAt: server.createdAt
-      }
+        createdAt: server.createdAt,
+      },
     });
   } catch (error: unknown) {
     if (error.code === 11000) {
@@ -187,7 +193,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
  * PUT /api/mcp-servers/:id
  * Update an MCP server
  */
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', denyGuests, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -212,13 +218,13 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
     if (config !== undefined) {
       server.config = {
         ...server.config,
-        ...config
+        ...config,
       };
     }
     if (metadata !== undefined) {
       server.metadata = {
         ...server.metadata,
-        ...metadata
+        ...metadata,
       };
     }
 
@@ -237,11 +243,11 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
         source: server.source,
         tools: server.tools,
         config: {
-          type: server.config.type
+          type: server.config.type,
         },
         metadata: server.metadata,
-        updatedAt: server.updatedAt
-      }
+        updatedAt: server.updatedAt,
+      },
     });
   } catch (error) {
     next(error);
@@ -252,7 +258,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
  * DELETE /api/mcp-servers/:id
  * Delete an MCP server
  */
-router.delete('/:id', async (req: AuthRequest, res, next) => {
+router.delete('/:id', denyGuests, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -279,7 +285,7 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
 
     res.json({
       success: true,
-      message: 'MCP server deleted successfully'
+      message: 'MCP server deleted successfully',
     });
   } catch (error) {
     next(error);
@@ -302,14 +308,16 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
       // System servers are available to all users
       try {
         const health = await mcpService.checkServerHealth(id);
-        const tools = await mcpService.getAllTools([{
-          id: id,
-          name: id,
-          description: 'System MCP server',
-          status: health.status === 'healthy' ? 'active' : 'inactive',
-          source: 'system',
-          tools: []
-        }]);
+        const tools = await mcpService.getAllTools([
+          {
+            id: id,
+            name: id,
+            description: 'System MCP server',
+            status: health.status === 'healthy' ? 'active' : 'inactive',
+            source: 'system',
+            tools: [],
+          },
+        ]);
 
         const serverTools = tools.get(id) || [];
 
@@ -319,8 +327,11 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
             serverId: id,
             status: health.status === 'healthy' ? 'connected' : 'error',
             tools: serverTools,
-            message: health.status === 'healthy' ? 'Server connection successful' : health.message || 'Server connection failed'
-          }
+            message:
+              health.status === 'healthy'
+                ? 'Server connection successful'
+                : health.message || 'Server connection failed',
+          },
         });
       } catch (error: unknown) {
         return res.json({
@@ -328,8 +339,8 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
           data: {
             serverId: id,
             status: 'error',
-            message: error.message || 'Failed to connect to server'
-          }
+            message: error.message || 'Failed to connect to server',
+          },
         });
       }
     }
@@ -349,14 +360,16 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
 
     // Try to discover tools
     try {
-      const tools = await mcpService.getAllTools([{
-        id: server.id,
-        name: server.name,
-        description: server.description,
-        status: server.status,
-        source: server.source,
-        tools: server.tools
-      }]);
+      const tools = await mcpService.getAllTools([
+        {
+          id: server.id,
+          name: server.name,
+          description: server.description,
+          status: server.status,
+          source: server.source,
+          tools: server.tools,
+        },
+      ]);
 
       const serverTools = tools.get(server.id) || [];
 
@@ -366,8 +379,8 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
           serverId: server.id,
           status: 'connected',
           tools: serverTools,
-          message: 'Server connection successful'
-        }
+          message: 'Server connection successful',
+        },
       });
     } catch (error: unknown) {
       res.json({
@@ -375,8 +388,8 @@ router.post('/:id/test', async (req: AuthRequest, res, next) => {
         data: {
           serverId: server.id,
           status: 'error',
-          message: error.message || 'Failed to connect to server'
-        }
+          message: error.message || 'Failed to connect to server',
+        },
       });
     }
   } catch (error) {
@@ -401,7 +414,7 @@ router.get('/:id/health', async (req: AuthRequest, res, next) => {
         const health = await mcpService.checkServerHealth(id);
         return res.json({
           success: true,
-          data: health
+          data: health,
         });
       }
       throw new AppError('MCP server not found', 404);
@@ -415,7 +428,7 @@ router.get('/:id/health', async (req: AuthRequest, res, next) => {
     const health = await mcpService.checkServerHealth(id);
     res.json({
       success: true,
-      data: health
+      data: health,
     });
   } catch (error) {
     next(error);
@@ -431,7 +444,7 @@ router.get('/health/all', async (req: AuthRequest, res, next) => {
     const healthStatuses = await mcpService.checkAllSystemServersHealth();
     res.json({
       success: true,
-      data: healthStatuses
+      data: healthStatuses,
     });
   } catch (error) {
     next(error);
@@ -439,7 +452,3 @@ router.get('/health/all', async (req: AuthRequest, res, next) => {
 });
 
 export default router;
-
-
-
-

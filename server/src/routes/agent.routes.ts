@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { authenticateToken, denyGuests, AuthRequest } from '../middleware/auth.js';
 import { checkFeatureAccess, FeatureRequest } from '../middleware/featureCheck.js';
 import { Project } from '../models/Project.model.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -12,69 +12,75 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Execute agent task - protected by agent_creation feature flag
-router.post('/execute', checkFeatureAccess('agent_creation'), validate(executeAgentTaskSchema), async (req: AuthRequest & FeatureRequest, res, next) => {
-  try {
-    const { projectId, agentId, taskId } = req.body;
+router.post(
+  '/execute',
+  denyGuests,
+  checkFeatureAccess('agent_creation'),
+  validate(executeAgentTaskSchema),
+  async (req: AuthRequest & FeatureRequest, res, next) => {
+    try {
+      const { projectId, agentId, taskId } = req.body;
 
-    if (!projectId || !agentId || !taskId) {
-      throw new AppError('Project ID, Agent ID, and Task ID are required', 400);
-    }
-
-    // Verify project belongs to user
-    const project = await Project.findOne({
-      _id: projectId,
-      userId: req.user!.id
-    });
-
-    if (!project) {
-      throw new AppError('Project not found', 404);
-    }
-
-    // Find the agent and task in the project
-    const agent = project.agents?.find((a: any) => a.id === agentId);
-    const task = project.tasks?.find((t: any) => t.id === taskId);
-
-    if (!agent) {
-      throw new AppError('Agent not found in project', 404);
-    }
-
-    if (!task) {
-      throw new AppError('Task not found in project', 404);
-    }
-
-    // Forward to the actual execution endpoint
-    // This route is a convenience wrapper that forwards to /api/gemini/execute-task
-    logger.info(`Agent route forwarding execution: agent=${agentId}, task=${taskId}`);
-
-    // Return success - actual execution happens via /api/gemini/execute-task
-    // The frontend should call that endpoint directly for full functionality
-    res.json({
-      success: true,
-      data: {
-        message: 'Agent task execution should be performed via /api/gemini/execute-task endpoint',
-        taskId,
-        agentId,
-        agent: {
-          id: agent.id,
-          role: agent.role,
-          name: agent.name
-        },
-        task: {
-          id: task.id,
-          title: task.title,
-          status: task.status
-        },
-        redirect: {
-          endpoint: '/api/gemini/execute-task',
-          method: 'POST',
-          note: 'Use this endpoint for actual task execution with full features'
-        }
+      if (!projectId || !agentId || !taskId) {
+        throw new AppError('Project ID, Agent ID, and Task ID are required', 400);
       }
-    });
-  } catch (error) {
-    next(error);
+
+      // Verify project belongs to user
+      const project = await Project.findOne({
+        _id: projectId,
+        userId: req.user!.id,
+      });
+
+      if (!project) {
+        throw new AppError('Project not found', 404);
+      }
+
+      // Find the agent and task in the project
+      const agent = project.agents?.find((a: any) => a.id === agentId);
+      const task = project.tasks?.find((t: any) => t.id === taskId);
+
+      if (!agent) {
+        throw new AppError('Agent not found in project', 404);
+      }
+
+      if (!task) {
+        throw new AppError('Task not found in project', 404);
+      }
+
+      // Forward to the actual execution endpoint
+      // This route is a convenience wrapper that forwards to /api/gemini/execute-task
+      logger.info(`Agent route forwarding execution: agent=${agentId}, task=${taskId}`);
+
+      // Return success - actual execution happens via /api/gemini/execute-task
+      // The frontend should call that endpoint directly for full functionality
+      res.json({
+        success: true,
+        data: {
+          message: 'Agent task execution should be performed via /api/gemini/execute-task endpoint',
+          taskId,
+          agentId,
+          agent: {
+            id: agent.id,
+            role: agent.role,
+            name: agent.name,
+          },
+          task: {
+            id: task.id,
+            title: task.title,
+            status: task.status,
+          },
+          redirect: {
+            endpoint: '/api/gemini/execute-task',
+            method: 'POST',
+            note: 'Use this endpoint for actual task execution with full features',
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 // Get agent status
 router.get('/status/:agentId', async (req: AuthRequest, res, next) => {
@@ -89,7 +95,7 @@ router.get('/status/:agentId', async (req: AuthRequest, res, next) => {
     // Verify project belongs to user
     const project = await Project.findOne({
       _id: projectId,
-      userId: req.user!.id
+      userId: req.user!.id,
     });
 
     if (!project) {
@@ -116,7 +122,7 @@ router.get('/status/:agentId', async (req: AuthRequest, res, next) => {
           id: agent.id,
           role: agent.role,
           name: agent.name,
-          description: agent.description
+          description: agent.description,
         },
         status: activeTasks.length > 0 ? 'active' : 'idle',
         lastActivity: project.lastModified || project.createdAt,
@@ -124,9 +130,9 @@ router.get('/status/:agentId', async (req: AuthRequest, res, next) => {
           total: agentTasks.length,
           active: activeTasks.length,
           completed: completedTasks.length,
-          pending: agentTasks.filter((t: any) => t.status === 'Pending').length
-        }
-      }
+          pending: agentTasks.filter((t: any) => t.status === 'Pending').length,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -134,4 +140,3 @@ router.get('/status/:agentId', async (req: AuthRequest, res, next) => {
 });
 
 export default router;
-

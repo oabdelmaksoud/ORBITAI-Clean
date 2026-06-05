@@ -1,6 +1,6 @@
 import express from 'express';
 import { CustomAgent } from '../models/CustomAgent.model.js';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { authenticateToken, denyGuests, AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logAudit } from '../middleware/auditLogger.js';
 import { logger } from '../utils/logger.js';
@@ -364,7 +364,7 @@ router.get('/:id', checkAgentCustomization, async (req: AuthRequest, res, next) 
  * POST /api/custom-agents
  * Create a new custom agent
  */
-router.post('/', checkAgentCustomization, async (req: AuthRequest, res, next) => {
+router.post('/', denyGuests, checkAgentCustomization, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user?.id;
     const {
@@ -454,7 +454,7 @@ router.post('/', checkAgentCustomization, async (req: AuthRequest, res, next) =>
  * PUT /api/custom-agents/:id
  * Update a custom agent
  */
-router.put('/:id', checkAgentCustomization, async (req: AuthRequest, res, next) => {
+router.put('/:id', denyGuests, checkAgentCustomization, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user?.id;
     const agentId = req.params.id;
@@ -526,7 +526,7 @@ router.put('/:id', checkAgentCustomization, async (req: AuthRequest, res, next) 
  * DELETE /api/custom-agents/:id
  * Delete a custom agent (soft delete)
  */
-router.delete('/:id', checkAgentDeletion, async (req: AuthRequest, res, next) => {
+router.delete('/:id', denyGuests, checkAgentDeletion, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
@@ -573,7 +573,7 @@ router.delete('/:id', checkAgentDeletion, async (req: AuthRequest, res, next) =>
  * POST /api/custom-agents/:id/clone
  * Clone a public agent to your own collection
  */
-router.post('/:id/clone', checkAgentCustomization, async (req: AuthRequest, res, next) => {
+router.post('/:id/clone', denyGuests, checkAgentCustomization, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.user?.id;
     const agentId = req.params.id;
