@@ -19,13 +19,13 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.3 / 5 — all 16 dimensions at 4+; context/memory/cost/eval now at 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.4 / 5 — all 16 dimensions at 4+; context/memory/cost/eval/providers/MCP now at 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
 | 1 | Agent loop | 2 | **4** | Reachable on `/execute-task` (WI-1, flag-gated), parallel tool exec (WI-6b), configurable cap (WI-6a). Not 5: results still stringified into the continuation prompt (WI-3c deferred). |
 | 2 | Tool system | 1 | **4** | Real registry: allowlist + arg validation + dispatch (WI-4). Not 5: lightweight (not full JSON-schema) validation; no dynamic registration. |
-| 3 | Tool protocol (MCP) | 2 | **4** | User/agent MCP tools now callable from the loop (WI-5). Not 5: still no MCP *server*; discovery via stored names. |
+| 3 | Tool protocol (MCP) | 2 | **5** | MCP **client** (loop-reachable, WI-5) **and** MCP **server**: `mcpServer.service` exposes read-only tools (health/ping/list_capabilities) via `@modelcontextprotocol/sdk` `McpServer` over stdio/in-memory transports (opt-in `HARNESS_MCP_SERVER_ENABLED`); status route `/api/harness-mcp-server`. |
 | 4 | Providers | 3 | **5** | Native tool-calling (Gemini/OpenAI/Anthropic); shared `ILLMProvider` interface (structural conformance); **all 14 providers expose `generateContentStream`** (real where the SDK supports it, single-yield fallback otherwise). |
 | 5 | Model routing | 3 | **4** | Fixed the `!predictivePrediction` gating bug that suppressed the RL bandit whenever a low-confidence prediction existed — RL (real UCB1 + reward loop) now contributes; AI prediction available behind `HARNESS_AI_ROUTING` (LLM-cost-gated). Rules+weighted scoring remains the workhorse. Not 5: wire/remove auto-tune + A/B, token-budget input. |
 | 6 | Context management | 2 | **5** | `contextManager` token-budgets chat history AND `compactHistory` summarizes the dropped prefix into a synthetic recap (deterministic default + injectable LLM summarizer), wired into both chat handlers. |

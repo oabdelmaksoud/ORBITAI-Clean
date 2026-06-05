@@ -25,6 +25,7 @@ export default defineConfig({
       'src/services/__tests__/executionRecovery.test.ts',
       'src/services/__tests__/mcpStdioSecurity.test.ts',
       'src/services/__tests__/evaluation.golden.test.ts',
+      'src/services/__tests__/mcpServer.service.test.ts',
       'src/services/llm/__tests__/FunctionCallProcessor.loop.test.ts',
       'src/services/llm/__tests__/fallbackSelector.test.ts',
       'src/services/llm/__tests__/CircuitBreaker.test.ts',
