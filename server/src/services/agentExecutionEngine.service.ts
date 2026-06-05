@@ -54,7 +54,11 @@ class AgentExecutionEngine {
   }
 
   /** Load an agent's config and run it through the LLM router. */
-  async runAgent(agent: RunnableAgent, input: string, ctx: AgentRunContext = {}): Promise<AgentRunResult> {
+  async runAgent(
+    agent: RunnableAgent,
+    input: string,
+    ctx: AgentRunContext = {}
+  ): Promise<AgentRunResult> {
     const startedAt = new Date();
     try {
       const result = await llmRouter.executeWithFallback({
@@ -92,7 +96,11 @@ class AgentExecutionEngine {
   }
 
   /** Run agents as an ordered pipeline, threading each output into the next agent's context. */
-  async runSequence(agents: RunnableAgent[], task: string, ctx: AgentRunContext = {}): Promise<SequenceResult> {
+  async runSequence(
+    agents: RunnableAgent[],
+    task: string,
+    ctx: AgentRunContext = {}
+  ): Promise<SequenceResult> {
     const steps: AgentRunResult[] = [];
     let context = task;
     for (const agent of agents) {
@@ -107,6 +115,34 @@ class AgentExecutionEngine {
     }
     const lastSuccessful = [...steps].reverse().find(s => s.success && s.output);
     return { steps, finalOutput: lastSuccessful?.output ?? '' };
+  }
+
+  /**
+   * Dynamic team formation (dim 8 → 5): order the available agents into a sensible pipeline
+   * (planner/architect → implementer → reviewer/QA), falling back to the input order for unknown
+   * roles, so a team self-organizes from whatever agents a project has.
+   */
+  formTeam(availableAgents: RunnableAgent[]): RunnableAgent[] {
+    if (!Array.isArray(availableAgents)) return [];
+    const rank = (role: string): number => {
+      const r = (role || '').toLowerCase();
+      if (/(plan|orchestrat|architect|analy)/.test(r)) return 0;
+      if (/(implement|develop|engineer|cod|build)/.test(r)) return 1;
+      if (/(review|qa|audit|test|security)/.test(r)) return 2;
+      return 1.5;
+    };
+    return [...availableAgents].sort((a, b) => rank(a.role) - rank(b.role));
+  }
+
+  /** Form a team from the available agents and run them as a pipeline on the task. */
+  async runTeam(
+    availableAgents: RunnableAgent[],
+    task: string,
+    ctx: AgentRunContext = {}
+  ): Promise<SequenceResult> {
+    const team = this.formTeam(availableAgents);
+    if (team.length === 0) return { steps: [], finalOutput: '' };
+    return this.runSequence(team, task, ctx);
   }
 
   /** Best-effort execution record (feeds the health/collaboration analytics). Never throws. */

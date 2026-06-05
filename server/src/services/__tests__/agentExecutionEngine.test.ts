@@ -78,4 +78,24 @@ describe('agentExecutionEngine (multi-agent, dim 8)', () => {
     await agentExecutionEngine.runAgent({ role: 'X' }, 'in', {});
     expect(create).not.toHaveBeenCalled();
   });
+
+  it('formTeam orders agents planner -> implementer -> reviewer', () => {
+    const ordered = agentExecutionEngine.formTeam([
+      { role: 'QA Reviewer' },
+      { role: 'Implementer' },
+      { role: 'Orchestrator' },
+    ]);
+    expect(ordered.map(a => a.role)).toEqual(['Orchestrator', 'Implementer', 'QA Reviewer']);
+  });
+
+  it('runTeam forms a team and runs it as a pipeline', async () => {
+    executeWithFallback.mockResolvedValue({ text: 'out', modelUsed: 'm' });
+    const r = await agentExecutionEngine.runTeam(
+      [{ role: 'Implementer' }, { role: 'Orchestrator' }],
+      'do it',
+      {}
+    );
+    expect(r.steps.map(s => s.agentRole)).toEqual(['Orchestrator', 'Implementer']);
+    expect(executeWithFallback).toHaveBeenCalledTimes(2);
+  });
 });
