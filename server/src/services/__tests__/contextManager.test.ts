@@ -44,4 +44,34 @@ describe('contextManager (dim 6)', () => {
     expect(trimmed.length).toBe(1);
     expect(trimmed[0].content).toBe(huge);
   });
+
+  it('compacts the dropped prefix into a summary message (compactHistory)', async () => {
+    const big = 'x'.repeat(400);
+    const h = [
+      { role: 'user', content: big + '1' },
+      { role: 'user', content: big + '2' },
+      { role: 'user', content: big + '3' },
+    ];
+    const out = await contextManager.compactHistory(h, 210);
+    expect(out[0].role).toBe('system');
+    expect(out[0].content).toContain('Earlier conversation summary');
+    expect(out[out.length - 1].content).toContain('3'); // recent message retained
+  });
+
+  it('uses an injected summarizer when provided', async () => {
+    const big = 'x'.repeat(400);
+    const h = [
+      { role: 'user', content: big + '1' },
+      { role: 'user', content: big + '2' },
+      { role: 'user', content: big + '3' },
+    ];
+    const out = await contextManager.compactHistory(h, 210, async () => 'CUSTOM RECAP');
+    expect(out[0].content).toContain('CUSTOM RECAP');
+  });
+
+  it('adds no summary when nothing is dropped', async () => {
+    const h = [{ role: 'user', content: 'a' }];
+    const out = await contextManager.compactHistory(h, 1000);
+    expect(out).toEqual(h);
+  });
 });

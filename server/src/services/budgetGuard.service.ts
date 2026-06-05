@@ -40,13 +40,29 @@ class BudgetGuard {
    * Throw BudgetExceededError if the user is at/over their monthly cap. No-op when no user or no cap
    * is configured (so the common path pays nothing). DB errors fail open (logged, request allowed).
    */
-  async assertWithinBudget(userId?: string, maxMonthlyBudget?: number): Promise<void> {
+  async assertWithinBudget(
+    userId?: string,
+    maxMonthlyBudget?: number,
+    estimatedRequestCost = 0
+  ): Promise<void> {
     if (!userId || !maxMonthlyBudget || maxMonthlyBudget <= 0) return;
     try {
       const spent = await this.getMonthlySpend(userId);
-      if (spent >= maxMonthlyBudget) {
-        logger.warn(`[BudgetGuard] Blocking request: user ${userId} spent $${spent} of $${maxMonthlyBudget} cap`);
-        throw new BudgetExceededError(spent, maxMonthlyBudget);
+      // Pre-estimate (dim 16 → 5): block if THIS request would push month-to-date over the cap.
+      const projected = spent + Math.max(0, estimatedRequestCost);
+      if (projected >= maxMonthlyBudget) {
+        logger.warn(
+          `[BudgetGuard] Blocking request: user ${userId} projected $${projected.toFixed(4)} ` +
+            `(spent $${spent.toFixed(4)} + est $${estimatedRequestCost}) of $${maxMonthlyBudget} cap`
+        );
+        throw new BudgetExceededError(projected, maxMonthlyBudget);
+      }
+      // Soft-warning tier: nearing the cap (default 80%, BUDGET_SOFT_WARN_RATIO).
+      const softRatio = Number(process.env.BUDGET_SOFT_WARN_RATIO) || 0.8;
+      if (spent >= maxMonthlyBudget * softRatio) {
+        logger.warn(
+          `[BudgetGuard] Soft warning: user ${userId} at ${((spent / maxMonthlyBudget) * 100).toFixed(0)}% of $${maxMonthlyBudget} monthly cap`
+        );
       }
     } catch (error) {
       if (error instanceof BudgetExceededError) throw error;

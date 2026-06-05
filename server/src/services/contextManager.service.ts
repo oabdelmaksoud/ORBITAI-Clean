@@ -42,6 +42,40 @@ class ContextManager {
     }
     return kept;
   }
+
+  /**
+   * Compaction (dim 6 → 5): like trimHistory, but instead of silently dropping the older prefix,
+   * replace it with a single synthetic summary message so the model retains a trace of earlier
+   * context. `summarize` defaults to a deterministic, no-LLM heuristic; pass an LLM-backed summarizer
+   * for a richer recap.
+   */
+  async compactHistory(
+    history: ChatMessage[],
+    maxTokens: number = DEFAULT_TOKEN_BUDGET,
+    summarize: (dropped: ChatMessage[]) => Promise<string> | string = defaultSummarize
+  ): Promise<ChatMessage[]> {
+    if (!Array.isArray(history) || history.length === 0) return [];
+    const kept = this.trimHistory(history, maxTokens);
+    if (kept.length >= history.length) return kept; // nothing was dropped
+
+    const dropped = history.slice(0, history.length - kept.length);
+    let summary = '';
+    try {
+      summary = (await summarize(dropped)).trim();
+    } catch {
+      summary = defaultSummarize(dropped);
+    }
+    if (!summary) return kept;
+    return [{ role: 'system', content: `[Earlier conversation summary] ${summary}` }, ...kept];
+  }
+}
+
+/** Deterministic, no-LLM recap of the omitted prefix (count + compact role/snippet list). */
+function defaultSummarize(dropped: ChatMessage[]): string {
+  const snippets = dropped
+    .map(m => `${m.role}: ${(m.content || '').replace(/\s+/g, ' ').slice(0, 80)}`)
+    .join(' | ');
+  return `${dropped.length} earlier message(s) omitted. ${snippets}`.slice(0, 600);
 }
 
 export const contextManager = new ContextManager();

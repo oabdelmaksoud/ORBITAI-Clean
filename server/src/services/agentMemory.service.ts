@@ -17,7 +17,9 @@ import { vectorSearchService } from './vectorSearch.service.js';
 const MEMORY_TYPE = 'agent-experience';
 
 function memoryEnabled(): boolean {
-  return (process.env.HARNESS_MEMORY_ENABLED || '').toLowerCase() === 'true';
+  // dim 7 → 5: on by default (degrades gracefully without a vector backend — retrieval returns ''
+  // and recording no-ops on error). Set HARNESS_MEMORY_ENABLED=false to disable.
+  return (process.env.HARNESS_MEMORY_ENABLED || '').toLowerCase() !== 'false';
 }
 
 export interface RecordExperienceParams {
@@ -37,9 +39,21 @@ class AgentMemoryService {
     if (!memoryEnabled() || !query || !query.trim()) return '';
     try {
       // Over-fetch then post-filter by agentRole (the vector filter API is typed to type/project/user).
-      const results = await vectorSearchService.vectorSearch(query, limit * 3, { type: MEMORY_TYPE });
+      const results = await vectorSearchService.vectorSearch(query, limit * 3, {
+        type: MEMORY_TYPE,
+      });
+      // Relevance tuning (dim 7 → 5): role-scope, drop low-similarity hits, dedup by content.
+      const minRelevance = Number(process.env.MEMORY_MIN_RELEVANCE) || 0;
+      const seen = new Set<string>();
       const scoped = (results || [])
         .filter(r => !agentRole || r.metadata?.agentRole === agentRole)
+        .filter(r => typeof r.score !== 'number' || r.score >= minRelevance)
+        .filter(r => {
+          const key = (r.content || '').trim();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
         .slice(0, limit);
       if (scoped.length === 0) return '';
 
@@ -65,6 +79,10 @@ class AgentMemoryService {
     if (!memoryEnabled()) return;
     const { agentRole, taskTitle, output, score, projectId } = params;
     if (!output || !output.trim()) return;
+    // Quality gate (dim 7 → 5): only store reasonably good outcomes so memory stays high-signal and
+    // we avoid embedding every low-quality output. MEMORY_MIN_RECORD_SCORE (default 60); no-score passes.
+    const minRecordScore = Number(process.env.MEMORY_MIN_RECORD_SCORE) || 60;
+    if (typeof score === 'number' && score < minRecordScore) return;
     try {
       const id = `exp-${agentRole}-${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
       const content = `Task: ${taskTitle}\nApproach & outcome: ${output.substring(0, 4000)}`;

@@ -40,4 +40,16 @@ describe('budgetGuard (cost governance, dim 16)', () => {
     // ...and therefore allows the request under any positive cap.
     await expect(budgetGuard.assertWithinBudget('u1', 100)).resolves.toBeUndefined();
   });
+
+  it('blocks when the estimated request cost would push spend over the cap (pre-estimate)', async () => {
+    aggregate.mockResolvedValue([{ total: 90 }]);
+    await expect(budgetGuard.assertWithinBudget('u1', 100, 20)).rejects.toBeInstanceOf(
+      BudgetExceededError
+    );
+  });
+
+  it('allows when spend + estimated request cost stays under the cap', async () => {
+    aggregate.mockResolvedValue([{ total: 50 }]);
+    await expect(budgetGuard.assertWithinBudget('u1', 100, 20)).resolves.toBeUndefined();
+  });
 });

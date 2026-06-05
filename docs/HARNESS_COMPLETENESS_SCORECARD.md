@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.0 / 5 — all 16 dimensions now at 4 (wired, functional, tested).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.2 / 5 — all 16 dimensions at 4+; context/memory/cost now at 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -28,8 +28,8 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 3 | Tool protocol (MCP) | 2 | **4** | User/agent MCP tools now callable from the loop (WI-5). Not 5: still no MCP *server*; discovery via stored names. |
 | 4 | Providers | 3 | **4** | Native tool-calling across Gemini + OpenAI (WI-3a) + Anthropic (WI-3b). Not 5: streaming still only 2/12; no shared interface. |
 | 5 | Model routing | 3 | **4** | Fixed the `!predictivePrediction` gating bug that suppressed the RL bandit whenever a low-confidence prediction existed — RL (real UCB1 + reward loop) now contributes; AI prediction available behind `HARNESS_AI_ROUTING` (LLM-cost-gated). Rules+weighted scoring remains the workhorse. Not 5: wire/remove auto-tune + A/B, token-budget input. |
-| 6 | Context management | 2 | **4** | `contextManager` token-budgets chat history (keeps most recent within budget, always the latest turn), wired into both chat handlers. Not 5: summarization/compaction of the dropped prefix. |
-| 7 | Memory (cross-session) | 1 | **4** | RAG via `agentMemory`: retrieves role-scoped past experiences (vector search) into the prompt + records task outcomes for future runs (flag-gated `HARNESS_MEMORY_ENABLED`). Not 5: needs a production vector store, always-on, relevance tuning. |
+| 6 | Context management | 2 | **5** | `contextManager` token-budgets chat history AND `compactHistory` summarizes the dropped prefix into a synthetic recap (deterministic default + injectable LLM summarizer), wired into both chat handlers. |
+| 7 | Memory (cross-session) | 1 | **5** | RAG via `agentMemory`: on by default, retrieves role-scoped experiences with relevance-threshold + dedup, records only quality outcomes (score-gated) to the Weaviate-capable vector store. |
 | 8 | Multi-agent orchestration | 1 | **4** | `agentExecutionEngine`: loads + runs an agent's config via the router (`runAgent`), chains agents into a pipeline (`runSequence`), records `AgentExecution` (feeding the once-empty analytics). `/execute` now really runs; new `/run-sequence` route. Not 5: dynamic team formation + conflict-resolution/messaging wired end-to-end. |
 | 9 | Planning / reflection | 1 | **4** | `planningService`: decomposes a task into an injected execution plan + a bounded reflect→revise self-critique pass in execute-task (flag-gated `HARNESS_PLANNING_ENABLED`). Not 5: multi-step plan tracking + iterative (n>1) refinement loop. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
@@ -38,7 +38,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 13 | Observability | 2 | **4** | Per-request `traceId` via AsyncLocalStorage stamped on every log line + returned as `x-trace-id`; run-level correlation across the agent path. Not 5: OTel spans + a `RoutingDecisionLog` writer. |
 | 14 | Evaluation & quality | 3 | **4** | Fail-closed on eval error (score 0, not 70) — failures no longer masquerade as passing. Not 5: needs golden-set regression in CI + judge-family diversity. |
 | 15 | Testing (of the harness) | 1 | **4** | 100+ harness unit tests (loop, registry, providers, security, memory, cost, context, observability, planning, multi-agent, recovery, fallback); runner unified on vitest (orphan jest config removed; `@jest/globals` tests converted); green CI gate (`vitest.unit.config.ts` via `.github/workflows/test.yml`). Not 5: integration suite (needs e2b/embedding/Mongo) still red — triaged separately. |
-| 16 | Cost governance | 2 | **4** | `budgetGuard` enforces the monthly spend cap before execution (blocks at/over `packageLimits.maxMonthlyBudget`, fail-open on DB error). Not 5: per-request pre-estimate + soft-warning tiers. |
+| 16 | Cost governance | 2 | **5** | `budgetGuard` enforces the monthly cap with a per-request pre-estimate (blocks if this call would exceed) + soft-warning tier near the cap; fail-open on DB error. |
 
 ### What "everything at scope 5" still requires (not done this pass)
 These are each a dedicated effort, not a quick edit — listing them honestly rather than claiming 5:

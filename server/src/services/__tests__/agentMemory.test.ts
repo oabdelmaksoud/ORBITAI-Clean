@@ -30,7 +30,12 @@ describe('agentMemory (RAG, dimension 7)', () => {
 
   it('retrieves, role-scopes, and formats memory for prompt injection', async () => {
     vectorSearch.mockResolvedValue([
-      { id: '1', content: 'Used JWT with refresh tokens', score: 0.9, metadata: { agentRole: 'Impl', score: 88 } },
+      {
+        id: '1',
+        content: 'Used JWT with refresh tokens',
+        score: 0.9,
+        metadata: { agentRole: 'Impl', score: 88 },
+      },
       { id: '2', content: 'belongs to another role', score: 0.8, metadata: { agentRole: 'QA' } },
     ]);
     const r = await agentMemory.retrieveRelevantMemory('Impl', 'auth', 3);
@@ -69,6 +74,16 @@ describe('agentMemory (RAG, dimension 7)', () => {
   it('does not record when disabled', async () => {
     process.env.HARNESS_MEMORY_ENABLED = 'false';
     await agentMemory.recordExperience({ agentRole: 'Impl', taskTitle: 'x', output: 'y' });
+    expect(addDocument).not.toHaveBeenCalled();
+  });
+
+  it('does not record a low-quality outcome (below MEMORY_MIN_RECORD_SCORE)', async () => {
+    await agentMemory.recordExperience({
+      agentRole: 'Impl',
+      taskTitle: 'x',
+      output: 'some output',
+      score: 30,
+    });
     expect(addDocument).not.toHaveBeenCalled();
   });
 });

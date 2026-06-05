@@ -75,7 +75,7 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
     logger.info(`[LLMRouter] Chat request received for agent: ${agentRole || 'Orchestrator'}`);
 
     // Build chat prompt from history (dim 6: token-budgeted trimming so long chats don't overflow).
-    const trimmedHistory = contextManager.trimHistory(
+    const trimmedHistory = await contextManager.compactHistory(
       history || [],
       Number(process.env.CHAT_HISTORY_TOKEN_BUDGET) || 6000
     );
@@ -259,7 +259,7 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
     res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     // Build chat prompt from history (dim 6: token-budgeted trimming so long chats don't overflow).
-    const trimmedHistory = contextManager.trimHistory(
+    const trimmedHistory = await contextManager.compactHistory(
       history || [],
       Number(process.env.CHAT_HISTORY_TOKEN_BUDGET) || 6000
     );
@@ -523,7 +523,11 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
     );
     // Planning (dim 9): decompose the task into an ordered plan and inject it so the agent executes
     // against concrete steps rather than improvising. No-op (empty) when HARNESS_PLANNING_ENABLED is off.
-    const plan = await planningService.createPlan(task.title, task.description || '', agentRoleForRun);
+    const plan = await planningService.createPlan(
+      task.title,
+      task.description || '',
+      agentRoleForRun
+    );
     const planContext = planningService.formatPlanForPrompt(plan);
     const systemInstruction = `You are executing a task: ${task.title}${planContext}${memoryContext}`;
 
