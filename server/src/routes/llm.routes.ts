@@ -579,25 +579,29 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
     let createdTasks: any[] = [];
     let outputText = result.text || '';
 
-    // Reflection (dim 9): one bounded self-critique -> revise pass (gated; no-op when disabled).
+    // Reflection (dim 9 → 5): iterative self-critique → revise loop (converges when no revision is
+    // needed; bounded by PLANNING_MAX_REVISIONS). No-op when planning is disabled.
     if (outputText.trim()) {
-      const reflection = await planningService.reflect(task.title, outputText, agentRoleForRun);
-      if (reflection.needsRevision) {
-        try {
+      const refined = await planningService.refineUntilSatisfied(
+        task.title,
+        outputText,
+        agentRoleForRun,
+        async (critique, previousOutput) => {
           const revised = await llmRouter.executeWithFallback({
-            prompt: `Revise your previous output for task "${task.title}" to address this critique:\n${reflection.critique}\n\nPrevious output:\n${outputText}`,
+            prompt: `Revise your previous output for task "${task.title}" to address this critique:\n${critique}\n\nPrevious output:\n${previousOutput}`,
             context: { agentRole: agentRoleForRun, taskType: 'code-generation', systemInstruction },
             routingContext: { userId: (req as any).user?.id, projectId: projectState?.id },
             requestType: 'task-execution',
             contextType: 'workspace',
           });
-          if (revised.text && revised.text.trim()) {
-            outputText = revised.text;
-            logger.info(`[LLMRouter] Applied a reflection revision for task "${task.title}"`);
-          }
-        } catch (reviseError) {
-          logger.warn('[Planning] Revision pass failed, keeping original output:', reviseError);
+          return revised.text || '';
         }
+      );
+      if (refined.iterations > 0) {
+        outputText = refined.output;
+        logger.info(
+          `[LLMRouter] Applied ${refined.iterations} reflection revision(s) for task "${task.title}"`
+        );
       }
     }
 

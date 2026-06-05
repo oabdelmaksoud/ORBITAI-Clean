@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.4 / 5 — all 16 dimensions at 4+; 7 now at 5 (tools/context/memory/cost/eval/providers/MCP).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.5 / 5 — all 16 dimensions at 4+; 8 now at 5 (tools/context/memory/cost/eval/providers/MCP/planning).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -31,7 +31,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 6 | Context management | 2 | **5** | `contextManager` token-budgets chat history AND `compactHistory` summarizes the dropped prefix into a synthetic recap (deterministic default + injectable LLM summarizer), wired into both chat handlers. |
 | 7 | Memory (cross-session) | 1 | **5** | RAG via `agentMemory`: on by default, retrieves role-scoped experiences with relevance-threshold + dedup, records only quality outcomes (score-gated) to the Weaviate-capable vector store. |
 | 8 | Multi-agent orchestration | 1 | **4** | `agentExecutionEngine`: loads + runs an agent's config via the router (`runAgent`), chains agents into a pipeline (`runSequence`), records `AgentExecution` (feeding the once-empty analytics). `/execute` now really runs; new `/run-sequence` route. Not 5: dynamic team formation + conflict-resolution/messaging wired end-to-end. |
-| 9 | Planning / reflection | 1 | **4** | `planningService`: decomposes a task into an injected execution plan + a bounded reflect→revise self-critique pass in execute-task (flag-gated `HARNESS_PLANNING_ENABLED`). Not 5: multi-step plan tracking + iterative (n>1) refinement loop. |
+| 9 | Planning / reflection | 1 | **5** | `planningService`: injected execution plan + **iterative reflect→revise loop** (`refineUntilSatisfied`, converges when no revision needed, bounded by `PLANNING_MAX_REVISIONS`), wired into execute-task. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
 | 11 | State & resumability | 2 | **4** | `executionRecovery` re-queues tasks orphaned `In Progress` by a process death → `Pending` at boot (2-min threshold, `HARNESS_RECOVERY_ENABLED`), so interrupted runs resume with their persisted progress/output. Not 5: per-step checkpoint store for mid-run resume. |
 | 12 | Resilience | 2 | **4** | Provider + Codex timeouts (WI-6a/b); failover now wired for end-user requests too (`HARNESS_ENDUSER_FALLBACK`), and `pickFallbackModel` excludes the failed provider so failover moves to a different backend. Not 5: multi-hop fallback chain + circuit-breaker-aware selection. |

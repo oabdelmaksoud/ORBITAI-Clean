@@ -70,7 +70,8 @@ class PlanningService {
     output: string,
     agentRole = 'Implementation Agent'
   ): Promise<Reflection> {
-    if (!planningEnabled() || !output || !output.trim()) return { needsRevision: false, critique: '' };
+    if (!planningEnabled() || !output || !output.trim())
+      return { needsRevision: false, critique: '' };
     try {
       const prompt =
         `Critique the following output for task "${taskTitle}". Respond ONLY as JSON ` +
@@ -87,6 +88,37 @@ class PlanningService {
       logger.warn('[Planning] reflect failed; skipping revision:', error);
       return { needsRevision: false, critique: '' };
     }
+  }
+
+  /**
+   * Iteratively reflect → revise up to maxIterations, stopping early when no revision is needed
+   * (dim 9 → 5). `reviser(critique, previousOutput)` produces a revised output; the loop converges
+   * when reflect reports no further revision, or the cap (PLANNING_MAX_REVISIONS, 1–5) is hit.
+   */
+  async refineUntilSatisfied(
+    taskTitle: string,
+    initialOutput: string,
+    agentRole: string,
+    reviser: (critique: string, previousOutput: string) => Promise<string>,
+    maxIterations = 2
+  ): Promise<{ output: string; iterations: number }> {
+    let output = initialOutput;
+    let iterations = 0;
+    const cap = Math.max(1, Math.min(5, Number(process.env.PLANNING_MAX_REVISIONS) || maxIterations));
+    for (let i = 0; i < cap; i++) {
+      const reflection = await this.reflect(taskTitle, output, agentRole);
+      if (!reflection.needsRevision) break;
+      try {
+        const revised = await reviser(reflection.critique, output);
+        if (!revised || !revised.trim()) break;
+        output = revised;
+        iterations++;
+      } catch (error) {
+        logger.warn('[Planning] revision step failed; keeping last output:', error);
+        break;
+      }
+    }
+    return { output, iterations };
   }
 
   parseSteps(text: string): PlanStep[] {

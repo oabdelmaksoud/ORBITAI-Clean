@@ -31,7 +31,9 @@ describe('planning.service (dim 9)', () => {
 
   it('formatPlanForPrompt returns "" for empty plan and a block otherwise', () => {
     expect(planningService.formatPlanForPrompt({ steps: [] })).toBe('');
-    const block = planningService.formatPlanForPrompt({ steps: [{ step: 1, description: 'do x' }] });
+    const block = planningService.formatPlanForPrompt({
+      steps: [{ step: 1, description: 'do x' }],
+    });
     expect(block).toContain('EXECUTION PLAN');
     expect(block).toContain('1. do x');
   });
@@ -60,5 +62,25 @@ describe('planning.service (dim 9)', () => {
     const r = await planningService.reflect('t', 'out');
     expect(r.needsRevision).toBe(false);
     expect(executeWithFallback).not.toHaveBeenCalled();
+  });
+
+  it('refineUntilSatisfied loops reflect→revise until no revision is needed', async () => {
+    executeWithFallback
+      .mockResolvedValueOnce({ text: '{"needsRevision":true,"critique":"fix"}' })
+      .mockResolvedValueOnce({ text: '{"needsRevision":false,"critique":""}' });
+    const reviser = vi.fn(async () => 'revised output');
+    const r = await planningService.refineUntilSatisfied('t', 'orig', 'Impl', reviser, 3);
+    expect(reviser).toHaveBeenCalledTimes(1);
+    expect(r.output).toBe('revised output');
+    expect(r.iterations).toBe(1);
+  });
+
+  it('refineUntilSatisfied makes no revision when reflect reports none', async () => {
+    executeWithFallback.mockResolvedValue({ text: '{"needsRevision":false}' });
+    const reviser = vi.fn(async () => 'should-not-be-used');
+    const r = await planningService.refineUntilSatisfied('t', 'orig', 'Impl', reviser, 3);
+    expect(reviser).not.toHaveBeenCalled();
+    expect(r.output).toBe('orig');
+    expect(r.iterations).toBe(0);
   });
 });
