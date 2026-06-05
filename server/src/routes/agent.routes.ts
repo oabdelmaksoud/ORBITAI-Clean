@@ -6,6 +6,7 @@ import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { validate } from '../middleware/validate.js';
 import { executeAgentTaskSchema } from '../validators/agent.validator.js';
+import { agentExecutionEngine } from '../services/agentExecutionEngine.service.js';
 
 const router = express.Router();
 
@@ -47,35 +48,56 @@ router.post(
         throw new AppError('Task not found in project', 404);
       }
 
-      // Forward to the actual execution endpoint
-      // This route is a convenience wrapper that forwards to /api/gemini/execute-task
-      logger.info(`Agent route forwarding execution: agent=${agentId}, task=${taskId}`);
+      // Multi-agent engine (dim 8): actually run the agent against the task via the LLM router
+      // (previously this was a no-op that told the client to call another endpoint).
+      logger.info(`[AgentEngine] Executing agent=${agentId} on task=${taskId}`);
+      const runResult = await agentExecutionEngine.runAgent(
+        {
+          id: agent.id,
+          role: agent.role,
+          name: agent.name,
+          goal: agent.goal,
+          systemPrompt: agent.systemPrompt,
+          preferredLLM: agent.preferredLLM,
+          tools: agent.tools,
+        },
+        task.description || task.title,
+        { userId: req.user!.id, projectId, taskId }
+      );
 
-      // Return success - actual execution happens via /api/gemini/execute-task
-      // The frontend should call that endpoint directly for full functionality
       res.json({
-        success: true,
+        success: runResult.success,
         data: {
-          message: 'Agent task execution should be performed via /api/gemini/execute-task endpoint',
-          taskId,
-          agentId,
-          agent: {
-            id: agent.id,
-            role: agent.role,
-            name: agent.name,
-          },
-          task: {
-            id: task.id,
-            title: task.title,
-            status: task.status,
-          },
-          redirect: {
-            endpoint: '/api/gemini/execute-task',
-            method: 'POST',
-            note: 'Use this endpoint for actual task execution with full features',
-          },
+          output: runResult.output,
+          modelUsed: runResult.modelUsed,
+          error: runResult.error,
+          agent: { id: agent.id, role: agent.role, name: agent.name },
+          task: { id: task.id, title: task.title, status: task.status },
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Run a sequence of agents as a pipeline (multi-agent orchestration — dim 8)
+router.post(
+  '/run-sequence',
+  denyGuests,
+  checkFeatureAccess('agent_creation'),
+  async (req: AuthRequest & FeatureRequest, res, next) => {
+    try {
+      const { agents, task, projectId, taskId } = req.body;
+      if (!Array.isArray(agents) || agents.length === 0 || !task) {
+        throw new AppError('agents (non-empty array) and task are required', 400);
+      }
+      const result = await agentExecutionEngine.runSequence(agents, task, {
+        userId: req.user!.id,
+        projectId,
+        taskId,
+      });
+      res.json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.5 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.7 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -30,7 +30,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 5 | Model routing | 3 | 3 | Unchanged — AI/ML layer still gated/dead. |
 | 6 | Context management | 2 | **4** | `contextManager` token-budgets chat history (keeps most recent within budget, always the latest turn), wired into both chat handlers. Not 5: summarization/compaction of the dropped prefix. |
 | 7 | Memory (cross-session) | 1 | **4** | RAG via `agentMemory`: retrieves role-scoped past experiences (vector search) into the prompt + records task outcomes for future runs (flag-gated `HARNESS_MEMORY_ENABLED`). Not 5: needs a production vector store, always-on, relevance tuning. |
-| 8 | Multi-agent orchestration | 1 | 1 | Unchanged — needs a real execution engine. |
+| 8 | Multi-agent orchestration | 1 | **4** | `agentExecutionEngine`: loads + runs an agent's config via the router (`runAgent`), chains agents into a pipeline (`runSequence`), records `AgentExecution` (feeding the once-empty analytics). `/execute` now really runs; new `/run-sequence` route. Not 5: dynamic team formation + conflict-resolution/messaging wired end-to-end. |
 | 9 | Planning / reflection | 1 | **4** | `planningService`: decomposes a task into an injected execution plan + a bounded reflect→revise self-critique pass in execute-task (flag-gated `HARNESS_PLANNING_ENABLED`). Not 5: multi-step plan tracking + iterative (n>1) refinement loop. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
 | 11 | State & resumability | 2 | 2 | Unchanged — needs checkpointing. |
@@ -44,7 +44,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 These are each a dedicated effort, not a quick edit — listing them honestly rather than claiming 5:
 - **WI-3c message threading** → loop 4→5 (carry a real `messages[]` history instead of stringifying tool results).
 - **Memory (RAG)** → dim 7 (4→5): production vector store + always-on + relevance tuning (retrieval + recording already implemented via `agentMemory`).
-- **Multi-agent engine** → dim 8: replace the dead orchestration cluster with a real sub-agent runtime.
+- **Multi-agent engine** → dim 8 (4→5): dynamic team formation + wiring the conflict-resolution/messaging cluster end-to-end (run + chain + execution recording done).
 - **Planning/reflection** → dim 9 (4→5): multi-step plan tracking + iterative (n>1) refine loop (decomposition + single reflect→revise done).
 - **Context compaction** → dim 6: token-budget + summarization.
 - **Resumability** → dim 11: checkpoint execution state; re-queue interrupted runs at boot.
