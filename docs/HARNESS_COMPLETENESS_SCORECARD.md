@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 2.7 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 2.8 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -36,7 +36,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 11 | State & resumability | 2 | 2 | Unchanged — needs checkpointing. |
 | 12 | Resilience | 2 | **3** | Per-request provider timeout added (WI-6b) + Codex timeout (WI-6a). Not 4: fallback chains still dead. |
 | 13 | Observability | 2 | 2 | Unchanged — no run-level trace yet. |
-| 14 | Evaluation & quality | 3 | 3 | Unchanged. |
+| 14 | Evaluation & quality | 3 | **4** | Fail-closed on eval error (score 0, not 70) — failures no longer masquerade as passing. Not 5: needs golden-set regression in CI + judge-family diversity. |
 | 15 | Testing (of the harness) | 1 | **3** | 25 new tests (loop, registry, providers, security). Not 5: broad coverage + CI gate still needed. |
 | 16 | Cost governance | 2 | 2 | Unchanged — tracking only, no enforcement. |
 
@@ -51,7 +51,7 @@ These are each a dedicated effort, not a quick edit — listing them honestly ra
 - **Routing AI** → dim 5: wire or delete the gated RL/predictive/auto-tune stack.
 - **Observability** → dim 13: per-run `traceId`, write `RoutingDecisionLog`.
 - **Cost enforcement** → dim 16: spend caps that block a run.
-- **Eval integrity** → dim 14: stop fail-open-to-70; golden-set regression in CI.
+- **Eval integrity** → dim 14 (4→5): golden-set regression in CI + judge-family diversity (fail-open already fixed).
 - **Resilience** → dim 12: wire the fallback-chain machinery (currently dead).
 
 ---

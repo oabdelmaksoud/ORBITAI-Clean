@@ -197,12 +197,14 @@ Remember: Your evaluation will be used to refine the task and improve the output
 
     } catch (error: unknown) {
       logger.error('Evaluation failed:', error);
-      
-      // Return a fallback evaluation on error
+
+      // Fail CLOSED: a failed evaluation must NOT masquerade as a passing score. Return 0 so callers
+      // treat it as "not yet evaluated / needs retry" instead of silently accepting a default 70.
+      const message = error instanceof Error ? error.message : 'Unknown error';
       return {
-        score: 70,
-        reasoning: `Evaluation service encountered an error: ${error.message || 'Unknown error'}. Default score assigned.`,
-        criteria: ['Error Fallback'],
+        score: 0,
+        reasoning: `Evaluation could not be completed (${message}). Score withheld pending re-evaluation.`,
+        criteria: ['Evaluation Error'],
         timestamp: Date.now()
       };
     }
