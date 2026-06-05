@@ -17,6 +17,8 @@ import { Type, Schema } from '@google/genai';
 import { evaluationService } from '../services/evaluation.service.js';
 import { agentMemory } from '../services/agentMemory.service.js';
 import { contextManager } from '../services/contextManager.service.js';
+import { requestContext } from '../utils/requestContext.js';
+import { randomUUID } from 'crypto';
 import { detectProjectType } from '../utils/llmRouteHelpers.js';
 import { embeddingService } from '../services/embedding.service.js';
 import { toApiError } from '../errors/ApiError.js';
@@ -25,6 +27,14 @@ import previewRouter from './llm/preview.routes.js';
 export const path = '/api/llm';
 
 const router = express.Router();
+
+// Observability (dim 13): establish a per-request trace context so every downstream log carries a
+// traceId; surface it to clients via the x-trace-id response header.
+router.use((req, res, next) => {
+  const traceId = (req.headers['x-trace-id'] as string) || randomUUID();
+  res.setHeader('x-trace-id', traceId);
+  requestContext.run(traceId, () => next());
+});
 
 // Project preview + prototype generation (split module; must be mounted on /api/llm)
 router.use(previewRouter);

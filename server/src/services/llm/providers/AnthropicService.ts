@@ -87,7 +87,7 @@ export class AnthropicService {
 
       const text = response.content
         .filter(item => item.type === 'text')
-        .map(item => (item as Anthropic.Message.TextBlock).text)
+        .map(item => (item as any).text as string)
         .join('');
 
       // Parse tool_use blocks into functionCalls (mirrors OpenAIService shape)

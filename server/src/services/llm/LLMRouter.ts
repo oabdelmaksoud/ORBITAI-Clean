@@ -388,7 +388,7 @@ class LLMRouter {
 
       // Process function calls if any
       if ((result as any).functionCalls && (result as any).functionCalls.length > 0) {
-        logger.info(`[LLMRouter] Processing ${result.functionCalls.length} function call(s)`);
+        logger.info(`[LLMRouter] Processing ${(result as any).functionCalls.length} function call(s)`);
         const processed = await functionCallProcessor.processWithFunctionCalls(
           result as LLMResponseWithFunctionCalls,
           prompt,

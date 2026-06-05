@@ -1,6 +1,16 @@
 import winston from 'winston';
+import { requestContext } from './requestContext.js';
+
+// Observability (dim 13): stamp the current request's traceId onto every log entry so all logs
+// emitted while handling one request can be correlated.
+const injectTrace = winston.format(info => {
+  const traceId = requestContext.getTraceId();
+  if (traceId) info.traceId = traceId;
+  return info;
+});
 
 const logFormat = winston.format.combine(
+  injectTrace(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
@@ -8,6 +18,7 @@ const logFormat = winston.format.combine(
 );
 
 const consoleFormat = winston.format.combine(
+  injectTrace(),
   winston.format.colorize(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message, ...meta }) => {

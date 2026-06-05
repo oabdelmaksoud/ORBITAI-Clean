@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../../utils/logger.js';
-import { toolRegistry } from '../toolRegistry.service.js';
+import { toolRegistry, ToolDispatchResult } from '../toolRegistry.service.js';
 import { geminiService } from '../gemini.service.js';
 import { openAIService } from './providers/OpenAIService.js';
 import { anthropicService } from './providers/AnthropicService.js';
@@ -91,7 +91,7 @@ export class FunctionCallProcessor {
       // the allowlist; the registry routes to create_mcp_server / google_search / user MCP servers.
       const declaredTools = (tools || []).flatMap((t: any) => t?.functionDeclarations || []);
       const dispatched = await Promise.all(
-        currentResponse.functionCalls.map(async functionCall => {
+        currentResponse.functionCalls.map(async (functionCall): Promise<ToolDispatchResult> => {
           logger.info(`[FunctionCallProcessor] Executing function: ${functionCall.name}`);
           try {
             return await toolRegistry.dispatch(functionCall, declaredTools, {
