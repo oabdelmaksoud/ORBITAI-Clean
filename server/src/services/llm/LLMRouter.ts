@@ -29,6 +29,7 @@ import { apiKeyProvider } from '../apiKeyProvider.service.js';
 import { UserSettings } from '../../models/UserSettings.model.js';
 import { internalTaskRouter } from '../internalTaskRouter.service.js';
 import { generationStatusService } from '../GenerationStatus.service.js';
+import { budgetGuard } from '../budgetGuard.service.js';
 
 import { llmCircuitBreaker } from './CircuitBreaker.js';
 import { toApiError } from '../../errors/ApiError.js';
@@ -156,6 +157,12 @@ class LLMRouter {
       routerType = 'end-user',
     } = params;
     const startTime = Date.now();
+
+    // Cost governance (dim 16): enforce the user's monthly spend cap before any work is done.
+    await budgetGuard.assertWithinBudget(
+      routingContext?.userId,
+      routingContext?.packageLimits?.maxMonthlyBudget
+    );
 
     // If model is explicitly specified, use it (backward compatibility)
     if (context.model) {
