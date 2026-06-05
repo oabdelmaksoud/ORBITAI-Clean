@@ -1,0 +1,76 @@
+# OrbitAI — Agent Harness Completeness Scorecard
+
+> Companion to `HARNESS_ARCHITECTURE.md`. This scores how complete OrbitAI's *internal* agent runtime is **as a harness**, dimension by dimension, with evidence and the single most important gap per row.
+
+## The yardstick & scale
+
+**5 = a production-grade, general-purpose agent runtime** (the bar set by Claude Code, LangGraph, the OpenAI Agents SDK). OrbitAI is a *product*, not a runtime, so a low score is **not** "bad software" — it means "the embedded harness scaffolding is partial." The scale is **reachability-first**, because the defining finding is *exists ≠ wired*:
+
+| Score | Meaning |
+|---|---|
+| **0** | Absent — capability does not exist |
+| **1** | Code exists but is **unreachable / dead / gated-out** (no callers, or reads data nothing writes) |
+| **2** | **Wired but minimal** — runs on a real path, but a stub-level implementation |
+| **3** | **Wired and functional, but shallow** — genuinely used, not hardened |
+| **4** | Wired, functional, reasonably hardened |
+| **5** | Wired + production-hardened |
+
+---
+
+## Scorecard
+
+| # | Dimension | Score | What exists (wired) | Most important gap |
+|---|---|:---:|---|---|
+| 1 | **Agent loop** | **2** | Multi-turn function-call loop, cap 5, error-isolated (`FunctionCallProcessor.ts:56,76`); reachable via `/api/llm/chat`. | Starved on the primary route (`/execute-task` hardcodes `tools=[]`, `llm.routes.ts:447`); sequential only; results passed as a **stringified prompt** (`FCP.ts:176-196`). |
+| 2 | **Tool system** | **1** | Two executable functions: `create_mcp_server` + `google_search` (`agentFunctionHandler.service.ts:35-50`, `FCP.ts:87`). | No tool registry feeding the loop; no arg-schema validation; native OpenAI tool path is **dead code** (`FCP.ts:391-439`). |
+| 3 | **Tool protocol (MCP)** | **2** | Real MCP **client** over stdio/SSE/HTTP/WS (`mcp.service.ts:858-915,1032-1087`). | Not reachable from the loop (only manual `POST /api/mcp/call`); not an MCP **server**; "system servers" aren't MCP (`mcp.service.ts:582-602`). |
+| 4 | **Model abstraction & providers** | **3** | 12 providers wired behind one router; DB-sourced keys; local models supported. | No shared interface/base class (470-line `if/else`); streaming real for **only 2 of 12** (`LLMRouter.ts:526-538`). |
+| 5 | **Model routing / selection** | **3** | Genuine rules + weighted cost/latency/quality scorer, actually the decision-maker (`RoutingEngine.ts:665`). | The "AI/ML" layer (RL/predictive/auto-tune/A-B) is gated-out or dead (see #16); no token-budget input. |
+| 6 | **Context management** | **2** | Last-N history passed to calls (`aiSupportAgent.service.ts:135-140`, `brainstormingAgent.service.ts:123`). | Hardcoded `slice(-10)`; **no token-budgeting, trimming, or summarization/compaction** anywhere. |
+| 7 | **Memory (cross-session)** | **1** | A real knowledge-learning cron updates skill/proficiency stats (`agentKnowledgeAggregator.ts:106-163`). | Plain key-store (not RAG) and **write-only** — knowledge is **never retrieved into an agent's prompt at runtime**. |
+| 8 | **Multi-agent orchestration** | **1** | LLM-driven agent *provisioning* is real (`aiAgentAssignment.routes.ts:281`). | No execution engine; collaboration/conflict/health/rollback have **zero callers** and read collections nothing writes. |
+| 9 | **Planning / reasoning / reflection** | **1** | CUA has a genuine verify→fix→retry loop (`cua.service.ts:1715-1837`), confined to prototype HTML. | Concrete agents are **one-shot LLM calls per phase** (`brainstormingAgent.service.ts`); no planning/decomposition/self-critique in the agent path. |
+| 10 | **Guardrails & permissions** | **2** | JWT auth + tiered IP rate-limits + per-action feature flags (`auth.ts:24`, `rateLimiter.ts:99-113`, `featureCheck.ts:14-44`). | **No spend cap, no HITL/approval, no tool allowlist**; guest tokens bypass verification (`auth.ts:38-46`); **+ critical exec hole (see below)**. |
+| 11 | **State & resumability** | **2** | Conversation/task/job state persisted to MongoDB. | Execution loops are **in-memory** (`backgroundAutoPilotService.ts:104`); no checkpoint and **no resume after crash/restart**. |
+| 12 | **Resilience** | **2** | Provider circuit breaker (`CircuitBreaker.ts:196`) + response cache, both on the hot path. | Elaborate **fallback chains are dead code**; live retry retries the **same** model; **no per-request timeout** (incl. Codex, `CodexCLIService.ts:120-137`). |
+| 13 | **Observability** | **2** | Structured winston JSON logs + per-call cost/usage telemetry (`UsageTracker.ts:60`). | No per-run trace (`traceId` declared, never set); `RoutingDecisionLog` is **read but never written**. |
+| 14 | **Evaluation & quality** | **3** | Real LLM-as-judge rubric wired into autopilot/task paths (`evaluation.service.ts:22-209`). | Self-grades with same model family; **fails open to score 70** (`:201-208`); no golden-set/regression gate in CI. |
+| 15 | **Testing (of the harness)** | **1** | Some router/MCP/route tests exist. | Core (CUA, eval, Codex, rate-limit, websocket) **untested**; runner is inconsistent — root `jest.config.js` is orphaned (jest not installed) while the suite runs on **vitest**. |
+| 16 | **Cost governance** | **2** | Cost is tracked and persisted per call (`UsageTracker.ts:60`); forecasting exists. | **No enforcement** — nothing blocks a run on spend; `llmCostOptimization.service.ts` is unimported dead code with a `record.cost` vs `totalCost` field bug → reports $0. |
+
+### Overall: **≈ 1.9 / 5** — *"broad scaffolding, much of it not wired together."*
+
+The shape is lopsided, and that's the takeaway: a handful of dimensions are genuinely functional (**routing, providers, eval, MCP client, cost telemetry** = 3s), while the things that make a *harness* a harness — **tools, memory, multi-agent orchestration, planning, testing** — sit at **1** (dead or disconnected). The agent loop itself is a **2**: real, but starved on the main route.
+
+---
+
+## Prioritized remediation (highest leverage first)
+
+**P0 — correctness & safety (do first)**
+1. **Un-starve the loop.** Stop hardcoding `tools = []` in `/execute-task` (`llm.routes.ts:447`); forward the client-built tool declarations (`geminiService.ts:748-760`) to the provider. This one change activates the entire loop on the main path. *(Moves #1 toward 3.)*
+2. **Close the exec hole** (tracked as a separate security task): allowlist stdio commands, drop `env:{...process.env}` (`mcp.service.ts:1047`), require confirmation; encrypt MCP secrets (`MCPServer.model.ts:72`); remove guest bypass on sensitive routes; sandbox CUA.
+
+**P1 — make the loop a real harness**
+3. **Real native function-calling** for OpenAI/Anthropic (forward `tools`, parse native `tool_calls`) instead of the single-function regex (`FCP.ts:351,367`); pass results as native tool-result parts, not stringified.
+4. **A tool registry the loop reads** — unify `dynamicToolingService` with the loop; add JSON-schema arg validation + a **per-tool permission/allowlist**.
+5. **Make the MCP client reachable from the loop** (let the model call user MCP tools, not just `google_search`).
+6. **Loop ergonomics** — make `maxIterations` configurable, allow parallel tool calls, add a **per-request timeout** (also fixes Codex hang).
+
+**P2 — depth**
+7. **Context management** — token-budgeting + compaction/summarization instead of `slice(-10)`.
+8. **Close the memory loop** — retrieve `AgentKnowledge` into agent prompts at runtime; consider embeddings/RAG.
+9. **Wire-or-delete the orphans** — decide per component (orchestration cluster, AI/ML routing, fallback chains, CUA vision loop, `RoutingDecisionLog`). Dead code is a maintenance and honesty cost.
+10. **Resumability** — checkpoint execution state; re-queue interrupted runs at boot.
+
+**P3 — hardening**
+11. **Tracing** — set `traceId` per run; write `RoutingDecisionLog`; add run-level correlation.
+12. **Eval integrity** — stop failing open to 70; use a different judge family; add a golden-set regression gate in CI.
+13. **Testing** — standardize on vitest, remove the orphan jest config, cover loop/tools/router/eval.
+
+**Reaching ~3.5/5** mostly takes **P0 + P1**: those unlock the loop, tools, MCP, and safety together — the structural fixes — after which P2/P3 add the depth and hardening.
+
+---
+
+## ⚠ Security callout
+
+The unsandboxed `stdio` command execution (`mcp.service.ts:1047-1051`), plaintext secrets (`MCPServer.model.ts:72`), and `--no-sandbox` CUA under guest auth (`cua.service.ts:83`, `cua.routes.ts:26`) are detailed in `HARNESS_ARCHITECTURE.md` → *Security-critical path*. These warrant a dedicated security remediation pass, not just a scorecard row.
