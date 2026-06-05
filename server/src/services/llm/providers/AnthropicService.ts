@@ -13,11 +13,17 @@ async function getAnthropicApiKey(): Promise<string> {
   if (dbKey) {
     return dbKey;
   }
-  throw new Error('Anthropic API key not configured. Please add it via Admin Console → Settings → API Keys');
+  throw new Error(
+    'Anthropic API key not configured. Please add it via Admin Console → Settings → API Keys'
+  );
 }
 
 export interface LLMResponse {
   text: string;
+  functionCalls?: Array<{
+    name: string;
+    args: Record<string, any>;
+  }>;
   usage: {
     promptTokens: number;
     completionTokens: number;
@@ -29,6 +35,7 @@ export interface LLMConfig {
   systemInstruction?: string;
   temperature?: number;
   maxTokens?: number;
+  tools?: any[]; // Function declarations for Anthropic tool use
 }
 
 export class AnthropicService {
@@ -55,17 +62,27 @@ export class AnthropicService {
     const client = await this.getClient();
 
     try {
+      // Convert incoming tools (functionDeclarations shape) to Anthropic tool format
+      const anthropicTools = (configOptions?.tools ?? []).flatMap((t: any) =>
+        (t.functionDeclarations ?? []).map((f: any) => ({
+          name: f.name,
+          description: f.description,
+          input_schema: f.parameters ?? { type: 'object', properties: {} },
+        }))
+      );
+
       const response = await client.messages.create({
         model,
         max_tokens: configOptions?.maxTokens || 4096,
         temperature: configOptions?.temperature || 0.7,
         system: configOptions?.systemInstruction,
+        tools: anthropicTools.length ? anthropicTools : undefined,
         messages: [
           {
             role: 'user',
-            content: prompt
-          }
-        ]
+            content: prompt,
+          },
+        ],
       });
 
       const text = response.content
@@ -73,14 +90,28 @@ export class AnthropicService {
         .map(item => (item as Anthropic.Message.TextBlock).text)
         .join('');
 
-      return {
+      // Parse tool_use blocks into functionCalls (mirrors OpenAIService shape)
+      const functionCalls = response.content
+        .filter(b => b.type === 'tool_use')
+        .map(b => ({
+          name: (b as any).name as string,
+          args: ((b as any).input ?? {}) as Record<string, any>,
+        }));
+
+      const result: LLMResponse = {
         text,
         usage: {
           promptTokens: response.usage.input_tokens,
           completionTokens: response.usage.output_tokens,
-          totalTokens: response.usage.input_tokens + response.usage.output_tokens
-        }
+          totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+        },
       };
+
+      if (functionCalls.length > 0) {
+        result.functionCalls = functionCalls;
+      }
+
+      return result;
     } catch (error: unknown) {
       const apiError = toApiError(error);
       logger.error('Anthropic API error:', apiError);
@@ -99,7 +130,7 @@ export class AnthropicService {
 
     const result = await this.generateContent(fullPrompt, model, {
       temperature: 0.3,
-      maxTokens: 4096
+      maxTokens: 4096,
     });
 
     try {
@@ -113,7 +144,6 @@ export class AnthropicService {
       throw new Error('Failed to parse structured output');
     }
   }
-
 }
 
 export const anthropicService = new AnthropicService();
