@@ -111,6 +111,22 @@ export class DeepSeekService {
       throw new Error('Failed to parse structured output');
     }
   }
+
+  /**
+   * Generate content as a stream of text chunks.
+   * DeepSeek does not stream here; yields the full text once as a fallback
+   * to satisfy the shared provider streaming interface.
+   */
+  async *generateContentStream(
+    prompt: string,
+    model: string,
+    configOptions?: LLMConfig
+  ): AsyncGenerator<string, void, unknown> {
+    const result = await this.generateContent(prompt, model, configOptions);
+    if (result.text) {
+      yield result.text;
+    }
+  }
 }
 
 export const deepSeekService = new DeepSeekService();

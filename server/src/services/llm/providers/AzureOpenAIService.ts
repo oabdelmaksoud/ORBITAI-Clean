@@ -145,6 +145,31 @@ class AzureOpenAIService {
   }
 
   /**
+   * Generate content as a stream of text chunks.
+   * Azure OpenAI does not stream here; yields the full text once as a fallback
+   * so streaming is uniformly available. Mirrors this provider's own
+   * (model, messages, options) generateContent signature.
+   */
+  async *generateContentStream(
+    model: string,
+    messages: Array<{ role: string; content: string }>,
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      tools?: any[];
+      toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
+    }
+  ): AsyncGenerator<string, void, unknown> {
+    const result = await this.generateContent(model, messages, options);
+    if (result.text) {
+      yield result.text;
+    }
+  }
+
+  /**
    * Convert generic tools to Azure OpenAI format (OpenAI-compatible)
    */
   convertToolsToAzureFormat(tools: any[]): any[] {

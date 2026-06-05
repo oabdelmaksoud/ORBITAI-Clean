@@ -6,6 +6,7 @@ import { toApiError } from '../../../errors/ApiError.js';
 
 import OpenAI from 'openai';
 import { apiKeyProvider } from '../../apiKeyProvider.service.js';
+import { codexCLIService } from './CodexCLIService.js';
 
 // Get API key from database ONLY (no env fallback for security)
 async function getOpenAIApiKey(): Promise<string> {
@@ -14,6 +15,10 @@ async function getOpenAIApiKey(): Promise<string> {
     return dbKey;
   }
   throw new Error('OpenAI API key not configured. Please add it via Admin Console → Settings → API Keys');
+}
+
+function useCodexCLI(): boolean {
+  return (process.env.USE_CODEX_CLI || '').toLowerCase() === 'true';
 }
 
 export interface LLMResponse {
@@ -45,6 +50,9 @@ export class OpenAIService {
   }
 
   async isAvailable(): Promise<boolean> {
+    if (useCodexCLI()) {
+      return codexCLIService.isAvailable();
+    }
     try {
       const apiKey = await getOpenAIApiKey();
       return !!apiKey && apiKey.trim().length > 0;
@@ -58,6 +66,10 @@ export class OpenAIService {
     model: string,
     configOptions?: LLMConfig
   ): Promise<LLMResponse> {
+    if (useCodexCLI()) {
+      logger.info('[OpenAIService] Routing generateContent through Codex CLI');
+      return codexCLIService.generateContent(prompt, model, configOptions);
+    }
     const client = await this.getClient();
 
     try {
@@ -140,6 +152,10 @@ export class OpenAIService {
     schema: any,
     model: string = 'gpt-4o'
   ): Promise<any> {
+    if (useCodexCLI()) {
+      logger.info('[OpenAIService] Routing generateStructuredOutput through Codex CLI');
+      return codexCLIService.generateStructuredOutput(prompt, schema, model);
+    }
     const systemPrompt = `You are a helpful assistant that returns JSON responses matching the provided schema.`;
 
     const result = await this.generateContent(
@@ -171,6 +187,11 @@ export class OpenAIService {
     model: string,
     configOptions?: LLMConfig
   ): AsyncGenerator<string, void, unknown> {
+    if (useCodexCLI()) {
+      logger.info('[OpenAIService] Routing generateContentStream through Codex CLI');
+      yield* codexCLIService.generateContentStream(prompt, model, configOptions);
+      return;
+    }
     const client = await this.getClient();
 
     try {

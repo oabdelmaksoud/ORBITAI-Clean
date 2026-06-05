@@ -136,6 +136,29 @@ class VertexService {
   }
 
   /**
+   * Generate content as a stream of text chunks.
+   * Vertex does not stream here; yields the full text once as a fallback so
+   * streaming is uniformly available. Mirrors this provider's own
+   * (model, messages, options) generateContent signature.
+   */
+  async *generateContentStream(
+    model: string,
+    messages: Array<{ role: string; content: string }>,
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      tools?: any[];
+      useInternet?: boolean;
+    }
+  ): AsyncGenerator<string, void, unknown> {
+    const result = await this.generateContent(model, messages, options);
+    if (result.text) {
+      yield result.text;
+    }
+  }
+
+  /**
    * Convert chat messages to Gemini prompt format
    */
   private convertMessagesToPrompt(messages: Array<{ role: string; content: string }>): string {

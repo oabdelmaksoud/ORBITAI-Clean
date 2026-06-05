@@ -229,6 +229,22 @@ export class MistralService {
     }
   }
 
+  /**
+   * Generate content as a stream of text chunks.
+   * Mistral does not stream here; yields the full text once as a fallback
+   * to satisfy the shared provider streaming interface.
+   */
+  async *generateContentStream(
+    prompt: string,
+    model: string,
+    configOptions?: LLMConfig
+  ): AsyncGenerator<string, void, unknown> {
+    const result = await this.generateContent(prompt, model, configOptions);
+    if (result.text) {
+      yield result.text;
+    }
+  }
+
 }
 
 export const mistralService = new MistralService();

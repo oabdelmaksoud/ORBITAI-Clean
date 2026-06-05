@@ -37,10 +37,10 @@ export class CodexCLIService {
 
   async isAvailable(): Promise<boolean> {
     if (!this.isEnabled()) return false;
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const child = spawn(this.binary, ['--version'], { stdio: 'ignore' });
       child.on('error', () => resolve(false));
-      child.on('exit', (code) => resolve(code === 0));
+      child.on('exit', code => resolve(code === 0));
     });
   }
 
@@ -57,7 +57,11 @@ export class CodexCLIService {
     };
   }
 
-  async generateStructuredOutput(prompt: string, _schema: unknown, model: string): Promise<unknown> {
+  async generateStructuredOutput(
+    prompt: string,
+    _schema: unknown,
+    model: string
+  ): Promise<unknown> {
     const composed = this.composePrompt(
       `${prompt}\n\nReturn ONLY a valid JSON object. No prose, no code fences.`,
       { responseFormat: { type: 'json_object' } }
@@ -94,12 +98,7 @@ export class CodexCLIService {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'orbitai-codex-'));
     const outFile = path.join(tmpDir, `out-${randomUUID()}.txt`);
     try {
-      const args = [
-        'exec',
-        '--skip-git-repo-check',
-        '-o', outFile,
-        '--color', 'never',
-      ];
+      const args = ['exec', '--skip-git-repo-check', '-o', outFile, '--color', 'never'];
       // Caller-supplied model names (e.g. "gpt-4o", "gpt-5-codex") are upstream
       // OpenAI identifiers and are usually rejected when Codex is authed via a
       // ChatGPT account. Only forward an explicit override via CODEX_CLI_MODEL.
@@ -137,20 +136,32 @@ export class CodexCLIService {
       const timer = setTimeout(() => {
         child.kill('SIGTERM');
         // Escalate to SIGKILL if SIGTERM is ignored.
-        setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* already gone */ } }, 5_000).unref?.();
+        setTimeout(() => {
+          try {
+            child.kill('SIGKILL');
+          } catch {
+            /* already gone */
+          }
+        }, 5_000).unref?.();
         logger.error('[CodexCLI] codex exec timed out', { timeoutMs });
         finish(() => reject(new Error(`Codex CLI timed out after ${timeoutMs}ms`)));
       }, timeoutMs);
       timer.unref?.();
-      child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-      child.stdout.on('data', () => { /* drain */ });
-      child.on('error', (err) => finish(() => reject(err)));
-      child.on('exit', (code) => finish(() => {
-        if (code === 0) return resolve();
-        const trimmed = stderr.trim().slice(-500) || `exit code ${code}`;
-        logger.error('[CodexCLI] codex exec failed', { code, stderr: trimmed });
-        reject(new Error(`Codex CLI failed: ${trimmed}`));
-      }));
+      child.stderr.on('data', chunk => {
+        stderr += chunk.toString();
+      });
+      child.stdout.on('data', () => {
+        /* drain */
+      });
+      child.on('error', err => finish(() => reject(err)));
+      child.on('exit', code =>
+        finish(() => {
+          if (code === 0) return resolve();
+          const trimmed = stderr.trim().slice(-500) || `exit code ${code}`;
+          logger.error('[CodexCLI] codex exec failed', { code, stderr: trimmed });
+          reject(new Error(`Codex CLI failed: ${trimmed}`));
+        })
+      );
     });
   }
 }

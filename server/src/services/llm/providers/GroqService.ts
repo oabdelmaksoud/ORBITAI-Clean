@@ -130,6 +130,31 @@ class GroqService {
   }
 
   /**
+   * Generate content as a stream of text chunks.
+   * Groq does not stream here; yields the full text once as a fallback so
+   * streaming is uniformly available. Mirrors this provider's own
+   * (model, messages, options) generateContent signature.
+   */
+  async *generateContentStream(
+    model: string,
+    messages: Array<{ role: string; content: string }>,
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      tools?: any[];
+      toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
+    }
+  ): AsyncGenerator<string, void, unknown> {
+    const result = await this.generateContent(model, messages, options);
+    if (result.text) {
+      yield result.text;
+    }
+  }
+
+  /**
    * Convert generic tools to Groq format (OpenAI-compatible)
    */
   convertToolsToGroqFormat(tools: any[]): any[] {
