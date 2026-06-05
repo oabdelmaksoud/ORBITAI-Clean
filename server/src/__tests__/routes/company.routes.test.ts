@@ -1,20 +1,32 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import companyRoutes from '../../src/routes/company.routes.js';
-import { CustomAgent } from '../../src/models/CustomAgent.model.js';
 
-// Mock dependencies
-jest.mock('../../src/middleware/auth.js', () => ({
-  authenticateToken: (req: any, res: any, next: any) => {
+// ── Mocks ──────────────────────────────────────────────────────────────────
+// vi.mock is hoisted, so factories must not reference out-of-scope variables.
+
+vi.mock('../../middleware/auth.js', () => ({
+  authenticateToken: (req: any, _res: any, next: any) => {
     req.user = { id: 'test-user-id', email: 'test@test.com' };
     next();
-  }
+  },
 }));
+
+vi.mock('../../models/CustomAgent.model.js', () => ({
+  CustomAgent: {
+    find: vi.fn(),
+    countDocuments: vi.fn(),
+  },
+}));
+
+import companyRoutes from '../../routes/company.routes.js';
+import { CustomAgent } from '../../models/CustomAgent.model.js';
 
 describe('Company Routes - Agent Hierarchy', () => {
   let app: express.Application;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     app = express();
     app.use(express.json());
     app.use('/api/company', companyRoutes);
@@ -39,8 +51,8 @@ describe('Company Routes - Agent Hierarchy', () => {
             role: 'Orchestrator',
             reportsTo: null,
             userId: 'test-user-id',
-            isActive: true
-          })
+            isActive: true,
+          }),
         },
         {
           _id: 'agent-2',
@@ -57,32 +69,29 @@ describe('Company Routes - Agent Hierarchy', () => {
             role: 'Implementation Agent',
             reportsTo: 'agent-1',
             userId: 'test-user-id',
-            isActive: true
-          })
-        }
+            isActive: true,
+          }),
+        },
       ];
 
-      // Mock CustomAgent.find
-      (CustomAgent.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          skip: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue({
-              populate: jest.fn().mockReturnValue({
-                exec: jest.fn().mockResolvedValue(mockAgents)
-              })
-            })
-          })
+      // The route calls CustomAgent.find twice: first the chainable paginated
+      // query (.sort().skip().limit().populate().exec()), then a .distinct()
+      // query to discover which agents have direct reports.
+      (CustomAgent.find as any)
+        .mockReturnValueOnce({
+          sort: vi.fn().mockReturnThis(),
+          skip: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          populate: vi.fn().mockReturnThis(),
+          exec: vi.fn().mockResolvedValue(mockAgents),
         })
-      });
+        .mockReturnValueOnce({
+          distinct: vi.fn().mockResolvedValue(['agent-1']),
+        });
 
-      (CustomAgent.countDocuments as jest.Mock).mockResolvedValue(2);
-      (CustomAgent.find as jest.Mock).mockReturnValueOnce({
-        distinct: jest.fn().mockResolvedValue(['agent-1'])
-      });
+      (CustomAgent.countDocuments as any).mockResolvedValue(2);
 
-      const response = await request(app)
-        .get('/api/company/agents')
-        .query({ page: 1, limit: 20 });
+      const response = await request(app).get('/api/company/agents').query({ page: 1, limit: 20 });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

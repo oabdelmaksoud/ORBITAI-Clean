@@ -1,5 +1,9 @@
 /**
  * Feature Flags Service Tests
+ *
+ * The FeatureFlag model is mocked, so no DB is required. The source resolves
+ * flags via `FeatureFlag.findOne({...}).lean()`, so the mock must return an
+ * object exposing a `lean()` method.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -16,38 +20,43 @@ vi.mock('../../utils/logger.js', () => ({
   },
 }));
 
+// Helper: make FeatureFlag.findOne(...).lean() resolve to `flag`.
+function mockFindOneLean(flag: unknown) {
+  vi.mocked(FeatureFlag.findOne).mockReturnValue({
+    lean: vi.fn().mockResolvedValue(flag),
+  } as any);
+}
+
 describe('FeatureFlags Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('isFeatureEnabled', () => {
-    it('should return true when feature flag is active', async () => {
-      const mockFlag = {
+    it('should return true when flag is active and role has access', async () => {
+      mockFindOneLean({
         featureKey: 'test_feature',
         isActive: true,
-      };
-
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(mockFlag as any);
+        enabledEnvironments: [],
+        enabledRoles: ['public'],
+      });
 
       const result = await isFeatureEnabled('test_feature');
       expect(result).toBe(true);
     });
 
     it('should return false when feature flag is inactive', async () => {
-      const mockFlag = {
+      mockFindOneLean({
         featureKey: 'test_feature',
         isActive: false,
-      };
-
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(mockFlag as any);
+      });
 
       const result = await isFeatureEnabled('test_feature');
       expect(result).toBe(false);
     });
 
     it('should return true when feature flag does not exist (default behavior)', async () => {
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(null);
+      mockFindOneLean(null);
 
       const result = await isFeatureEnabled('non_existent_feature');
       expect(result).toBe(true);
@@ -55,7 +64,9 @@ describe('FeatureFlags Service', () => {
     });
 
     it('should handle errors gracefully and return true', async () => {
-      vi.mocked(FeatureFlag.findOne).mockRejectedValue(new Error('Database error'));
+      vi.mocked(FeatureFlag.findOne).mockReturnValue({
+        lean: vi.fn().mockRejectedValue(new Error('Database error')),
+      } as any);
 
       const result = await isFeatureEnabled('test_feature');
       expect(result).toBe(true);
@@ -63,12 +74,11 @@ describe('FeatureFlags Service', () => {
     });
 
     it('should normalize feature key to lowercase', async () => {
-      const mockFlag = {
+      mockFindOneLean({
         featureKey: 'test_feature',
         isActive: true,
-      };
-
-      vi.mocked(FeatureFlag.findOne).mockResolvedValue(mockFlag as any);
+        enabledRoles: ['public'],
+      });
 
       await isFeatureEnabled('TEST_FEATURE');
       expect(FeatureFlag.findOne).toHaveBeenCalledWith({

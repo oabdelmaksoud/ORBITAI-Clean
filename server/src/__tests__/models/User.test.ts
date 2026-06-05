@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { User } from '../../models/User.model.js';
 import mongoose from 'mongoose';
+import { hasMongo } from '../helpers/testEnv.js';
 
-describe('User Model', () => {
+// Requires a reachable MongoDB server (TEST_MONGODB_URI / MONGODB_URI).
+describe.skipIf(!hasMongo)('User Model', () => {
   beforeEach(async () => {
     await User.deleteMany({});
   });
@@ -12,7 +14,7 @@ describe('User Model', () => {
       const userData = {
         email: 'test@example.com',
         password: 'SecurePassword123!',
-        name: 'Test User'
+        name: 'Test User',
       };
 
       const user = await User.create(userData);
@@ -31,7 +33,7 @@ describe('User Model', () => {
       const user = await User.create({
         email: 'hash@example.com',
         password,
-        name: 'Test User'
+        name: 'Test User',
       });
 
       expect(user.password).not.toBe(password);
@@ -42,7 +44,7 @@ describe('User Model', () => {
       await expect(
         User.create({
           password: 'Password123!',
-          name: 'Test User'
+          name: 'Test User',
         })
       ).rejects.toThrow();
     });
@@ -51,7 +53,7 @@ describe('User Model', () => {
       await expect(
         User.create({
           email: 'test@example.com',
-          name: 'Test User'
+          name: 'Test User',
         })
       ).rejects.toThrow();
     });
@@ -60,7 +62,7 @@ describe('User Model', () => {
       await expect(
         User.create({
           email: 'test@example.com',
-          password: 'Password123!'
+          password: 'Password123!',
         })
       ).rejects.toThrow();
     });
@@ -71,14 +73,14 @@ describe('User Model', () => {
       await User.create({
         email,
         password: 'Password123!',
-        name: 'First User'
+        name: 'First User',
       });
 
       await expect(
         User.create({
           email,
           password: 'Password123!',
-          name: 'Second User'
+          name: 'Second User',
         })
       ).rejects.toThrow();
     });
@@ -88,7 +90,7 @@ describe('User Model', () => {
         User.create({
           email: 'invalid-email',
           password: 'Password123!',
-          name: 'Test User'
+          name: 'Test User',
         })
       ).rejects.toThrow();
     });
@@ -97,7 +99,7 @@ describe('User Model', () => {
       const user = await User.create({
         email: 'TEST@EXAMPLE.COM',
         password: 'Password123!',
-        name: 'Test User'
+        name: 'Test User',
       });
 
       expect(user.email).toBe('test@example.com');
@@ -110,7 +112,7 @@ describe('User Model', () => {
       const user = await User.create({
         email: 'compare@example.com',
         password,
-        name: 'Test User'
+        name: 'Test User',
       });
 
       const isValid = await user.comparePassword(password);
@@ -126,7 +128,7 @@ describe('User Model', () => {
       const user = await User.create({
         email: 'default@example.com',
         password: 'Password123!',
-        name: 'Test User'
+        name: 'Test User',
       });
 
       expect(user.plan).toBe('Free');
@@ -136,7 +138,7 @@ describe('User Model', () => {
       const user = await User.create({
         email: 'role@example.com',
         password: 'Password123!',
-        name: 'Test User'
+        name: 'Test User',
       });
 
       expect(user.role).toBe('user');
@@ -146,7 +148,7 @@ describe('User Model', () => {
       const user = await User.create({
         email: 'active@example.com',
         password: 'Password123!',
-        name: 'Test User'
+        name: 'Test User',
       });
 
       expect(user.isActive).toBe(true);

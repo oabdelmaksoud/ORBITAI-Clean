@@ -5,12 +5,14 @@ import adminRoutes from '../../routes/admin.routes.js';
 import { createTestAdmin, createTestUser, getAuthHeaders } from '../helpers/testHelpers.js';
 import { User } from '../../models/User.model.js';
 import { Project } from '../../models/Project.model.js';
+import { hasMongo } from '../helpers/testEnv.js';
 
 const app = express();
 app.use(express.json());
 app.use('/api/admin', adminRoutes);
 
-describe('Admin Routes', () => {
+// Requires a reachable MongoDB server (createTestAdmin/User/Project persist to mongoose).
+describe.skipIf(!hasMongo)('Admin Routes', () => {
   let adminUser: Awaited<ReturnType<typeof createTestAdmin>>;
   let adminHeaders: ReturnType<typeof getAuthHeaders>;
   let regularUser: Awaited<ReturnType<typeof createTestUser>>;
@@ -25,17 +27,12 @@ describe('Admin Routes', () => {
 
   describe('GET /api/admin/dashboard', () => {
     it('should require authentication', async () => {
-      await request(app)
-        .get('/api/admin/dashboard')
-        .expect(401);
+      await request(app).get('/api/admin/dashboard').expect(401);
     });
 
     it('should require admin role', async () => {
       const userHeaders = getAuthHeaders(regularUser.token);
-      await request(app)
-        .get('/api/admin/dashboard')
-        .set(userHeaders)
-        .expect(403);
+      await request(app).get('/api/admin/dashboard').set(userHeaders).expect(403);
     });
 
     it('should get dashboard statistics for admin', async () => {
@@ -47,13 +44,10 @@ describe('Admin Routes', () => {
         description: 'Test',
         userId: regularUser._id,
         currentPhase: 'planning',
-        methodology: 'agile'
+        methodology: 'agile',
       });
 
-      const response = await request(app)
-        .get('/api/admin/dashboard')
-        .set(adminHeaders)
-        .expect(200);
+      const response = await request(app).get('/api/admin/dashboard').set(adminHeaders).expect(200);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data).toHaveProperty('stats');
@@ -71,10 +65,7 @@ describe('Admin Routes', () => {
       await createTestUser({ email: 'user1@example.com' });
       await createTestUser({ email: 'user2@example.com' });
 
-      const response = await request(app)
-        .get('/api/admin/users')
-        .set(adminHeaders)
-        .expect(200);
+      const response = await request(app).get('/api/admin/users').set(adminHeaders).expect(200);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data).toHaveProperty('users');

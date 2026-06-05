@@ -10,7 +10,15 @@ import authRoutes from '../routes/auth.routes.js';
 import projectRoutes from '../routes/project.routes.js';
 import taskRoutes from '../routes/task.routes.js';
 import agentRoutes from '../routes/agent.routes.js';
-import { setupTestEnv, teardownTestEnv, cleanupTestData, createTestUser, createTestProject, getAuthHeaders } from './helpers/testHelpers.js';
+import {
+  setupTestEnv,
+  teardownTestEnv,
+  cleanupTestData,
+  createTestUser,
+  createTestProject,
+  getAuthHeaders,
+} from './helpers/testHelpers.js';
+import { hasMongo } from './helpers/testEnv.js';
 
 const app = express();
 app.use(express.json());
@@ -19,7 +27,8 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/agents', agentRoutes);
 
-describe('Integration Tests - Complete Workflows', () => {
+// Requires a reachable MongoDB server (setupTestEnv connects via mongoose).
+describe.skipIf(!hasMongo)('Integration Tests - Complete Workflows', () => {
   let authToken: string;
   let userId: string;
 
@@ -28,7 +37,7 @@ describe('Integration Tests - Complete Workflows', () => {
     await cleanupTestData();
     const { user, token } = await createTestUser({
       email: 'integration@example.com',
-      name: 'Integration User'
+      name: 'Integration User',
     });
     authToken = token;
     userId = user._id.toString();
@@ -48,12 +57,10 @@ describe('Integration Tests - Complete Workflows', () => {
       const registerData = {
         email: `workflow-${Date.now()}@example.com`,
         password: 'Workflow@1234',
-        name: 'Workflow User'
+        name: 'Workflow User',
       };
 
-      const registerResponse = await request(app)
-        .post('/api/auth/register')
-        .send(registerData);
+      const registerResponse = await request(app).post('/api/auth/register').send(registerData);
 
       expect(registerResponse.status).toBe(201);
       expect(registerResponse.body.data).toHaveProperty('user');
@@ -61,20 +68,16 @@ describe('Integration Tests - Complete Workflows', () => {
       const workflowToken = registerResponse.body.data.token;
 
       // Step 2: Login with registered user
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: registerData.email,
-          password: registerData.password
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: registerData.email,
+        password: registerData.password,
+      });
 
       expect(loginResponse.status).toBe(200);
       expect(loginResponse.body.data).toHaveProperty('token');
 
       // Step 3: Get current user
-      const meResponse = await request(app)
-        .get('/api/auth/me')
-        .set(getAuthHeaders(workflowToken));
+      const meResponse = await request(app).get('/api/auth/me').set(getAuthHeaders(workflowToken));
 
       expect(meResponse.status).toBe(200);
       expect(meResponse.body.data.user.email).toBe(registerData.email.toLowerCase());
@@ -83,7 +86,7 @@ describe('Integration Tests - Complete Workflows', () => {
       const projectData = {
         name: 'Workflow Test Project',
         description: 'Testing complete workflow',
-        methodology: 'V-Model'
+        methodology: 'V-Model',
       };
 
       const projectResponse = await request(app)
@@ -97,7 +100,7 @@ describe('Integration Tests - Complete Workflows', () => {
       // Step 5: Update project
       const updateData = {
         name: 'Updated Workflow Project',
-        currentPhase: 'Requirements'
+        currentPhase: 'Requirements',
       };
 
       const updateResponse = await request(app)
@@ -132,31 +135,25 @@ describe('Integration Tests - Complete Workflows', () => {
       const email = `auth-${Date.now()}@example.com`;
 
       // Register
-      const registerResponse = await request(app)
-        .post('/api/auth/register')
-        .send({
-          email,
-          password: 'Auth@1234',
-          name: 'Auth User'
-        });
+      const registerResponse = await request(app).post('/api/auth/register').send({
+        email,
+        password: 'Auth@1234',
+        name: 'Auth User',
+      });
 
       expect(registerResponse.status).toBe(201);
       const token = registerResponse.body.data.token;
 
       // Login
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email,
-          password: 'Auth@1234'
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email,
+        password: 'Auth@1234',
+      });
 
       expect(loginResponse.status).toBe(200);
 
       // Get Profile (should work)
-      const profileResponse = await request(app)
-        .get('/api/auth/me')
-        .set(getAuthHeaders(token));
+      const profileResponse = await request(app).get('/api/auth/me').set(getAuthHeaders(token));
 
       expect(profileResponse.status).toBe(200);
       expect(profileResponse.body.data.user.email).toBe(email.toLowerCase());
@@ -164,18 +161,15 @@ describe('Integration Tests - Complete Workflows', () => {
 
     it('should reject invalid authentication attempts', async () => {
       // Invalid login
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'nonexistent@example.com',
-          password: 'WrongPassword'
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: 'nonexistent@example.com',
+        password: 'WrongPassword',
+      });
 
       expect(loginResponse.status).toBe(401);
 
       // Access protected route without token
-      const protectedResponse = await request(app)
-        .get('/api/projects');
+      const protectedResponse = await request(app).get('/api/projects');
 
       expect(protectedResponse.status).toBe(401);
     });
@@ -193,7 +187,7 @@ describe('Integration Tests - Complete Workflows', () => {
         .send({
           name: 'Lifecycle Project',
           description: 'Testing lifecycle',
-          methodology: 'Agile'
+          methodology: 'Agile',
         });
 
       expect(createResponse.status).toBe(201);
@@ -213,7 +207,7 @@ describe('Integration Tests - Complete Workflows', () => {
         .set(getAuthHeaders(token))
         .send({
           name: 'Updated Lifecycle Project',
-          description: 'Updated description'
+          description: 'Updated description',
         });
 
       expect(updateResponse.status).toBe(200);
@@ -236,7 +230,7 @@ describe('Integration Tests - Complete Workflows', () => {
       // Try to create project with invalid data (should fail validation)
       const invalidProject = {
         name: 'ab', // Too short
-        description: 'Test'
+        description: 'Test',
       };
 
       const invalidResponse = await request(app)
@@ -250,7 +244,7 @@ describe('Integration Tests - Complete Workflows', () => {
       const validProject = {
         name: 'Valid Project Name',
         description: 'Valid description',
-        methodology: 'V-Model'
+        methodology: 'V-Model',
       };
 
       const validResponse = await request(app)
@@ -266,10 +260,10 @@ describe('Integration Tests - Complete Workflows', () => {
     it('should isolate projects between users', async () => {
       // Create two users
       const { user: user1, token: token1 } = await createTestUser({
-        email: 'user1@example.com'
+        email: 'user1@example.com',
       });
       const { user: user2, token: token2 } = await createTestUser({
-        email: 'user2@example.com'
+        email: 'user2@example.com',
       });
 
       // User 1 creates project
@@ -278,16 +272,14 @@ describe('Integration Tests - Complete Workflows', () => {
         .set(getAuthHeaders(token1))
         .send({
           name: 'User 1 Project',
-          description: 'Private project'
+          description: 'Private project',
         });
 
       expect(projectResponse.status).toBe(201);
       const projectId = projectResponse.body.data.project._id;
 
       // User 2 should not see User 1's project
-      const user2Projects = await request(app)
-        .get('/api/projects')
-        .set(getAuthHeaders(token2));
+      const user2Projects = await request(app).get('/api/projects').set(getAuthHeaders(token2));
 
       expect(user2Projects.status).toBe(200);
       const user2ProjectIds = user2Projects.body.data.projects.map((p: any) => p.id);

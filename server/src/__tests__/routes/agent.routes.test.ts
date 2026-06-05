@@ -14,6 +14,8 @@ vi.mock('../../middleware/auth.js', () => ({
     req.user = { id: 'test-user-id', email: 'test@example.com' };
     next();
   }),
+  // agent.routes also imports denyGuests; mock it as a pass-through.
+  denyGuests: vi.fn((_req: any, _res: any, next: any) => next()),
 }));
 
 vi.mock('../../middleware/featureCheck.js', () => ({
@@ -26,6 +28,15 @@ vi.mock('../../middleware/validate.js', () => ({
 
 vi.mock('../../validators/agent.validator.js', () => ({
   executeAgentTaskSchema: {},
+}));
+
+// The /execute handler runs the agent via agentExecutionEngine.runAgent, which
+// internally resolves API keys from the DB. Mock the engine so no DB/LLM is hit.
+vi.mock('../../services/agentExecutionEngine.service.js', () => ({
+  agentExecutionEngine: {
+    runAgent: vi.fn(),
+    runSequence: vi.fn(),
+  },
 }));
 
 const mockProject = {
@@ -51,6 +62,7 @@ vi.mock('../../models/Project.model.js', () => ({
 }));
 
 import { Project } from '../../models/Project.model.js';
+import { agentExecutionEngine } from '../../services/agentExecutionEngine.service.js';
 
 // ── App setup ──────────────────────────────────────────────────────────────
 
@@ -75,10 +87,7 @@ describe('Agent Routes', () => {
     it('returns 400 when required fields are missing', async () => {
       (Project.findOne as any).mockResolvedValue(null);
 
-      const res = await request(app)
-        .post('/api/agents/execute')
-        .send({})
-        .expect(400);
+      const res = await request(app).post('/api/agents/execute').send({}).expect(400);
 
       expect(res.body.success).toBe(false);
       expect(res.body.message).toMatch(/required/i);
@@ -120,8 +129,17 @@ describe('Agent Routes', () => {
       expect(res.body.message).toMatch(/task not found/i);
     });
 
-    it('returns success with redirect info when project/agent/task found', async () => {
+    it('runs the agent and returns its output when project/agent/task found', async () => {
+      // The /execute handler now actually runs the agent (dim 8) instead of
+      // redirecting the client to another endpoint, so assert the run result.
       (Project.findOne as any).mockResolvedValue(mockProject);
+      vi.mocked(agentExecutionEngine.runAgent).mockResolvedValue({
+        agentId: 'agent-1',
+        role: 'Developer',
+        output: 'done',
+        modelUsed: 'gemini-2.0',
+        success: true,
+      } as any);
 
       const res = await request(app)
         .post('/api/agents/execute')
@@ -129,9 +147,10 @@ describe('Agent Routes', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.agentId).toBe('agent-1');
-      expect(res.body.data.taskId).toBe('task-1');
-      expect(res.body.data.redirect.endpoint).toBe('/api/gemini/execute-task');
+      expect(res.body.data.output).toBe('done');
+      expect(res.body.data.modelUsed).toBe('gemini-2.0');
+      expect(res.body.data.agent.id).toBe('agent-1');
+      expect(res.body.data.task.id).toBe('task-1');
     });
   });
 
@@ -139,9 +158,7 @@ describe('Agent Routes', () => {
 
   describe('GET /api/agents/status/:agentId', () => {
     it('returns 400 when projectId query param is missing', async () => {
-      const res = await request(app)
-        .get('/api/agents/status/agent-1')
-        .expect(400);
+      const res = await request(app).get('/api/agents/status/agent-1').expect(400);
 
       expect(res.body.success).toBe(false);
       expect(res.body.message).toMatch(/project id is required/i);
@@ -180,7 +197,7 @@ describe('Agent Routes', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.agentId).toBe('agent-1');
       expect(res.body.data.status).toBe('active'); // Developer has 1 In Progress task
-      expect(res.body.data.tasks.total).toBe(2);   // Developer has 2 tasks
+      expect(res.body.data.tasks.total).toBe(2); // Developer has 2 tasks
       expect(res.body.data.tasks.active).toBe(1);
       expect(res.body.data.tasks.pending).toBe(1);
     });

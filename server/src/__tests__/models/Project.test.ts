@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Project } from '../../models/Project.model.js';
 import { Types } from 'mongoose';
+import { hasMongo } from '../helpers/testEnv.js';
 
-describe('Project Model', () => {
+// Requires a reachable MongoDB server (TEST_MONGODB_URI / MONGODB_URI).
+describe.skipIf(!hasMongo)('Project Model', () => {
   beforeEach(async () => {
     await Project.deleteMany({});
   });
@@ -14,7 +16,7 @@ describe('Project Model', () => {
         name: 'Test Project',
         description: 'Test Description',
         currentPhase: 'planning',
-        methodology: 'Agile'
+        methodology: 'Agile',
       };
 
       const project = await Project.create(projectData);
@@ -29,7 +31,7 @@ describe('Project Model', () => {
     it('should set default values', async () => {
       const project = await Project.create({
         userId: new Types.ObjectId().toString(),
-        name: 'Default Project'
+        name: 'Default Project',
       });
 
       expect(project.currentPhase).toBe('Initiation');
@@ -48,7 +50,7 @@ describe('Project Model', () => {
     it('should require userId', async () => {
       await expect(
         Project.create({
-          name: 'Test Project'
+          name: 'Test Project',
         })
       ).rejects.toThrow();
     });
@@ -56,7 +58,7 @@ describe('Project Model', () => {
     it('should require name', async () => {
       await expect(
         Project.create({
-          userId: new Types.ObjectId().toString()
+          userId: new Types.ObjectId().toString(),
         })
       ).rejects.toThrow();
     });
@@ -66,7 +68,7 @@ describe('Project Model', () => {
         Project.create({
           userId: new Types.ObjectId().toString(),
           name: 'Test Project',
-          methodology: 'InvalidMethodology'
+          methodology: 'InvalidMethodology',
         })
       ).rejects.toThrow();
     });
@@ -78,7 +80,7 @@ describe('Project Model', () => {
         const project = await Project.create({
           userId: new Types.ObjectId().toString(),
           name: `Test ${methodology}`,
-          methodology
+          methodology,
         });
         expect(project.methodology).toBe(methodology);
       }
@@ -92,8 +94,8 @@ describe('Project Model', () => {
         name: 'Budget Project',
         budget: {
           cap: 5000,
-          spent: 1000
-        }
+          spent: 1000,
+        },
       });
 
       expect(project.budget.cap).toBe(5000);
@@ -104,7 +106,7 @@ describe('Project Model', () => {
       const project = await Project.create({
         userId: new Types.ObjectId().toString(),
         name: 'Sample Project',
-        isSample: true
+        isSample: true,
       });
 
       expect(project.isSample).toBe(true);
@@ -114,7 +116,7 @@ describe('Project Model', () => {
       const project = await Project.create({
         userId: new Types.ObjectId().toString(),
         name: 'Standards Project',
-        selectedStandards: ['ISO 27001', 'SOC 2']
+        selectedStandards: ['ISO 27001', 'SOC 2'],
       });
 
       expect(project.selectedStandards).toHaveLength(2);

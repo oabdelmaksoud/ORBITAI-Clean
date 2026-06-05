@@ -9,13 +9,22 @@ import express from 'express';
 import projectRoutes from '../routes/project.routes.js';
 import { User } from '../models/User.model.js';
 import { Project } from '../models/Project.model.js';
-import { setupTestEnv, teardownTestEnv, cleanupTestData, createTestUser, createTestProject, getAuthHeaders } from './helpers/testHelpers.js';
+import {
+  setupTestEnv,
+  teardownTestEnv,
+  cleanupTestData,
+  createTestUser,
+  createTestProject,
+  getAuthHeaders,
+} from './helpers/testHelpers.js';
+import { hasMongo } from './helpers/testEnv.js';
 
 const app = express();
 app.use(express.json());
 app.use('/api/projects', projectRoutes);
 
-describe('Project Routes', () => {
+// Requires a reachable MongoDB server (setupTestEnv connects via mongoose).
+describe.skipIf(!hasMongo)('Project Routes', () => {
   let testUser: any;
   let authToken: string;
 
@@ -40,7 +49,7 @@ describe('Project Routes', () => {
       const projectData = {
         name: 'My Test Project',
         description: 'This is a test project',
-        methodology: 'V-Model'
+        methodology: 'V-Model',
       };
 
       const response = await request(app)
@@ -58,7 +67,7 @@ describe('Project Routes', () => {
     it('should reject project creation with name too short', async () => {
       const projectData = {
         name: 'ab', // Too short (min 3 chars)
-        description: 'Test description'
+        description: 'Test description',
       };
 
       const response = await request(app)
@@ -72,12 +81,10 @@ describe('Project Routes', () => {
     it('should reject project creation without authentication', async () => {
       const projectData = {
         name: 'Unauthorized Project',
-        description: 'This should fail'
+        description: 'This should fail',
       };
 
-      const response = await request(app)
-        .post('/api/projects')
-        .send(projectData);
+      const response = await request(app).post('/api/projects').send(projectData);
 
       expect(response.status).toBe(401);
     });
@@ -91,9 +98,7 @@ describe('Project Routes', () => {
     });
 
     it('should return all user projects', async () => {
-      const response = await request(app)
-        .get('/api/projects')
-        .set(getAuthHeaders(authToken));
+      const response = await request(app).get('/api/projects').set(getAuthHeaders(authToken));
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -103,8 +108,7 @@ describe('Project Routes', () => {
     });
 
     it('should reject request without authentication', async () => {
-      const response = await request(app)
-        .get('/api/projects');
+      const response = await request(app).get('/api/projects');
 
       expect(response.status).toBe(401);
     });
@@ -116,7 +120,7 @@ describe('Project Routes', () => {
     beforeEach(async () => {
       testProject = await createTestProject(testUser._id.toString(), {
         name: 'Single Project Test',
-        description: 'Test description'
+        description: 'Test description',
       });
     });
 
@@ -141,8 +145,7 @@ describe('Project Routes', () => {
     });
 
     it('should reject request without authentication', async () => {
-      const response = await request(app)
-        .get(`/api/projects/${testProject._id.toString()}`);
+      const response = await request(app).get(`/api/projects/${testProject._id.toString()}`);
 
       expect(response.status).toBe(401);
     });
@@ -154,14 +157,14 @@ describe('Project Routes', () => {
     beforeEach(async () => {
       testProject = await createTestProject(testUser._id.toString(), {
         name: 'Update Test Project',
-        description: 'Original description'
+        description: 'Original description',
       });
     });
 
     it('should update project with valid data', async () => {
       const updateData = {
         name: 'Updated Project Name',
-        description: 'Updated description'
+        description: 'Updated description',
       };
 
       const response = await request(app)
@@ -177,7 +180,7 @@ describe('Project Routes', () => {
 
     it('should reject update with invalid phase', async () => {
       const updateData = {
-        currentPhase: 'InvalidPhase'
+        currentPhase: 'InvalidPhase',
       };
 
       const response = await request(app)
@@ -190,7 +193,7 @@ describe('Project Routes', () => {
 
     it('should reject update without authentication', async () => {
       const updateData = {
-        name: 'Unauthorized Update'
+        name: 'Unauthorized Update',
       };
 
       const response = await request(app)
@@ -206,7 +209,7 @@ describe('Project Routes', () => {
 
     beforeEach(async () => {
       testProject = await createTestProject(testUser._id.toString(), {
-        name: 'Delete Test Project'
+        name: 'Delete Test Project',
       });
     });
 
@@ -224,12 +227,9 @@ describe('Project Routes', () => {
     });
 
     it('should reject delete without authentication', async () => {
-      const response = await request(app)
-        .delete(`/api/projects/${testProject._id.toString()}`);
+      const response = await request(app).delete(`/api/projects/${testProject._id.toString()}`);
 
       expect(response.status).toBe(401);
     });
   });
 });
-
-

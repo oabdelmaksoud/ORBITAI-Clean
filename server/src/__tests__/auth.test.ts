@@ -8,13 +8,20 @@ import request from 'supertest';
 import express from 'express';
 import authRoutes from '../routes/auth.routes.js';
 import { User } from '../models/User.model.js';
-import { setupTestEnv, teardownTestEnv, cleanupTestData, createTestUser } from './helpers/testHelpers.js';
+import {
+  setupTestEnv,
+  teardownTestEnv,
+  cleanupTestData,
+  createTestUser,
+} from './helpers/testHelpers.js';
+import { hasMongo } from './helpers/testEnv.js';
 
 const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 
-describe('Authentication Routes', () => {
+// Requires a reachable MongoDB server (setupTestEnv connects via mongoose).
+describe.skipIf(!hasMongo)('Authentication Routes', () => {
   beforeEach(async () => {
     await setupTestEnv();
     await cleanupTestData();
@@ -33,12 +40,10 @@ describe('Authentication Routes', () => {
       const userData = {
         email: 'newuser@example.com',
         password: 'Secure@1234',
-        name: 'New User'
+        name: 'New User',
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData);
+      const response = await request(app).post('/api/auth/register').send(userData);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('success', true);
@@ -52,12 +57,10 @@ describe('Authentication Routes', () => {
       const userData = {
         email: 'invalid-email',
         password: 'Secure@1234',
-        name: 'Test User'
+        name: 'Test User',
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData);
+      const response = await request(app).post('/api/auth/register').send(userData);
 
       expect(response.status).toBe(400);
     });
@@ -66,12 +69,10 @@ describe('Authentication Routes', () => {
       const userData = {
         email: 'test@example.com',
         password: 'weak',
-        name: 'Test User'
+        name: 'Test User',
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData);
+      const response = await request(app).post('/api/auth/register').send(userData);
 
       expect(response.status).toBe(400);
     });
@@ -82,20 +83,16 @@ describe('Authentication Routes', () => {
       const userData = {
         email: `duplicate-${timestamp}@example.com`,
         password: 'Secure@1234',
-        name: 'Test User'
+        name: 'Test User',
       };
 
       // First registration
-      const firstResponse = await request(app)
-        .post('/api/auth/register')
-        .send(userData);
+      const firstResponse = await request(app).post('/api/auth/register').send(userData);
 
       expect(firstResponse.status).toBe(201);
 
       // Duplicate registration with same email
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData);
+      const response = await request(app).post('/api/auth/register').send(userData);
 
       expect(response.status).toBe(409);
       expect(response.body).toHaveProperty('success', false);
@@ -111,19 +108,17 @@ describe('Authentication Routes', () => {
       await createTestUser({
         email: testUserEmail,
         password: 'Secure@1234',
-        name: 'Login User'
+        name: 'Login User',
       });
     });
 
     it('should login with valid credentials', async () => {
       const loginData = {
         email: testUserEmail,
-        password: 'Secure@1234'
+        password: 'Secure@1234',
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData);
+      const response = await request(app).post('/api/auth/login').send(loginData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -135,12 +130,10 @@ describe('Authentication Routes', () => {
     it('should reject login with invalid email', async () => {
       const loginData = {
         email: 'nonexistent@example.com',
-        password: 'Secure@1234'
+        password: 'Secure@1234',
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData);
+      const response = await request(app).post('/api/auth/login').send(loginData);
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('success', false);
@@ -149,12 +142,10 @@ describe('Authentication Routes', () => {
     it('should reject login with incorrect password', async () => {
       const loginData = {
         email: testUserEmail,
-        password: 'Wrong@Password'
+        password: 'Wrong@Password',
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData);
+      const response = await request(app).post('/api/auth/login').send(loginData);
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('success', false);
@@ -167,7 +158,7 @@ describe('Authentication Routes', () => {
       const uniqueEmail = `me-${Date.now()}@example.com`;
       const { user, token } = await createTestUser({
         email: uniqueEmail,
-        name: 'Me User'
+        name: 'Me User',
       });
 
       const response = await request(app)
@@ -182,8 +173,7 @@ describe('Authentication Routes', () => {
     });
 
     it('should reject request without token', async () => {
-      const response = await request(app)
-        .get('/api/auth/me');
+      const response = await request(app).get('/api/auth/me');
 
       expect(response.status).toBe(401);
     });

@@ -229,11 +229,7 @@ describe('Code Generator Service', () => {
   });
 
   describe('FastAPI Code Generation', () => {
-    // SKIP: FastAPI generation currently throws "e.method.lower is not a function"
-    // inside codeGeneratorService (a service-side bug calling .lower() on the HTTP
-    // method), so result.success is false. Fixing it requires editing the
-    // (out-of-scope) service logic, not this test.
-    it.skip('should generate complete FastAPI backend', async () => {
+    it('should generate complete FastAPI backend', async () => {
       const request: CodeGenerationRequest = {
         projectName: 'Python API',
         description: 'FastAPI backend',

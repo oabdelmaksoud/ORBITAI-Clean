@@ -1,29 +1,20 @@
 /**
  * Embedding Service Tests
+ *
+ * apiKeyProvider is mocked to report no provider keys, which forces the
+ * deterministic hash-based fallback path — so these tests need no DB and no
+ * external embedding API.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EmbeddingService } from '../../services/embedding.service.js';
-import { config } from '../../config/env.js';
 
-// Mock config
-vi.mock('../../config/env.js', () => ({
-  config: {
-    geminiApiKey: 'test-gemini-key',
+// Force the hash fallback (no DB, no external API) by reporting no keys.
+vi.mock('../../services/apiKeyProvider.service.js', () => ({
+  apiKeyProvider: {
+    hasApiKey: vi.fn().mockResolvedValue(false),
+    getApiKey: vi.fn().mockResolvedValue(null),
   },
-}));
-
-// Mock Google GenAI
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn().mockImplementation(() => ({
-    models: {
-      embedContent: vi.fn().mockResolvedValue({
-        embedding: {
-          values: Array(768).fill(0.1),
-        },
-      }),
-    },
-  })),
 }));
 
 describe('Embedding Service', () => {
@@ -34,35 +25,29 @@ describe('Embedding Service', () => {
   });
 
   describe('generateEmbedding', () => {
-    it('should generate embedding for text', async () => {
-      const text = 'Test text for embedding';
-      const embedding = await service.generateEmbedding(text);
+    it('should generate a numeric embedding vector for text', async () => {
+      const embedding = await service.generateEmbedding('Test text for embedding');
 
-      expect(embedding).toBeDefined();
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBeGreaterThan(0);
+      expect(typeof embedding[0]).toBe('number');
+    });
+
+    it('should throw for empty text', async () => {
+      await expect(service.generateEmbedding('')).rejects.toThrow('Text cannot be empty');
+    });
+
+    it('should fall back gracefully (resolve, not reject) when no provider key exists', async () => {
+      // With no API keys the service uses the hash fallback and never rejects.
+      const embedding = await service.generateEmbedding('fallback text');
       expect(Array.isArray(embedding)).toBe(true);
       expect(embedding.length).toBeGreaterThan(0);
     });
 
-    it('should handle empty text', async () => {
-      const embedding = await service.generateEmbedding('');
-      expect(embedding).toBeDefined();
-    });
-
-    it('should handle errors gracefully', async () => {
-      // Mock error scenario
-      vi.mocked(config).geminiApiKey = '';
-
-      await expect(service.generateEmbedding('test')).rejects.toThrow();
-    });
-  });
-
-  describe('generateEmbeddings', () => {
-    it('should generate embeddings for multiple texts', async () => {
-      const texts = ['Text 1', 'Text 2', 'Text 3'];
-      const embeddings = await service.generateEmbeddings(texts);
-
-      expect(embeddings).toBeDefined();
-      expect(embeddings.length).toBe(texts.length);
+    it('should produce deterministic embeddings for identical input', async () => {
+      const a = await service.generateEmbedding('same input');
+      const b = await service.generateEmbedding('same input');
+      expect(a).toEqual(b);
     });
   });
 });

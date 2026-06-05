@@ -5,12 +5,14 @@ import featureFlagsRoutes from '../../routes/featureFlags.routes.js';
 import { createTestAdmin, getAuthHeaders } from '../helpers/testHelpers.js';
 import { FeatureFlag } from '../../models/FeatureFlag.model.js';
 import { User } from '../../models/User.model.js';
+import { hasMongo } from '../helpers/testEnv.js';
 
 const app = express();
 app.use(express.json());
 app.use('/api/admin/feature-flags', featureFlagsRoutes);
 
-describe('Feature Flags Routes', () => {
+// Requires a reachable MongoDB server (createTestAdmin/FeatureFlag persist to mongoose).
+describe.skipIf(!hasMongo)('Feature Flags Routes', () => {
   let adminUser: Awaited<ReturnType<typeof createTestAdmin>>;
   let adminHeaders: ReturnType<typeof getAuthHeaders>;
 
@@ -29,7 +31,7 @@ describe('Feature Flags Routes', () => {
         description: 'Test Description',
         category: 'test',
         enabledRoles: ['user', 'admin'],
-        isActive: true
+        isActive: true,
       });
 
       const response = await request(app)
@@ -56,7 +58,7 @@ describe('Feature Flags Routes', () => {
         description: 'Test',
         category: 'test',
         enabledRoles: ['admin'],
-        isActive: true
+        isActive: true,
       });
 
       const response = await request(app)
@@ -74,7 +76,7 @@ describe('Feature Flags Routes', () => {
         description: 'Test',
         category: 'test',
         enabledRoles: ['user'],
-        isActive: false
+        isActive: false,
       });
 
       const response = await request(app)
@@ -88,9 +90,7 @@ describe('Feature Flags Routes', () => {
 
   describe('GET /api/admin/feature-flags (Admin Only)', () => {
     it('should require authentication', async () => {
-      await request(app)
-        .get('/api/admin/feature-flags')
-        .expect(401);
+      await request(app).get('/api/admin/feature-flags').expect(401);
     });
 
     it('should get all feature flags for admin', async () => {
@@ -100,7 +100,7 @@ describe('Feature Flags Routes', () => {
         description: 'Test',
         category: 'test',
         enabledRoles: ['user'],
-        isActive: true
+        isActive: true,
       });
 
       await FeatureFlag.create({
@@ -109,7 +109,7 @@ describe('Feature Flags Routes', () => {
         description: 'Test',
         category: 'test',
         enabledRoles: ['admin'],
-        isActive: true
+        isActive: true,
       });
 
       const response = await request(app)

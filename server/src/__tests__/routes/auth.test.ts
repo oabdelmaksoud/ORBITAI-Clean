@@ -4,12 +4,14 @@ import express from 'express';
 import authRoutes from '../../routes/auth.routes.js';
 import { createTestUser } from '../helpers/testHelpers.js';
 import { User } from '../../models/User.model.js';
+import { hasMongo } from '../helpers/testEnv.js';
 
 const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 
-describe('Auth Routes', () => {
+// Requires a reachable MongoDB server (createTestUser/User persist to mongoose).
+describe.skipIf(!hasMongo)('Auth Routes', () => {
   beforeEach(async () => {
     // Clear users before each test
     await User.deleteMany({});
@@ -20,13 +22,10 @@ describe('Auth Routes', () => {
       const userData = {
         email: 'newuser@example.com',
         password: 'SecurePassword123!',
-        name: 'New User'
+        name: 'New User',
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data).toHaveProperty('user');
@@ -52,20 +51,14 @@ describe('Auth Routes', () => {
       const userData = {
         email: 'duplicate@example.com',
         password: 'Password123!',
-        name: 'First User'
+        name: 'First User',
       };
 
       // Create first user
-      await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+      await request(app).post('/api/auth/register').send(userData).expect(201);
 
       // Try to register again with same email
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(409);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(409);
 
       expect(response.body).toHaveProperty('success', false);
       expect(response.body.message).toContain('already exists');
@@ -76,14 +69,14 @@ describe('Auth Routes', () => {
     it('should login with valid credentials', async () => {
       const testUser = await createTestUser({
         email: 'login@example.com',
-        password: 'TestPassword123!'
+        password: 'TestPassword123!',
       });
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
           email: testUser.email,
-          password: testUser.password
+          password: testUser.password,
         })
         .expect(200);
 
@@ -98,7 +91,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/login')
         .send({
           email: 'nonexistent@example.com',
-          password: 'Password123!'
+          password: 'Password123!',
         })
         .expect(401);
 
@@ -108,14 +101,14 @@ describe('Auth Routes', () => {
 
     it('should reject login with invalid password', async () => {
       const testUser = await createTestUser({
-        email: 'testlogin@example.com'
+        email: 'testlogin@example.com',
       });
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
           email: testUser.email,
-          password: 'WrongPassword123!'
+          password: 'WrongPassword123!',
         })
         .expect(401);
 

@@ -91,16 +91,40 @@ describe('toolRegistry.dispatch (WI-4 / WI-5)', () => {
 
   it('rejects an out-of-enum value', async () => {
     const declaredEnum = [
-      { name: 'set_mode', parameters: { type: 'object', properties: { mode: { type: 'string', enum: ['fast', 'slow'] } }, required: ['mode'] } },
+      {
+        name: 'set_mode',
+        parameters: {
+          type: 'object',
+          properties: { mode: { type: 'string', enum: ['fast', 'slow'] } },
+          required: ['mode'],
+        },
+      },
     ];
-    const r = await toolRegistry.dispatch({ name: 'set_mode', args: { mode: 'turbo' } }, declaredEnum, {});
+    const r = await toolRegistry.dispatch(
+      { name: 'set_mode', args: { mode: 'turbo' } },
+      declaredEnum,
+      {}
+    );
     expect(r.success).toBe(false);
     expect(r.error).toMatch(/must be one of/);
   });
 
   it('rejects a missing nested required property', async () => {
     const declaredNested = [
-      { name: 'cfg', parameters: { type: 'object', properties: { opts: { type: 'object', properties: { level: { type: 'number' } }, required: ['level'] } }, required: ['opts'] } },
+      {
+        name: 'cfg',
+        parameters: {
+          type: 'object',
+          properties: {
+            opts: {
+              type: 'object',
+              properties: { level: { type: 'number' } },
+              required: ['level'],
+            },
+          },
+          required: ['opts'],
+        },
+      },
     ];
     const r = await toolRegistry.dispatch({ name: 'cfg', args: { opts: {} } }, declaredNested, {});
     expect(r.success).toBe(false);
@@ -109,9 +133,19 @@ describe('toolRegistry.dispatch (WI-4 / WI-5)', () => {
 
   it('rejects a wrongly-typed array item', async () => {
     const declaredArr = [
-      { name: 'tagger', parameters: { type: 'object', properties: { items: { type: 'array', items: { type: 'string' } } } } },
+      {
+        name: 'tagger',
+        parameters: {
+          type: 'object',
+          properties: { items: { type: 'array', items: { type: 'string' } } },
+        },
+      },
     ];
-    const r = await toolRegistry.dispatch({ name: 'tagger', args: { items: [1, 2] } }, declaredArr, {});
+    const r = await toolRegistry.dispatch(
+      { name: 'tagger', args: { items: [1, 2] } },
+      declaredArr,
+      {}
+    );
     expect(r.success).toBe(false);
     expect(r.error).toMatch(/must be of type string/);
   });

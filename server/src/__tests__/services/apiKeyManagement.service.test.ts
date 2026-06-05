@@ -3,7 +3,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ApiKeyManagementService } from '../../services/apiKeyManagement.service.js';
+// The service exports a singleton (the class itself is not exported), and the
+// ApiKey model is mocked below, so no real DB is required.
+import { apiKeyManagement } from '../../services/apiKeyManagement.service.js';
 import { ApiKey } from '../../models/ApiKey.model.js';
 
 // Mock dependencies
@@ -17,6 +19,7 @@ vi.mock('../../services/apiKeyEncryption.service.js', () => ({
       tag: 'tag_value',
     })),
     decrypt: vi.fn((encrypted: string) => encrypted.replace('encrypted_', '')),
+    maskKey: vi.fn((key: string) => `****${key.slice(-4)}`),
   },
 }));
 vi.mock('../../utils/logger.js', () => ({
@@ -27,10 +30,9 @@ vi.mock('../../utils/logger.js', () => ({
 }));
 
 describe('API Key Management Service', () => {
-  let service: ApiKeyManagementService;
+  const service = apiKeyManagement;
 
   beforeEach(() => {
-    service = new ApiKeyManagementService();
     vi.clearAllMocks();
   });
 
@@ -54,7 +56,10 @@ describe('API Key Management Service', () => {
       };
 
       vi.mocked(ApiKey.findOne).mockResolvedValue(null);
-      vi.mocked(ApiKey).mockImplementation(() => mockApiKey as any);
+      // mockImplementation must be usable with `new` — use a function, not an arrow.
+      vi.mocked(ApiKey).mockImplementation(function () {
+        return mockApiKey as any;
+      });
 
       const result = await service.createApiKey(input, userId);
 
@@ -79,7 +84,7 @@ describe('API Key Management Service', () => {
     });
   });
 
-  describe('getApiKeys', () => {
+  describe('getAllApiKeys', () => {
     it('should retrieve all API keys', async () => {
       const mockKeys = [
         {
@@ -93,13 +98,12 @@ describe('API Key Management Service', () => {
         },
       ];
 
+      // Source uses ApiKey.find(query).sort(...) — no .populate().
       vi.mocked(ApiKey.find).mockReturnValue({
-        populate: vi.fn().mockReturnValue({
-          sort: vi.fn().mockResolvedValue(mockKeys),
-        }),
+        sort: vi.fn().mockResolvedValue(mockKeys),
       } as any);
 
-      const keys = await service.getApiKeys();
+      const keys = await service.getAllApiKeys();
       expect(keys).toBeDefined();
       expect(Array.isArray(keys)).toBe(true);
     });

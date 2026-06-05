@@ -54,19 +54,23 @@ describe('Auth Middleware', () => {
 
       const req = {
         headers: {
-          authorization: `Bearer ${token}`
-        }
+          authorization: `Bearer ${token}`,
+        },
       } as unknown as AuthRequest;
 
       const res = {} as Response;
       let nextCalled = false;
       let nextError: any = null;
-      const next = ((err?: any) => { nextCalled = true; nextError = err; }) as NextFunction;
+      const next = ((err?: any) => {
+        nextCalled = true;
+        nextError = err;
+      }) as NextFunction;
 
       await authenticateToken(req, res, next);
 
       expect(nextCalled).toBe(true);
-      expect(nextError).toBeNull();
+      // Success path calls next() with no argument, so the captured error is undefined.
+      expect(nextError).toBeUndefined();
       expect(req.user).toBeDefined();
       expect(req.user?.id).toBe(userId);
       expect(req.user?.email).toBe(email);
@@ -76,12 +80,14 @@ describe('Auth Middleware', () => {
 
     it('should reject request without token', async () => {
       const req = {
-        headers: {}
+        headers: {},
       } as unknown as AuthRequest;
 
       const res = {} as Response;
       let nextError: any = null;
-      const next = ((err?: any) => { nextError = err; }) as NextFunction;
+      const next = ((err?: any) => {
+        nextError = err;
+      }) as NextFunction;
 
       await authenticateToken(req, res, next);
 
@@ -92,13 +98,15 @@ describe('Auth Middleware', () => {
     it('should reject request with invalid token', async () => {
       const req = {
         headers: {
-          authorization: 'Bearer invalid-token'
-        }
+          authorization: 'Bearer invalid-token',
+        },
       } as unknown as AuthRequest;
 
       const res = {} as Response;
       let nextError: any = null;
-      const next = ((err?: any) => { nextError = err; }) as NextFunction;
+      const next = ((err?: any) => {
+        nextError = err;
+      }) as NextFunction;
 
       await authenticateToken(req, res, next);
 
@@ -109,13 +117,15 @@ describe('Auth Middleware', () => {
     it('should reject request with malformed authorization header', async () => {
       const req = {
         headers: {
-          authorization: 'InvalidFormat token'
-        }
+          authorization: 'InvalidFormat token',
+        },
       } as unknown as AuthRequest;
 
       const res = {} as Response;
       let nextError: any = null;
-      const next = ((err?: any) => { nextError = err; }) as NextFunction;
+      const next = ((err?: any) => {
+        nextError = err;
+      }) as NextFunction;
 
       await authenticateToken(req, res, next);
 
