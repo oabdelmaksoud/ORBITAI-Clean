@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.7 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.8 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -34,7 +34,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 9 | Planning / reflection | 1 | **4** | `planningService`: decomposes a task into an injected execution plan + a bounded reflect→revise self-critique pass in execute-task (flag-gated `HARNESS_PLANNING_ENABLED`). Not 5: multi-step plan tracking + iterative (n>1) refinement loop. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
 | 11 | State & resumability | 2 | 2 | Unchanged — needs checkpointing. |
-| 12 | Resilience | 2 | **3** | Per-request provider timeout added (WI-6b) + Codex timeout (WI-6a). Not 4: fallback chains still dead. |
+| 12 | Resilience | 2 | **4** | Provider + Codex timeouts (WI-6a/b); failover now wired for end-user requests too (`HARNESS_ENDUSER_FALLBACK`), and `pickFallbackModel` excludes the failed provider so failover moves to a different backend. Not 5: multi-hop fallback chain + circuit-breaker-aware selection. |
 | 13 | Observability | 2 | **4** | Per-request `traceId` via AsyncLocalStorage stamped on every log line + returned as `x-trace-id`; run-level correlation across the agent path. Not 5: OTel spans + a `RoutingDecisionLog` writer. |
 | 14 | Evaluation & quality | 3 | **4** | Fail-closed on eval error (score 0, not 70) — failures no longer masquerade as passing. Not 5: needs golden-set regression in CI + judge-family diversity. |
 | 15 | Testing (of the harness) | 1 | **3** | 25 new tests (loop, registry, providers, security). Not 5: broad coverage + CI gate still needed. |
@@ -51,7 +51,7 @@ These are each a dedicated effort, not a quick edit — listing them honestly ra
 - **Routing AI** → dim 5: wire or delete the gated RL/predictive/auto-tune stack.
 - **Observability** → dim 13 (4→5): OpenTelemetry spans + a `RoutingDecisionLog` writer (per-run `traceId` correlation done).
 - **Eval integrity** → dim 14 (4→5): golden-set regression in CI + judge-family diversity (fail-open already fixed).
-- **Resilience** → dim 12: wire the fallback-chain machinery (currently dead).
+- **Resilience** → dim 12 (4→5): multi-hop fallback chain + circuit-breaker-aware selection (single failover + timeouts done).
 
 ---
 

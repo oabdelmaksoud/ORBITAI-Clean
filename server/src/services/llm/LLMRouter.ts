@@ -30,6 +30,7 @@ import { UserSettings } from '../../models/UserSettings.model.js';
 import { internalTaskRouter } from '../internalTaskRouter.service.js';
 import { generationStatusService } from '../GenerationStatus.service.js';
 import { budgetGuard } from '../budgetGuard.service.js';
+import { pickFallbackModel } from './fallbackSelector.js';
 
 import { llmCircuitBreaker } from './CircuitBreaker.js';
 import { toApiError } from '../../errors/ApiError.js';
@@ -163,6 +164,9 @@ class LLMRouter {
       routingContext?.userId,
       routingContext?.packageLimits?.maxMonthlyBudget
     );
+
+    // Resilience (dim 12): remember a failed provider so failover picks a different backend.
+    let lastFailedProvider: string | undefined;
 
     // If model is explicitly specified, use it (backward compatibility)
     if (context.model) {
@@ -329,6 +333,7 @@ class LLMRouter {
             );
             continue;
           } else {
+            lastFailedProvider = selectedModel.provider; // remember for failover (dim 12)
             throw error; // Re-throw if not rate limit or max retries reached
           }
         }
@@ -417,7 +422,12 @@ class LLMRouter {
       logger.error(`[LLMRouter] Intelligent routing failed:`, apiError);
 
       // STRICT POLICY: No fallbacks for end-user requests
-      if (routerType === 'end-user') {
+      // Resilience (dim 12): allow a bounded failover for end-user requests too. Set
+      // HARNESS_ENDUSER_FALLBACK=false to restore the strict no-fallback policy.
+      if (
+        routerType === 'end-user' &&
+        (process.env.HARNESS_ENDUSER_FALLBACK || '').toLowerCase() === 'false'
+      ) {
         logger.warn(
           '[LLMRouter] Fallback disabled for end-user request by strict policy - re-throwing error'
         );
@@ -428,17 +438,17 @@ class LLMRouter {
       // Use DEFAULT_LLM_PROVIDER from config if available, otherwise prefer Gemini
       let fallbackModel: any = null;
       try {
-        // Get any available active model as fallback
+        // Get any available active model as fallback (dim 12: exclude the provider that just failed
+        // so a failover actually moves to a different backend).
         const activeModels = modelRegistry.getActiveModels();
-        if (activeModels.length > 0) {
-          // Prefer DEFAULT_LLM_PROVIDER if available, otherwise prefer Gemini, otherwise use first available
-          const defaultProvider = config.defaultLLMProvider || 'gemini';
-          fallbackModel =
-            activeModels.find(m => m.provider === defaultProvider) ||
-            activeModels.find(m => m.provider === 'gemini') ||
-            activeModels[0];
+        const defaultProvider = config.defaultLLMProvider || 'gemini';
+        fallbackModel = pickFallbackModel(activeModels, {
+          defaultProvider,
+          excludeProvider: lastFailedProvider,
+        });
+        if (fallbackModel) {
           logger.info(
-            `[LLMRouter] Using fallback model from routing engine: ${fallbackModel.name} (${fallbackModel.modelIdentifier}) [preferred provider: ${defaultProvider}]`
+            `[LLMRouter] Using fallback model: ${fallbackModel.name} (${fallbackModel.modelIdentifier}) [preferred: ${defaultProvider}, excluded failed: ${lastFailedProvider || 'none'}]`
           );
         }
       } catch (fallbackError) {
