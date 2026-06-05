@@ -16,6 +16,7 @@ import {
 import { Type, Schema } from '@google/genai';
 import { evaluationService } from '../services/evaluation.service.js';
 import { agentMemory } from '../services/agentMemory.service.js';
+import { contextManager } from '../services/contextManager.service.js';
 import { detectProjectType } from '../utils/llmRouteHelpers.js';
 import { embeddingService } from '../services/embedding.service.js';
 import { toApiError } from '../errors/ApiError.js';
@@ -62,10 +63,14 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
 
     logger.info(`[LLMRouter] Chat request received for agent: ${agentRole || 'Orchestrator'}`);
 
-    // Build chat prompt from history
+    // Build chat prompt from history (dim 6: token-budgeted trimming so long chats don't overflow).
+    const trimmedHistory = contextManager.trimHistory(
+      history || [],
+      Number(process.env.CHAT_HISTORY_TOKEN_BUDGET) || 6000
+    );
     let chatPrompt =
-      history && history.length > 0
-        ? `${history.map((h: any) => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
+      trimmedHistory.length > 0
+        ? `${trimmedHistory.map(h => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
         : message;
 
     // INTERNET RESEARCH INJECTION
@@ -242,10 +247,14 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
-    // Build chat prompt from history
+    // Build chat prompt from history (dim 6: token-budgeted trimming so long chats don't overflow).
+    const trimmedHistory = contextManager.trimHistory(
+      history || [],
+      Number(process.env.CHAT_HISTORY_TOKEN_BUDGET) || 6000
+    );
     let chatPrompt =
-      history && history.length > 0
-        ? `${history.map((h: any) => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
+      trimmedHistory.length > 0
+        ? `${trimmedHistory.map(h => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
         : message;
 
     // Use custom system context if provided (overrides default wizard context)

@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.1 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.2 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -28,7 +28,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 3 | Tool protocol (MCP) | 2 | **4** | User/agent MCP tools now callable from the loop (WI-5). Not 5: still no MCP *server*; discovery via stored names. |
 | 4 | Providers | 3 | **4** | Native tool-calling across Gemini + OpenAI (WI-3a) + Anthropic (WI-3b). Not 5: streaming still only 2/12; no shared interface. |
 | 5 | Model routing | 3 | 3 | Unchanged — AI/ML layer still gated/dead. |
-| 6 | Context management | 2 | 2 | Unchanged — needs token-budget + compaction. |
+| 6 | Context management | 2 | **4** | `contextManager` token-budgets chat history (keeps most recent within budget, always the latest turn), wired into both chat handlers. Not 5: summarization/compaction of the dropped prefix. |
 | 7 | Memory (cross-session) | 1 | **4** | RAG via `agentMemory`: retrieves role-scoped past experiences (vector search) into the prompt + records task outcomes for future runs (flag-gated `HARNESS_MEMORY_ENABLED`). Not 5: needs a production vector store, always-on, relevance tuning. |
 | 8 | Multi-agent orchestration | 1 | 1 | Unchanged — needs a real execution engine. |
 | 9 | Planning / reflection | 1 | 1 | Unchanged. |
@@ -95,7 +95,7 @@ The shape is lopsided, and that's the takeaway: a handful of dimensions are genu
 6. **Loop ergonomics** — make `maxIterations` configurable, allow parallel tool calls, add a **per-request timeout** (also fixes Codex hang).
 
 **P2 — depth**
-7. **Context management** — token-budgeting + compaction/summarization instead of `slice(-10)`.
+7. **Context management** → dim 6 (4→5): summarization/compaction of the dropped prefix (token-budgeting + trimming done).
 8. **Close the memory loop** — retrieve `AgentKnowledge` into agent prompts at runtime; consider embeddings/RAG.
 9. **Wire-or-delete the orphans** — decide per component (orchestration cluster, AI/ML routing, fallback chains, CUA vision loop, `RoutingDecisionLog`). Dead code is a maintenance and honesty cost.
 10. **Resumability** — checkpoint execution state; re-queue interrupted runs at boot.
