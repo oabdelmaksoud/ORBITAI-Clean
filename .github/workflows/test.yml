@@ -1,0 +1,45 @@
+name: Server Unit Tests (vitest)
+
+# Green merge gate: runs the deterministic, infrastructure-free harness/unit suites
+# (server/vitest.unit.config.ts) — mocks only, no MongoDB/e2b/embedding/etc.
+#
+# The full suite (server/vitest.config.ts) additionally includes integration tests that require
+# provisioned external services; those have pre-existing failures and are triaged separately, so
+# they are intentionally NOT part of this gate (a red gate gives no signal).
+
+on:
+  push:
+    branches: [main, develop, 'feat/**']
+  pull_request:
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  vitest-unit:
+    name: Run server unit/harness suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # npm workspaces monorepo: the lockfile is at the repo root, so install from root.
+      - name: Install dependencies
+        run: npm ci
+
+      # The server imports @orbitai/shared, whose entry points at dist/ (absent on fresh checkout).
+      - name: Build shared workspace
+        run: npm run build:shared
+
+      - name: Run unit/harness vitest gate
+        working-directory: ./server
+        run: npx vitest run --config vitest.unit.config.ts
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-jwt-secret-key-for-testing-only

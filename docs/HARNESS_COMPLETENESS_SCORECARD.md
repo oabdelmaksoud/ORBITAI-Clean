@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 3.8 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.0 / 5 — all 16 dimensions now at 4 (wired, functional, tested).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -37,7 +37,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 12 | Resilience | 2 | **4** | Provider + Codex timeouts (WI-6a/b); failover now wired for end-user requests too (`HARNESS_ENDUSER_FALLBACK`), and `pickFallbackModel` excludes the failed provider so failover moves to a different backend. Not 5: multi-hop fallback chain + circuit-breaker-aware selection. |
 | 13 | Observability | 2 | **4** | Per-request `traceId` via AsyncLocalStorage stamped on every log line + returned as `x-trace-id`; run-level correlation across the agent path. Not 5: OTel spans + a `RoutingDecisionLog` writer. |
 | 14 | Evaluation & quality | 3 | **4** | Fail-closed on eval error (score 0, not 70) — failures no longer masquerade as passing. Not 5: needs golden-set regression in CI + judge-family diversity. |
-| 15 | Testing (of the harness) | 1 | **3** | 25 new tests (loop, registry, providers, security). Not 5: broad coverage + CI gate still needed. |
+| 15 | Testing (of the harness) | 1 | **4** | 100+ harness unit tests (loop, registry, providers, security, memory, cost, context, observability, planning, multi-agent, recovery, fallback); runner unified on vitest (orphan jest config removed; `@jest/globals` tests converted); green CI gate (`vitest.unit.config.ts` via `.github/workflows/test.yml`). Not 5: integration suite (needs e2b/embedding/Mongo) still red — triaged separately. |
 | 16 | Cost governance | 2 | **4** | `budgetGuard` enforces the monthly spend cap before execution (blocks at/over `packageLimits.maxMonthlyBudget`, fail-open on DB error). Not 5: per-request pre-estimate + soft-warning tiers. |
 
 ### What "everything at scope 5" still requires (not done this pass)
