@@ -77,10 +77,19 @@ class CUAService {
             }
 
             logger.info(`[CUA] Launching browser - Headless: ${headless}`);
+            // SECURITY: keep the Chromium sandbox ON by default. Disabling it is
+            // an explicit opt-in (e.g. some containers) via CUA_ALLOW_NO_SANDBOX=true.
+            const allowNoSandbox = process.env.CUA_ALLOW_NO_SANDBOX === 'true';
+            const launchArgs = allowNoSandbox
+                ? ['--no-sandbox', '--disable-setuid-sandbox']
+                : [];
+            if (allowNoSandbox) {
+                logger.warn('[CUA] Chromium sandbox DISABLED via CUA_ALLOW_NO_SANDBOX=true');
+            }
             this.browser = await chromium.launch({
                 headless,
                 slowMo: headless ? 0 : 50,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                args: launchArgs
             });
             this.isInitialized = true;
             logger.info('[CUA] Browser initialized successfully');

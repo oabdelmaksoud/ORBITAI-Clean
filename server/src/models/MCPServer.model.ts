@@ -1,6 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { encrypt, decrypt, isEncrypted, REDACTED } from '../utils/secretCrypto.js';
 
 export interface IMCPServer extends Document {
+  /** Returns the decrypted plaintext apiKey for outbound use (never exposed via toJSON). */
+  getDecryptedApiKey(): string | undefined;
   id: string;
   name: string;
   description: string;
@@ -32,56 +35,56 @@ const mcpServerSchema = new Schema<IMCPServer>(
       type: String,
       required: true,
       unique: true,
-      index: true
+      index: true,
     },
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     description: {
       type: String,
-      default: ''
+      default: '',
     },
     status: {
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
-      index: true
+      index: true,
     },
     source: {
       type: String,
       enum: ['system', 'user', 'agent'],
       default: 'user',
-      index: true
+      index: true,
     },
     tools: {
       type: [String],
-      default: []
+      default: [],
     },
     config: {
       type: {
         type: String,
         enum: ['e2b', 'http', 'stdio', 'websocket', 'custom'],
-        required: true
+        required: true,
       },
       endpoint: String,
       command: String,
       args: [String],
       headers: Schema.Types.Mixed,
-      apiKey: String // Should be encrypted in production
+      apiKey: String, // Should be encrypted in production
     },
     metadata: {
       createdBy: String,
       createdFor: String,
       tags: [String],
-      notes: String
+      notes: String,
     },
-    lastUsed: Date
+    lastUsed: Date,
   },
   {
     timestamps: true,
-    collection: 'mcpservers'
+    collection: 'mcpservers',
   }
 );
 
@@ -91,20 +94,32 @@ mcpServerSchema.index({ 'metadata.createdBy': 1 });
 mcpServerSchema.index({ 'metadata.createdFor': 1 });
 mcpServerSchema.index({ createdAt: -1 });
 
+// Encrypt config.apiKey at rest before persisting.
+// Guarded so we never double-encrypt an already-enveloped value.
+mcpServerSchema.pre('save', function (next) {
+  const apiKey = this.config?.apiKey;
+  if (this.isModified('config.apiKey') && apiKey && !isEncrypted(apiKey)) {
+    this.config.apiKey = encrypt(apiKey);
+  }
+  next();
+});
+
+// Decrypt the stored apiKey for outbound use (e.g. setting an HTTP Authorization
+// header when connecting to the MCP server). Never call this on a response path.
+mcpServerSchema.methods.getDecryptedApiKey = function (): string | undefined {
+  const apiKey = this.config?.apiKey;
+  if (!apiKey) return undefined;
+  return decrypt(apiKey);
+};
+
+// Redact the secret when serializing to JSON (API responses, logs).
+mcpServerSchema.set('toJSON', {
+  transform: (_doc, ret: any) => {
+    if (ret?.config && typeof ret.config.apiKey === 'string' && ret.config.apiKey) {
+      ret.config.apiKey = REDACTED;
+    }
+    return ret;
+  },
+});
+
 export const MCPServer = mongoose.model<IMCPServer>('MCPServer', mcpServerSchema);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

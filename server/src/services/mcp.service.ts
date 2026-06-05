@@ -3,7 +3,76 @@
  */
 
 import { MCPServer } from '../../../types.js';
+import path from 'path';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Build the minimal environment passed to spawned stdio MCP processes.
+ *
+ * NEVER pass the full `process.env` — that leaks every secret into the child.
+ * We pass only PATH + HOME plus any variable names explicitly listed in the
+ * comma-separated `MCP_ALLOWED_ENV` env var.
+ */
+export function buildAllowedStdioEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  for (const key of ['PATH', 'HOME']) {
+    const value = process.env[key];
+    if (value !== undefined) {
+      env[key] = value;
+    }
+  }
+
+  const allowed = (process.env.MCP_ALLOWED_ENV || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  for (const key of allowed) {
+    const value = process.env[key];
+    if (value !== undefined) {
+      env[key] = value;
+    }
+  }
+
+  return env;
+}
+
+/**
+ * Reject any stdio command not present in the `MCP_ALLOWED_STDIO_COMMANDS`
+ * allowlist (comma-separated absolute paths or basenames). If the env var is
+ * unset/empty, stdio execution is DEFAULT-DENIED — it must be opt-in.
+ *
+ * @throws Error when the command is not allowlisted.
+ */
+export function assertStdioCommandAllowed(command: string): void {
+  const raw = (process.env.MCP_ALLOWED_STDIO_COMMANDS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (raw.length === 0) {
+    throw new Error(
+      'stdio MCP execution is disabled: set MCP_ALLOWED_STDIO_COMMANDS to an allowlist of permitted commands to enable it.'
+    );
+  }
+
+  if (!command || typeof command !== 'string') {
+    throw new Error('stdio MCP command is missing or invalid');
+  }
+
+  const commandBasename = path.basename(command);
+  const isAllowed = raw.some(
+    entry =>
+      entry === command || entry === commandBasename || path.basename(entry) === commandBasename
+  );
+
+  if (!isAllowed) {
+    throw new Error(
+      `stdio MCP command "${command}" is not in the MCP_ALLOWED_STDIO_COMMANDS allowlist`
+    );
+  }
+}
 
 export interface MCPTool {
   name: string;
@@ -46,7 +115,7 @@ export class MCPService {
       name: 'Unknown',
       status: 'unknown',
       tools: 0,
-      lastChecked: new Date()
+      lastChecked: new Date(),
     };
 
     try {
@@ -71,7 +140,7 @@ export class MCPService {
               status: 'unhealthy',
               tools: 0,
               message: 'MCP server not found in database',
-              lastChecked: new Date()
+              lastChecked: new Date(),
             };
           }
         } catch (error: unknown) {
@@ -81,7 +150,7 @@ export class MCPService {
             status: 'unhealthy',
             tools: 0,
             message: `Health check failed: ${error.message}`,
-            lastChecked: new Date()
+            lastChecked: new Date(),
           };
         }
       }
@@ -92,7 +161,7 @@ export class MCPService {
         status: 'unhealthy',
         tools: 0,
         message: `Health check failed: ${error.message}`,
-        lastChecked: new Date()
+        lastChecked: new Date(),
       };
     }
 
@@ -117,12 +186,13 @@ export class MCPService {
         name: 'E2B Sandbox',
         status: 'not_configured', // Changed from 'unhealthy' to 'not_configured' - this is optional, not an error
         tools: 4,
-        message: 'E2B_API_KEY not configured. Add it via Admin Console or set E2B_API_KEY environment variable to enable E2B tools. (Optional - other features work without it)',
+        message:
+          'E2B_API_KEY not configured. Add it via Admin Console or set E2B_API_KEY environment variable to enable E2B tools. (Optional - other features work without it)',
         lastChecked: new Date(),
         configStatus: {
           apiKeyConfigured: false,
-          serviceAvailable: false
-        }
+          serviceAvailable: false,
+        },
       };
     }
 
@@ -139,8 +209,8 @@ export class MCPService {
         lastChecked: new Date(),
         configStatus: {
           apiKeyConfigured: true,
-          serviceAvailable: true
-        }
+          serviceAvailable: true,
+        },
       };
     } catch (error: unknown) {
       return {
@@ -152,8 +222,8 @@ export class MCPService {
         lastChecked: new Date(),
         configStatus: {
           apiKeyConfigured: true,
-          serviceAvailable: false
-        }
+          serviceAvailable: false,
+        },
       };
     }
   }
@@ -192,13 +262,13 @@ export class MCPService {
           message: weaviateNowHealthy
             ? 'Knowledge Graph is operational (Weaviate connected)'
             : weaviateUrlConfigured && !weaviateNowAvailable
-            ? 'Knowledge Graph is operational (Weaviate URL configured but not connected - using in-memory fallback)'
-            : 'Knowledge Graph is operational (using in-memory storage - works fine, data resets on server restart)',
+              ? 'Knowledge Graph is operational (Weaviate URL configured but not connected - using in-memory fallback)'
+              : 'Knowledge Graph is operational (using in-memory storage - works fine, data resets on server restart)',
           lastChecked: new Date(),
           configStatus: {
             apiKeyConfigured: weaviateNowHealthy,
-            serviceAvailable: true
-          }
+            serviceAvailable: true,
+          },
         };
       } catch (searchError: any) {
         return {
@@ -210,8 +280,8 @@ export class MCPService {
           lastChecked: new Date(),
           configStatus: {
             apiKeyConfigured: weaviateHealthy,
-            serviceAvailable: true
-          }
+            serviceAvailable: true,
+          },
         };
       }
     } catch (error: unknown) {
@@ -224,8 +294,8 @@ export class MCPService {
         lastChecked: new Date(),
         configStatus: {
           apiKeyConfigured: weaviateHealthy,
-          serviceAvailable: false
-        }
+          serviceAvailable: false,
+        },
       };
     }
   }
@@ -238,7 +308,7 @@ export class MCPService {
 
     const geminiConfigured = await apiKeyProvider.hasApiKey('gemini');
     const engineId = await apiKeyProvider.getGoogleSearchEngineId();
-    const customSearchConfigured = await apiKeyProvider.hasApiKey('google_search') && !!engineId;
+    const customSearchConfigured = (await apiKeyProvider.hasApiKey('google_search')) && !!engineId;
 
     if (geminiConfigured) {
       return {
@@ -250,8 +320,8 @@ export class MCPService {
         lastChecked: new Date(),
         configStatus: {
           apiKeyConfigured: true,
-          serviceAvailable: true
-        }
+          serviceAvailable: true,
+        },
       };
     }
 
@@ -272,8 +342,8 @@ export class MCPService {
             lastChecked: new Date(),
             configStatus: {
               apiKeyConfigured: true,
-              serviceAvailable: true
-            }
+              serviceAvailable: true,
+            },
           };
         } else {
           return {
@@ -285,8 +355,8 @@ export class MCPService {
             lastChecked: new Date(),
             configStatus: {
               apiKeyConfigured: true,
-              serviceAvailable: false
-            }
+              serviceAvailable: false,
+            },
           };
         }
       } catch (error: unknown) {
@@ -299,8 +369,8 @@ export class MCPService {
           lastChecked: new Date(),
           configStatus: {
             apiKeyConfigured: true,
-            serviceAvailable: false
-          }
+            serviceAvailable: false,
+          },
         };
       }
     }
@@ -310,12 +380,13 @@ export class MCPService {
       name: 'Google Search',
       status: 'unhealthy',
       tools: 1,
-      message: 'Google Search is not configured. To enable web search: 1) Set GEMINI_API_KEY for native grounding (recommended), or 2) Set GOOGLE_SEARCH_API_KEY + GOOGLE_SEARCH_ENGINE_ID for Custom Search API. Get Google Search API key at: https://console.cloud.google.com/apis/credentials',
+      message:
+        'Google Search is not configured. To enable web search: 1) Set GEMINI_API_KEY for native grounding (recommended), or 2) Set GOOGLE_SEARCH_API_KEY + GOOGLE_SEARCH_ENGINE_ID for Custom Search API. Get Google Search API key at: https://console.cloud.google.com/apis/credentials',
       lastChecked: new Date(),
       configStatus: {
         apiKeyConfigured: false,
-        serviceAvailable: false
-      }
+        serviceAvailable: false,
+      },
     };
   }
 
@@ -338,7 +409,7 @@ export class MCPService {
           status: 'unhealthy' as const,
           tools: 0,
           message: `Health check failed: ${result.reason?.message || 'Unknown error'}`,
-          lastChecked: new Date()
+          lastChecked: new Date(),
         };
       }
     });
@@ -423,7 +494,7 @@ export class MCPService {
               description: 'E2B Sandbox tools',
               status: 'active',
               source: 'system',
-              tools: []
+              tools: [],
             });
           }
 
@@ -435,8 +506,8 @@ export class MCPService {
             inputSchema: {
               type: 'object',
               properties: {},
-              required: []
-            }
+              required: [],
+            },
           }));
         }
 
@@ -448,7 +519,7 @@ export class MCPService {
             description: 'E2B Sandbox tools',
             status: 'active',
             source: 'system',
-            tools: []
+            tools: [],
           });
         }
 
@@ -480,10 +551,10 @@ export class MCPService {
             type: 'object',
             properties: {
               path: { type: 'string', description: 'File path' },
-              content: { type: 'string', description: 'File content' }
+              content: { type: 'string', description: 'File content' },
             },
-            required: ['path', 'content']
-          }
+            required: ['path', 'content'],
+          },
         },
         {
           name: 'read_file',
@@ -491,10 +562,10 @@ export class MCPService {
           inputSchema: {
             type: 'object',
             properties: {
-              path: { type: 'string', description: 'File path' }
+              path: { type: 'string', description: 'File path' },
             },
-            required: ['path']
-          }
+            required: ['path'],
+          },
         },
         {
           name: 'list_directory',
@@ -502,9 +573,9 @@ export class MCPService {
           inputSchema: {
             type: 'object',
             properties: {
-              path: { type: 'string', description: 'Directory path', default: '/' }
-            }
-          }
+              path: { type: 'string', description: 'Directory path', default: '/' },
+            },
+          },
         },
         {
           name: 'run_shell_command',
@@ -512,10 +583,10 @@ export class MCPService {
           inputSchema: {
             type: 'object',
             properties: {
-              command: { type: 'string', description: 'Shell command to execute' }
+              command: { type: 'string', description: 'Shell command to execute' },
             },
-            required: ['command']
-          }
+            required: ['command'],
+          },
         }
       );
     }
@@ -530,10 +601,10 @@ export class MCPService {
             type: 'object',
             properties: {
               query: { type: 'string', description: 'Search query' },
-              limit: { type: 'number', description: 'Maximum number of results', default: 5 }
+              limit: { type: 'number', description: 'Maximum number of results', default: 5 },
             },
-            required: ['query']
-          }
+            required: ['query'],
+          },
         },
         {
           name: 'vector_search',
@@ -542,30 +613,28 @@ export class MCPService {
             type: 'object',
             properties: {
               query: { type: 'string', description: 'Search query' },
-              limit: { type: 'number', description: 'Maximum number of results', default: 5 }
+              limit: { type: 'number', description: 'Maximum number of results', default: 5 },
             },
-            required: ['query']
-          }
+            required: ['query'],
+          },
         }
       );
     }
 
     // Google Search tools
     if (server.id === 'mcp-sys-3' || server.name === 'Google Search') {
-      tools.push(
-        {
-          name: 'google_search',
-          description: 'Search the web using Google',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              query: { type: 'string', description: 'Search query' },
-              num_results: { type: 'number', description: 'Number of results', default: 5 }
-            },
-            required: ['query']
-          }
-        }
-      );
+      tools.push({
+        name: 'google_search',
+        description: 'Search the web using Google',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query' },
+            num_results: { type: 'number', description: 'Number of results', default: 5 },
+          },
+          required: ['query'],
+        },
+      });
     }
 
     return tools;
@@ -611,9 +680,9 @@ export class MCPService {
     if (!isConfigured) {
       throw new Error(
         'E2B API key is not configured. ' +
-        'To enable E2B Sandbox tools (write_file, read_file, list_directory, run_shell_command), ' +
-        'please add E2B_API_KEY via Admin Console or set E2B_API_KEY environment variable. ' +
-        'Get your API key at: https://e2b.dev'
+          'To enable E2B Sandbox tools (write_file, read_file, list_directory, run_shell_command), ' +
+          'please add E2B_API_KEY via Admin Console or set E2B_API_KEY environment variable. ' +
+          'Get your API key at: https://e2b.dev'
       );
     }
 
@@ -648,7 +717,7 @@ export class MCPService {
             success: true,
             output: commandResult.output,
             error: commandResult.error,
-            command: args.command
+            command: args.command,
           };
 
         default:
@@ -663,7 +732,10 @@ export class MCPService {
   /**
    * Execute Knowledge Graph / Vector Search tools
    */
-  private async executeKnowledgeGraphTool(toolName: string, args: Record<string, any>): Promise<any> {
+  private async executeKnowledgeGraphTool(
+    toolName: string,
+    args: Record<string, any>
+  ): Promise<any> {
     const { vectorSearchService } = await import('./vectorSearch.service.js');
 
     try {
@@ -718,12 +790,17 @@ export class MCPService {
 
     if (apiKey && engineId && engineId !== 'YOUR_SEARCH_ENGINE_ID_HERE') {
       try {
-        const searchResults = await this.performGoogleCustomSearch(args.query, args.num_results || 5, apiKey, engineId);
+        const searchResults = await this.performGoogleCustomSearch(
+          args.query,
+          args.num_results || 5,
+          apiKey,
+          engineId
+        );
         return {
           success: true,
           results: searchResults,
           query: args.query,
-          source: 'google_custom_search_api'
+          source: 'google_custom_search_api',
         };
       } catch (error: unknown) {
         logger.error('Google Custom Search API failed:', error);
@@ -731,7 +808,7 @@ export class MCPService {
           success: false,
           message: `Google Custom Search API error: ${error.message}. Verify Google Search API key and Engine ID are configured in Admin Console → Settings → API Keys.`,
           query: args.query,
-          error: error.message
+          error: error.message,
         };
       }
     }
@@ -740,42 +817,56 @@ export class MCPService {
     // (Agents should use Gemini with useInternet=true for better integration)
     const geminiConfigured = await apiKeyProvider.hasApiKey('gemini');
     if (geminiConfigured) {
-      logger.info(`[MCP Google Search] Using Gemini native grounding recommendation - Custom Search API not fully configured`);
+      logger.info(
+        `[MCP Google Search] Using Gemini native grounding recommendation - Custom Search API not fully configured`
+      );
       return {
         success: true,
-        message: 'Google Search is available via Gemini native grounding. When agents use Google Search with useInternet=true, it will automatically use Gemini\'s native grounding which provides better results and automatic link extraction.',
+        message:
+          "Google Search is available via Gemini native grounding. When agents use Google Search with useInternet=true, it will automatically use Gemini's native grounding which provides better results and automatic link extraction.",
         query: args.query,
-        recommendation: 'Use Gemini models with useInternet=true for best results. Links are automatically extracted from search results.',
+        recommendation:
+          'Use Gemini models with useInternet=true for best results. Links are automatically extracted from search results.',
         source: 'gemini_native_grounding_recommended',
-        note: 'To enable direct Custom Search API calls, add Google Search API key and Engine ID via Admin Console → Settings → API Keys'
+        note: 'To enable direct Custom Search API calls, add Google Search API key and Engine ID via Admin Console → Settings → API Keys',
       };
     }
 
     // No configuration available
     return {
       success: false,
-      message: 'Google Search is not configured. Options: 1) Add GEMINI_API_KEY for native grounding (recommended, no Search Engine ID needed), or 2) Configure Google Search API key + Engine ID via Admin Console → Settings → API Keys.',
+      message:
+        'Google Search is not configured. Options: 1) Add GEMINI_API_KEY for native grounding (recommended, no Search Engine ID needed), or 2) Configure Google Search API key + Engine ID via Admin Console → Settings → API Keys.',
       query: args.query,
       setupInstructions: {
-        gemini: 'Add GEMINI_API_KEY via Admin Console → Settings → API Keys - enables native grounding automatically',
-        customSearch: 'Get Search Engine ID from https://programmablesearchengine.google.com/ and add Google Search API key + Engine ID via Admin Console → Settings → API Keys'
-      }
+        gemini:
+          'Add GEMINI_API_KEY via Admin Console → Settings → API Keys - enables native grounding automatically',
+        customSearch:
+          'Get Search Engine ID from https://programmablesearchengine.google.com/ and add Google Search API key + Engine ID via Admin Console → Settings → API Keys',
+      },
     };
   }
 
   /**
    * Perform Google Custom Search using the API
    */
-  private async performGoogleCustomSearch(query: string, numResults: number = 5, apiKey?: string, engineId?: string): Promise<any[]> {
+  private async performGoogleCustomSearch(
+    query: string,
+    numResults: number = 5,
+    apiKey?: string,
+    engineId?: string
+  ): Promise<any[]> {
     // Get from parameters or database
     if (!apiKey || !engineId) {
       const { apiKeyProvider } = await import('./apiKeyProvider.service.js');
-      apiKey = apiKey || await apiKeyProvider.getApiKey('google_search') || '';
-      engineId = engineId || await apiKeyProvider.getGoogleSearchEngineId() || '';
+      apiKey = apiKey || (await apiKeyProvider.getApiKey('google_search')) || '';
+      engineId = engineId || (await apiKeyProvider.getGoogleSearchEngineId()) || '';
     }
 
     if (!apiKey || !engineId) {
-      throw new Error('Google Custom Search API not configured. Add Google Search API key and Engine ID via Admin Console → Settings → API Keys.');
+      throw new Error(
+        'Google Custom Search API not configured. Add Google Search API key and Engine ID via Admin Console → Settings → API Keys.'
+      );
     }
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${engineId}&q=${encodeURIComponent(query)}&num=${Math.min(numResults, 10)}`;
@@ -792,7 +883,7 @@ export class MCPService {
       title: item.title,
       link: item.link,
       snippet: item.snippet,
-      displayLink: item.displayLink
+      displayLink: item.displayLink,
     }));
 
     return results;
@@ -802,7 +893,11 @@ export class MCPService {
    * Execute user-created MCP server tools
    * This connects to external MCP servers via the MCP protocol
    */
-  private async executeUserMCPServerTool(serverId: string, toolName: string, args: Record<string, any>): Promise<any> {
+  private async executeUserMCPServerTool(
+    serverId: string,
+    toolName: string,
+    args: Record<string, any>
+  ): Promise<any> {
     try {
       const { MCPServer: MCPServerModel } = await import('../models/MCPServer.model.js');
       const dbServer = await MCPServerModel.findOne({ id: serverId });
@@ -862,29 +957,37 @@ export class MCPService {
 
       if (config.type === 'websocket') {
         // WebSocket MCP client
-        const { WebSocketTransport } = await import('@modelcontextprotocol/sdk/client/websocket.js');
-        const wsUrl = config.endpoint.startsWith('ws') ? config.endpoint :
-                     config.endpoint.replace(/^https?/, 'ws');
+        const { WebSocketTransport } =
+          await import('@modelcontextprotocol/sdk/client/websocket.js');
+        const wsUrl = config.endpoint.startsWith('ws')
+          ? config.endpoint
+          : config.endpoint.replace(/^https?/, 'ws');
         const transport = new WebSocketTransport(wsUrl);
-        client = new Client({
-          name: 'orbitai-mcp-client',
-          version: '1.0.0'
-        }, {
-          capabilities: {}
-        });
+        client = new Client(
+          {
+            name: 'orbitai-mcp-client',
+            version: '1.0.0',
+          },
+          {
+            capabilities: {},
+          }
+        );
         await client.connect(transport);
       } else {
         // HTTP MCP client
         const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
         const transport = new SSEClientTransport(new URL(config.endpoint), {
-          headers: config.headers || {}
+          headers: config.headers || {},
         });
-        client = new Client({
-          name: 'orbitai-mcp-client',
-          version: '1.0.0'
-        }, {
-          capabilities: {}
-        });
+        client = new Client(
+          {
+            name: 'orbitai-mcp-client',
+            version: '1.0.0',
+          },
+          {
+            capabilities: {},
+          }
+        );
         await client.connect(transport);
       }
 
@@ -900,7 +1003,7 @@ export class MCPService {
         // Call the tool
         const result = await client.callTool({
           name: toolName,
-          arguments: args
+          arguments: args,
         });
 
         return result.content?.[0]?.text || result.content || result;
@@ -923,7 +1026,7 @@ export class MCPService {
       name: dbServer.name,
       status: 'unknown',
       tools: dbServer.tools?.length || 0,
-      lastChecked: new Date()
+      lastChecked: new Date(),
     };
 
     try {
@@ -942,28 +1045,37 @@ export class MCPService {
             let client: any;
 
             if (dbServer.config.type === 'websocket') {
-              const { WebSocketTransport } = await import('@modelcontextprotocol/sdk/client/websocket.js');
-              const wsUrl = dbServer.config.endpoint.startsWith('ws') ? dbServer.config.endpoint :
-                           dbServer.config.endpoint.replace(/^https?/, 'ws');
+              const { WebSocketTransport } =
+                await import('@modelcontextprotocol/sdk/client/websocket.js');
+              const wsUrl = dbServer.config.endpoint.startsWith('ws')
+                ? dbServer.config.endpoint
+                : dbServer.config.endpoint.replace(/^https?/, 'ws');
               const transport = new WebSocketTransport(wsUrl);
-              client = new Client({
-                name: 'orbitai-health-check',
-                version: '1.0.0'
-              }, {
-                capabilities: {}
-              });
+              client = new Client(
+                {
+                  name: 'orbitai-health-check',
+                  version: '1.0.0',
+                },
+                {
+                  capabilities: {},
+                }
+              );
               await client.connect(transport);
             } else {
-              const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
+              const { SSEClientTransport } =
+                await import('@modelcontextprotocol/sdk/client/sse.js');
               const transport = new SSEClientTransport(new URL(dbServer.config.endpoint), {
-                headers: dbServer.config.headers || {}
+                headers: dbServer.config.headers || {},
               });
-              client = new Client({
-                name: 'orbitai-health-check',
-                version: '1.0.0'
-              }, {
-                capabilities: {}
-              });
+              client = new Client(
+                {
+                  name: 'orbitai-health-check',
+                  version: '1.0.0',
+                },
+                {
+                  capabilities: {},
+                }
+              );
               await client.connect(transport);
             }
 
@@ -991,9 +1103,13 @@ export class MCPService {
 
           // Try to spawn process and check if it starts
           try {
+            // SECURITY: only allowlisted commands may be spawned, and the child
+            // gets a minimal env (never the full process.env with secrets).
+            assertStdioCommandAllowed(dbServer.config.command);
             const { spawn } = await import('child_process');
             const childProcess = spawn(dbServer.config.command, dbServer.config.args || [], {
-              stdio: ['pipe', 'pipe', 'pipe']
+              stdio: ['pipe', 'pipe', 'pipe'],
+              env: buildAllowedStdioEnv(),
             });
 
             // Give it a moment to start, then kill it
@@ -1039,24 +1155,31 @@ export class MCPService {
       throw new Error(`MCP server ${serverId} missing command configuration`);
     }
 
+    // SECURITY: default-deny unless the command is explicitly allowlisted.
+    assertStdioCommandAllowed(config.command);
+
     try {
       const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
       const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
 
-      // Create stdio transport (handles process spawning internally)
+      // Create stdio transport (handles process spawning internally).
+      // SECURITY: pass a minimal env allowlist only — never the full process.env.
       const transport = new StdioClientTransport({
         command: config.command,
         args: config.args || [],
-        env: { ...process.env }
+        env: buildAllowedStdioEnv(),
       });
 
       // Create MCP client
-      const client = new Client({
-        name: 'orbitai-mcp-client',
-        version: '1.0.0'
-      }, {
-        capabilities: {}
-      });
+      const client = new Client(
+        {
+          name: 'orbitai-mcp-client',
+          version: '1.0.0',
+        },
+        {
+          capabilities: {},
+        }
+      );
 
       await client.connect(transport);
 
@@ -1072,7 +1195,7 @@ export class MCPService {
         // Call the tool
         const result = await client.callTool({
           name: toolName,
-          arguments: args
+          arguments: args,
         });
 
         return result.content?.[0]?.text || result.content || result;

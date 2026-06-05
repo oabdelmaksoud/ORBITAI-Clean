@@ -16,7 +16,9 @@ export interface AuthRequest extends Request {
 }
 
 // Helper to wrap async middleware for Express
-const asyncHandler = (fn: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>): RequestHandler => {
+const asyncHandler = (
+  fn: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>
+): RequestHandler => {
   return (req, res, next) => {
     Promise.resolve(fn(req as AuthRequest, res, next)).catch(next);
   };
@@ -42,13 +44,19 @@ async function authenticateTokenAsync(
       email: 'guest@local',
       name: 'Guest',
       plan: 'free',
-      role: 'guest'
+      role: 'guest',
     };
     return next();
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; email: string; name?: string; plan: string; role?: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as {
+      userId: string;
+      email: string;
+      name?: string;
+      plan: string;
+      role?: string;
+    };
 
     // If role is not in token (old tokens), fetch from database
     let role = decoded.role;
@@ -67,7 +75,7 @@ async function authenticateTokenAsync(
       email: decoded.email,
       name: decoded.name || decoded.email.split('@')[0], // Fallback to email prefix if name not in token
       plan: decoded.plan,
-      role: role
+      role: role,
     };
     next();
   } catch (error) {
@@ -79,11 +87,9 @@ async function authenticateTokenAsync(
 export const authenticateToken = asyncHandler(authenticateTokenAsync);
 
 export function generateToken(userId: string, email: string, plan: string, role?: string): string {
-  return jwt.sign(
-    { userId, email, plan, role },
-    config.jwtSecret,
-    { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
-  );
+  return jwt.sign({ userId, email, plan, role }, config.jwtSecret, {
+    expiresIn: config.jwtExpiresIn,
+  } as jwt.SignOptions);
 }
 
 // Optional authentication - doesn't error if no token, but populates user if token is valid
@@ -107,13 +113,19 @@ async function authenticateTokenOptionalAsync(
       email: 'guest@local',
       name: 'Guest',
       plan: 'free',
-      role: 'guest'
+      role: 'guest',
     };
     return next();
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; email: string; name?: string; plan: string; role?: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as {
+      userId: string;
+      email: string;
+      name?: string;
+      plan: string;
+      role?: string;
+    };
 
     // If role is not in token (old tokens), fetch from database
     let role = decoded.role;
@@ -131,7 +143,7 @@ async function authenticateTokenOptionalAsync(
       email: decoded.email,
       name: decoded.name || decoded.email.split('@')[0],
       plan: decoded.plan,
-      role: role
+      role: role,
     };
     next();
   } catch (error) {
@@ -141,3 +153,19 @@ async function authenticateTokenOptionalAsync(
 }
 
 export const authenticateTokenOptional = asyncHandler(authenticateTokenOptionalAsync);
+
+/**
+ * denyGuests — block guest identities from state-changing / execution routes.
+ *
+ * Guest support remains globally available (read-only flows), but this gate
+ * must be applied AFTER `authenticateToken` on sensitive routes (MCP-server
+ * creation, agent execute/create) so anonymous guest tokens cannot mutate
+ * state or trigger execution.
+ */
+export const denyGuests: RequestHandler = (req, _res, next) => {
+  const user = (req as AuthRequest).user;
+  if (user?.role === 'guest' || user?.id === 'guest') {
+    return next(new AppError('Guests are not permitted to perform this action', 403));
+  }
+  next();
+};
