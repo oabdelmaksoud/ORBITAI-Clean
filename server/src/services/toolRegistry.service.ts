@@ -78,24 +78,64 @@ class ToolRegistry {
 
     const props: Record<string, any> = parameters.properties || {};
     for (const [key, value] of Object.entries(args)) {
-      const spec = props[key];
-      if (!spec || !spec.type) continue;
-      const type = spec.type;
-      const ok =
-        type === 'string'
-          ? typeof value === 'string'
-          : type === 'number' || type === 'integer'
-            ? typeof value === 'number'
-            : type === 'boolean'
-              ? typeof value === 'boolean'
-              : type === 'array'
-                ? Array.isArray(value)
-                : type === 'object'
-                  ? value !== null && typeof value === 'object' && !Array.isArray(value)
-                  : true;
-      if (!ok) return `Argument "${key}" for tool "${name}" must be of type ${type}`;
+      if (!props[key]) continue;
+      const err = this.validateValue(value, props[key], `Argument "${key}" for tool "${name}"`);
+      if (err) return err;
     }
     return null;
+  }
+
+  /**
+   * Recursive JSON-schema-style validation: type, enum, nested object properties + required,
+   * and array item types (dim 2 → 5 — fuller than the original primitive-only check).
+   */
+  private validateValue(value: any, spec: any, label: string): string | null {
+    if (!spec || typeof spec !== 'object') return null;
+
+    if (Array.isArray(spec.enum) && !spec.enum.includes(value)) {
+      return `${label} must be one of: ${spec.enum.join(', ')}`;
+    }
+
+    const type = spec.type;
+    if (type === 'object') {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        return `${label} must be an object`;
+      }
+      for (const key of Array.isArray(spec.required) ? spec.required : []) {
+        if (value[key] === undefined || value[key] === null) {
+          return `${label} is missing required property "${key}"`;
+        }
+      }
+      const props: Record<string, any> = spec.properties || {};
+      for (const [key, v] of Object.entries(value)) {
+        if (props[key]) {
+          const err = this.validateValue(v, props[key], `${label}.${key}`);
+          if (err) return err;
+        }
+      }
+      return null;
+    }
+
+    if (type === 'array') {
+      if (!Array.isArray(value)) return `${label} must be an array`;
+      if (spec.items) {
+        for (let i = 0; i < value.length; i++) {
+          const err = this.validateValue(value[i], spec.items, `${label}[${i}]`);
+          if (err) return err;
+        }
+      }
+      return null;
+    }
+
+    const ok =
+      type === 'string'
+        ? typeof value === 'string'
+        : type === 'number' || type === 'integer'
+          ? typeof value === 'number'
+          : type === 'boolean'
+            ? typeof value === 'boolean'
+            : true;
+    return ok ? null : `${label} must be of type ${type}`;
   }
 
   /**
