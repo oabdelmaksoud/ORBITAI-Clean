@@ -131,9 +131,12 @@ export class RoutingEngine {
       }
     }
 
-    // Try RL routing if enabled (cost/quality optimization)
+    // Try RL routing if enabled (cost/quality optimization).
+    // dim 5 fix: reaching here means predictive did NOT select (it returns early when it does), so the
+    // old `!predictivePrediction` guard wrongly suppressed RL whenever a low-confidence prediction
+    // existed. The RL bandit is cheap (in-memory UCB1 with a real reward loop) — let it contribute.
     let rlSelection = null;
-    if (settings.enabled && settings.enableIntelligentRouting && !predictivePrediction) {
+    if (settings.enabled && settings.enableIntelligentRouting) {
       try {
         const availableModelIds = modelRegistry.getActiveModels()
           .filter(model => {
@@ -170,9 +173,16 @@ export class RoutingEngine {
       }
     }
 
-    // Try AI prediction if enabled (non-blocking, fallback to predictive/RL)
+    // Try AI prediction if enabled. dim 5 fix: previously suppressed by the same `!predictivePrediction`
+    // bug. AI prediction makes an LLM call, so gate it behind HARNESS_AI_ROUTING=true to avoid adding
+    // routing-path latency/cost by default; it runs only when RL did not select.
     let aiPrediction = null;
-    if (settings.enabled && settings.enableIntelligentRouting && !predictivePrediction && !rlSelection) {
+    if (
+      settings.enabled &&
+      settings.enableIntelligentRouting &&
+      !rlSelection &&
+      (process.env.HARNESS_AI_ROUTING || '').toLowerCase() === 'true'
+    ) {
       try {
         aiPrediction = await llmRouterAIService.predictOptimalModel(
           {

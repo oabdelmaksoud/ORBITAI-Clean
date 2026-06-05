@@ -27,7 +27,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 2 | Tool system | 1 | **4** | Real registry: allowlist + arg validation + dispatch (WI-4). Not 5: lightweight (not full JSON-schema) validation; no dynamic registration. |
 | 3 | Tool protocol (MCP) | 2 | **4** | User/agent MCP tools now callable from the loop (WI-5). Not 5: still no MCP *server*; discovery via stored names. |
 | 4 | Providers | 3 | **4** | Native tool-calling across Gemini + OpenAI (WI-3a) + Anthropic (WI-3b). Not 5: streaming still only 2/12; no shared interface. |
-| 5 | Model routing | 3 | 3 | Unchanged — AI/ML layer still gated/dead. |
+| 5 | Model routing | 3 | **4** | Fixed the `!predictivePrediction` gating bug that suppressed the RL bandit whenever a low-confidence prediction existed — RL (real UCB1 + reward loop) now contributes; AI prediction available behind `HARNESS_AI_ROUTING` (LLM-cost-gated). Rules+weighted scoring remains the workhorse. Not 5: wire/remove auto-tune + A/B, token-budget input. |
 | 6 | Context management | 2 | **4** | `contextManager` token-budgets chat history (keeps most recent within budget, always the latest turn), wired into both chat handlers. Not 5: summarization/compaction of the dropped prefix. |
 | 7 | Memory (cross-session) | 1 | **4** | RAG via `agentMemory`: retrieves role-scoped past experiences (vector search) into the prompt + records task outcomes for future runs (flag-gated `HARNESS_MEMORY_ENABLED`). Not 5: needs a production vector store, always-on, relevance tuning. |
 | 8 | Multi-agent orchestration | 1 | **4** | `agentExecutionEngine`: loads + runs an agent's config via the router (`runAgent`), chains agents into a pipeline (`runSequence`), records `AgentExecution` (feeding the once-empty analytics). `/execute` now really runs; new `/run-sequence` route. Not 5: dynamic team formation + conflict-resolution/messaging wired end-to-end. |
@@ -48,7 +48,7 @@ These are each a dedicated effort, not a quick edit — listing them honestly ra
 - **Planning/reflection** → dim 9 (4→5): multi-step plan tracking + iterative (n>1) refine loop (decomposition + single reflect→revise done).
 - **Context compaction** → dim 6: token-budget + summarization.
 - **Resumability** → dim 11: checkpoint execution state; re-queue interrupted runs at boot.
-- **Routing AI** → dim 5: wire or delete the gated RL/predictive/auto-tune stack.
+- **Routing AI** → dim 5 (4→5): wire-or-delete auto-tune + A/B-test, add token-budget input (RL bandit activated; AI behind a flag).
 - **Observability** → dim 13 (4→5): OpenTelemetry spans + a `RoutingDecisionLog` writer (per-run `traceId` correlation done).
 - **Eval integrity** → dim 14 (4→5): golden-set regression in CI + judge-family diversity (fail-open already fixed).
 - **Resilience** → dim 12 (4→5): multi-hop fallback chain + circuit-breaker-aware selection (single failover + timeouts done).
