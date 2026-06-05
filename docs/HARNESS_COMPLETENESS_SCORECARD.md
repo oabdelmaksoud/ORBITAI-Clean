@@ -19,11 +19,11 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.9 / 5 — all 16 at 4+; 14 now at 5 (adds routing). Remaining at 4: loop, testing.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 4.9 / 5 — all 16 at 4+; 15 now at 5 (adds loop). Remaining at 4: testing (graceful-skip work in progress).** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
-| 1 | Agent loop | 2 | **4** | Reachable on `/execute-task` (WI-1, flag-gated), parallel tool exec (WI-6b), configurable cap (WI-6a). Not 5: results still stringified into the continuation prompt (WI-3c deferred). |
+| 1 | Agent loop | 2 | **5** | Reachable on `/execute-task` (WI-1), parallel tool exec (WI-6b), configurable cap (WI-6a), **and a real threaded conversation** — the OpenAI-family continuation now receives native message turns (assistant + tool-results) via `OpenAIService.messages`, not a single stringified prompt. |
 | 2 | Tool system | 1 | **5** | Registry with allowlist + **recursive JSON-schema validation** (type, enum, nested object + required, array item types) + real dispatch to MCP/system tools (WI-4/5). |
 | 3 | Tool protocol (MCP) | 2 | **5** | MCP **client** (loop-reachable, WI-5) **and** MCP **server**: `mcpServer.service` exposes read-only tools (health/ping/list_capabilities) via `@modelcontextprotocol/sdk` `McpServer` over stdio/in-memory transports (opt-in `HARNESS_MCP_SERVER_ENABLED`); status route `/api/harness-mcp-server`. |
 | 4 | Providers | 3 | **5** | Native tool-calling (Gemini/OpenAI/Anthropic); shared `ILLMProvider` interface (structural conformance); **all 14 providers expose `generateContentStream`** (real where the SDK supports it, single-yield fallback otherwise). |

@@ -85,4 +85,20 @@ describe('FunctionCallProcessor.processWithFunctionCalls', () => {
     expect(openaiGen).toHaveBeenCalledTimes(1); // single continuation turn
     expect(result.finalText).toBe('final answer');
   });
+
+  it('threads a real message conversation into the OpenAI continuation (dim 1 → 5)', async () => {
+    dispatch.mockResolvedValue({ name: 'google_search', success: true, result: { hits: 1 } });
+    const initial = {
+      text: '',
+      functionCalls: [{ name: 'google_search', args: { query: 'x' } }],
+      usage: { promptTokens: 0, candidatesTokens: 0, totalTokens: 0 },
+      modelUsed: 'gpt-4o',
+      provider: 'openai' as const,
+    };
+    await functionCallProcessor.processWithFunctionCalls(initial, 'do a search', tools);
+    const config = openaiGen.mock.calls[0][2];
+    expect(Array.isArray(config.messages)).toBe(true);
+    expect(config.messages.length).toBeGreaterThanOrEqual(3); // user → assistant → tool-results
+    expect(config.messages[0]).toEqual({ role: 'user', content: 'do a search' });
+  });
 });

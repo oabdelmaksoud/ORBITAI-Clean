@@ -40,6 +40,10 @@ export interface LLMConfig {
   maxTokens?: number;
   responseFormat?: { type: 'json_object' | 'text' };
   tools?: any[]; // Function declarations for OpenAI function calling
+  // dim 1 → 5: a real multi-turn conversation (e.g. assistant output + tool-result messages),
+  // threaded natively instead of collapsing history into a single prompt string. When present,
+  // these are used as the chat messages (after any systemInstruction) and `prompt` is ignored.
+  messages?: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
 }
 
 export class OpenAIService {
@@ -82,10 +86,17 @@ export class OpenAIService {
         });
       }
 
-      messages.push({
-        role: 'user',
-        content: prompt
-      });
+      // dim 1 → 5: thread a real conversation when provided; else fall back to the single prompt.
+      if (Array.isArray(configOptions?.messages) && configOptions.messages.length > 0) {
+        for (const m of configOptions.messages) {
+          messages.push({ role: m.role, content: m.content });
+        }
+      } else {
+        messages.push({
+          role: 'user',
+          content: prompt
+        });
+      }
 
       // Convert tools to OpenAI format if provided
       const openAITools: any[] | undefined = configOptions?.tools
@@ -204,10 +215,17 @@ export class OpenAIService {
         });
       }
 
-      messages.push({
-        role: 'user',
-        content: prompt
-      });
+      // dim 1 → 5: thread a real conversation when provided; else fall back to the single prompt.
+      if (Array.isArray(configOptions?.messages) && configOptions.messages.length > 0) {
+        for (const m of configOptions.messages) {
+          messages.push({ role: m.role, content: m.content });
+        }
+      } else {
+        messages.push({
+          role: 'user',
+          content: prompt
+        });
+      }
 
       // Convert tools to OpenAI format if provided
       const openAITools: any[] | undefined = configOptions?.tools

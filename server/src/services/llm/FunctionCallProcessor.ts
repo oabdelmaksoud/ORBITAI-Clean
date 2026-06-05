@@ -68,6 +68,11 @@ export class FunctionCallProcessor {
     let currentText = initialResponse.text;
     let currentResponse = initialResponse;
     let iteration = 0;
+    // dim 1 → 5: thread a real conversation (used natively by the OpenAI-family continuation) instead
+    // of collapsing each turn into a single stringified prompt.
+    const conversationMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+      { role: 'user', content: prompt },
+    ];
     let totalUsage = {
       promptTokens: initialResponse.usage?.promptTokens || 0,
       candidatesTokens:
@@ -126,6 +131,17 @@ export class FunctionCallProcessor {
         functionResponses
       );
 
+      // dim 1 → 5: extend the structured conversation with the assistant turn + tool results so the
+      // OpenAI-family continuation receives a real message history (not a single stringified prompt).
+      const toolResultsText = (currentResponse.functionCalls || [])
+        .map((call, i) => `Tool ${call.name} → ${JSON.stringify(functionResponses[i]?.response)}`)
+        .join('\n');
+      conversationMessages.push({ role: 'assistant', content: currentText || '(issued tool calls)' });
+      conversationMessages.push({
+        role: 'user',
+        content: `Tool results:\n${toolResultsText}\n\nContinue the task using these results.`,
+      });
+
       // Get next response from LLM
       currentResponse = await this.continueConversation(
         continuationPrompt,
@@ -133,7 +149,8 @@ export class FunctionCallProcessor {
         currentResponse.modelUsed,
         tools,
         systemInstruction,
-        functionResponses
+        functionResponses,
+        conversationMessages
       );
 
       currentText = currentResponse.text;
@@ -197,7 +214,8 @@ export class FunctionCallProcessor {
     model: string,
     tools: any[],
     systemInstruction?: string,
-    functionResponses?: FunctionCallResponse[]
+    functionResponses?: FunctionCallResponse[],
+    conversationMessages?: Array<{ role: 'user' | 'assistant'; content: string }>
   ): Promise<LLMResponseWithFunctionCalls> {
     try {
       switch (provider) {
@@ -216,7 +234,8 @@ export class FunctionCallProcessor {
             model,
             tools,
             systemInstruction,
-            functionResponses
+            functionResponses,
+            conversationMessages
           );
 
         case 'anthropic':
@@ -235,7 +254,8 @@ export class FunctionCallProcessor {
             model,
             tools,
             systemInstruction,
-            functionResponses
+            functionResponses,
+            conversationMessages
           );
 
         case 'grok':
@@ -245,7 +265,8 @@ export class FunctionCallProcessor {
             model,
             tools,
             systemInstruction,
-            functionResponses
+            functionResponses,
+            conversationMessages
           );
 
         default:
@@ -307,15 +328,17 @@ export class FunctionCallProcessor {
     model: string,
     tools: any[],
     systemInstruction?: string,
-    functionResponses?: FunctionCallResponse[]
+    functionResponses?: FunctionCallResponse[],
+    conversationMessages?: Array<{ role: 'user' | 'assistant'; content: string }>
   ): Promise<LLMResponseWithFunctionCalls> {
     // WI-3a: OpenAIService natively converts tool declarations and parses tool_calls, returning
-    // structured `functionCalls`. Pass the tools through and read the native result instead of the
-    // create_mcp_server-only text regex (which silently dropped every other tool on continuation turns).
+    // structured `functionCalls`. dim 1 → 5: pass the real conversation (messages) when available so
+    // tool results are native message turns, not a single stringified prompt (prompt kept as fallback).
     const result = await openAIService.generateContent(prompt, model, {
       systemInstruction,
       temperature: 0.7,
       tools: tools.length > 0 ? tools : undefined,
+      messages: conversationMessages && conversationMessages.length > 0 ? conversationMessages : undefined,
     });
 
     const functionCalls =
