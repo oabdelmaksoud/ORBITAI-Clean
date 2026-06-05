@@ -352,27 +352,25 @@ class LLMRouterAutoTuneService {
         end: new Date()
       });
 
-      // Simulate config B metrics (in real implementation, track separately)
-      const configBMetrics: PerformanceMetrics = {
-        ...configAMetrics,
-        avgLatency: configAMetrics.avgLatency * 0.95, // Assume slight improvement
-        avgCost: configAMetrics.avgCost * 0.98
-      };
-
-      // Determine winner based on performance score
+      // dim 5 honesty fix: we do NOT track which requests used config B separately, so we MUST NOT
+      // fabricate a "config B is better" result (the old code assumed B = A × 0.95 / × 0.98). Until
+      // per-config attribution exists, report the measured (config A) metrics for both and keep the
+      // incumbent — the test is inconclusive, never a fabricated winner.
+      const configBMetrics: PerformanceMetrics = { ...configAMetrics };
       const scoreA = this.calculatePerformanceScore(configAMetrics);
-      const scoreB = this.calculatePerformanceScore(configBMetrics);
 
       test.results = {
         configA: configAMetrics,
         configB: configBMetrics,
-        winner: scoreB > scoreA ? 'B' : 'A'
+        winner: 'A', // incumbent retained; no real evidence config B is better
       };
 
       test.status = 'completed';
       test.endDate = new Date();
 
-      logger.info(`A/B test ${testId} completed. Winner: Config ${test.results.winner}`);
+      logger.warn(
+        `A/B test ${testId} completed without per-config attribution (score ${scoreA.toFixed(2)}) — inconclusive, retaining incumbent (Config A).`
+      );
     } catch (error: unknown) {
       logger.error('Failed to complete A/B test:', error);
     }
