@@ -9,9 +9,13 @@ import { logger } from '../utils/logger.js';
 import { usageTracker } from '../services/llm/UsageTracker.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { routeTimeout } from '../middleware/timeout.js';
-import { functionCallProcessor, LLMResponseWithFunctionCalls } from '../services/llm/FunctionCallProcessor.js';
+import {
+  functionCallProcessor,
+  LLMResponseWithFunctionCalls,
+} from '../services/llm/FunctionCallProcessor.js';
 import { Type, Schema } from '@google/genai';
 import { evaluationService } from '../services/evaluation.service.js';
+import { agentMemory } from '../services/agentMemory.service.js';
 import { detectProjectType } from '../utils/llmRouteHelpers.js';
 import { embeddingService } from '../services/embedding.service.js';
 import { toApiError } from '../errors/ApiError.js';
@@ -23,7 +27,6 @@ const router = express.Router();
 
 // Project preview + prototype generation (split module; must be mounted on /api/llm)
 router.use(previewRouter);
-
 
 // Optional authentication - allows unauthenticated requests but extracts user if available
 router.use((req: AuthRequest, res, next) => {
@@ -40,8 +43,6 @@ router.use((req: AuthRequest, res, next) => {
   }
 });
 
-
-
 // ============================================================================
 /**
  * Chat endpoint - routes through LLM router
@@ -54,7 +55,7 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
     if (!message) {
       res.status(400).json({
         success: false,
-        message: 'message is required'
+        message: 'message is required',
       });
       return;
     }
@@ -62,9 +63,10 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
     logger.info(`[LLMRouter] Chat request received for agent: ${agentRole || 'Orchestrator'}`);
 
     // Build chat prompt from history
-    let chatPrompt = history && history.length > 0
-      ? `${history.map((h: any) => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
-      : message;
+    let chatPrompt =
+      history && history.length > 0
+        ? `${history.map((h: any) => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
+        : message;
 
     // INTERNET RESEARCH INJECTION
     // If enabled, perform research first and inject context
@@ -73,7 +75,9 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
 
     if (useInternet) {
       try {
-        logger.info(`[LLMRouter] Performing internet research for chat topic: ${researchTopic.substring(0, 50)}...`);
+        logger.info(
+          `[LLMRouter] Performing internet research for chat topic: ${researchTopic.substring(0, 50)}...`
+        );
         const researchPrompt = `Find the latest trends, technologies, and innovative examples for: "${researchTopic}"
         
         Focus on:
@@ -90,7 +94,7 @@ router.post('/chat', routeTimeout(120000), async (req: AuthRequest, res, _next) 
           routingContext: { userId: (req as any).user?.id },
           requestType: 'research',
           contextType: 'wizard',
-          useInternet: true
+          useInternet: true,
         });
 
         if (researchResult.text) {
@@ -173,17 +177,19 @@ User's latest message: ${message}`;
         agentRole: agentRole || 'Orchestrator',
         taskType: preferFastModel ? 'prompt-enhancement' : 'chat', // Use 'prompt-enhancement' to target Flash models which are recommended for this type
         maxTokens: maxTokens, // Limit tokens for faster responses
-        systemInstruction: systemInstruction
+        systemInstruction: systemInstruction,
       },
       routingContext: {
         userId: (req as any).user?.id,
         projectId: projectState?.id,
-        userPreferences: preferFastModel ? {
-          costPreference: 'low' // Prefer cheaper/faster models
-        } : undefined
+        userPreferences: preferFastModel
+          ? {
+              costPreference: 'low', // Prefer cheaper/faster models
+            }
+          : undefined,
       },
       requestType: 'chat',
-      contextType: isWizardContext ? 'wizard' : 'other'
+      contextType: isWizardContext ? 'wizard' : 'other',
     });
 
     res.json({
@@ -191,7 +197,7 @@ User's latest message: ${message}`;
       response: result.text,
       usage: result.usage,
       modelUsed: result.modelUsed,
-      provider: result.provider
+      provider: result.provider,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -199,7 +205,7 @@ User's latest message: ${message}`;
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Chat request failed',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -209,12 +215,21 @@ User's latest message: ${message}`;
  */
 router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, _next) => {
   try {
-    const { message, history, projectState, contextType, preferFastModel, maxTokens, systemContext, useInternet } = req.body;
+    const {
+      message,
+      history,
+      projectState,
+      contextType,
+      preferFastModel,
+      maxTokens,
+      systemContext,
+      useInternet,
+    } = req.body;
 
     if (!message) {
       res.status(400).json({
         success: false,
-        message: 'message is required'
+        message: 'message is required',
       });
       return;
     }
@@ -228,9 +243,10 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
     res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     // Build chat prompt from history
-    let chatPrompt = history && history.length > 0
-      ? `${history.map((h: any) => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
-      : message;
+    let chatPrompt =
+      history && history.length > 0
+        ? `${history.map((h: any) => `${h.role}: ${h.content}`).join('\n')}\nuser: ${message}`
+        : message;
 
     // Use custom system context if provided (overrides default wizard context)
     let systemInstruction = systemContext;
@@ -292,7 +308,6 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
   User's latest message: ${message}`;
     }
 
-
     try {
       // Stream the response
       const stream = llmRouter.executeWithFallbackStream({
@@ -301,18 +316,20 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
           agentRole: 'Orchestrator',
           taskType: preferFastModel ? 'analysis' : 'chat',
           maxTokens: maxTokens,
-          systemInstruction: systemInstruction // Pass explicitly here!
+          systemInstruction: systemInstruction, // Pass explicitly here!
         },
         routingContext: {
           userId: (req as any).user?.id,
           projectId: projectState?.id,
-          userPreferences: preferFastModel ? {
-            costPreference: 'low'
-          } : undefined
+          userPreferences: preferFastModel
+            ? {
+                costPreference: 'low',
+              }
+            : undefined,
         },
         requestType: 'chat',
         contextType: isWizardContext ? 'wizard' : 'other',
-        useInternet: useInternet === true // Pass internet research flag
+        useInternet: useInternet === true, // Pass internet research flag
       });
 
       // Send chunks as they arrive
@@ -336,7 +353,7 @@ router.post('/chat/stream', routeTimeout(120000), async (req: AuthRequest, res, 
       res.status(apiError.statusCode).json({
         success: false,
         message: 'Streaming chat request failed',
-        error: apiError.message
+        error: apiError.message,
       });
     } else {
       res.write(`data: ${JSON.stringify({ error: apiError.message || 'Streaming failed' })}\n\n`);
@@ -355,7 +372,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
     if (!text) {
       res.status(400).json({
         success: false,
-        message: 'text is required'
+        message: 'text is required',
       });
       return;
     }
@@ -365,7 +382,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
 
     res.json({
       success: true,
-      embedding
+      embedding,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -373,7 +390,7 @@ router.post('/generate-embedding', async (req: AuthRequest, res, _next) => {
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Failed to generate embedding',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -388,7 +405,7 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
     if (!prompt) {
       res.status(400).json({
         success: false,
-        message: 'prompt is required'
+        message: 'prompt is required',
       });
       return;
     }
@@ -399,20 +416,20 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
       prompt: enhancementPrompt,
       context: {
         agentRole: 'Orchestrator',
-        taskType: 'text-generation'
+        taskType: 'text-generation',
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'prompt-enhancement',
-      contextType: 'other'
+      contextType: 'other',
     });
 
     res.json({
       success: true,
       enhancedPrompt: result.text,
       modelUsed: result.modelUsed,
-      provider: result.provider
+      provider: result.provider,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -420,7 +437,7 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Failed to enhance prompt',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -430,12 +447,22 @@ router.post('/enhance-prompt', async (req: AuthRequest, res, _next) => {
  */
 router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res, _next) => {
   try {
-    const { task, projectState, projectContext, useInternet, mcpServers, selectedStandards, standards, tools: clientTools, functionDeclarations } = req.body;
+    const {
+      task,
+      projectState,
+      projectContext,
+      useInternet,
+      mcpServers,
+      selectedStandards,
+      standards,
+      tools: clientTools,
+      functionDeclarations,
+    } = req.body;
 
     if (!task) {
       res.status(400).json({
         success: false,
-        message: 'task is required'
+        message: 'task is required',
       });
       return;
     }
@@ -448,7 +475,8 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
     // wrapped into the [{ functionDeclarations }] shape the router's provider converters expect.
     // `clientTools` is only trusted when already wrapped, since its shape is built client-side.
     const toolsEnabled = (process.env.HARNESS_TOOLS_ENABLED || '').toLowerCase() === 'true';
-    const looksWrapped = (arr: any[]): boolean => arr.every((t) => t && Array.isArray(t.functionDeclarations));
+    const looksWrapped = (arr: any[]): boolean =>
+      arr.every(t => t && Array.isArray(t.functionDeclarations));
     const tools: any[] = !toolsEnabled
       ? []
       : Array.isArray(functionDeclarations) && functionDeclarations.length
@@ -457,39 +485,53 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
           ? clientTools
           : [];
     if (tools.length > 0) {
-      logger.info(`[LLMRouter] execute-task: forwarding ${functionDeclarations?.length ?? clientTools?.length ?? 0} tool declaration(s) to the model`);
+      logger.info(
+        `[LLMRouter] execute-task: forwarding ${functionDeclarations?.length ?? clientTools?.length ?? 0} tool declaration(s) to the model`
+      );
     }
 
     // Contract reconciliation: the client sends `standards` (string[]); the server historically read
     // `selectedStandards`. Fall back across both so standards actually reach evaluation.
     const standardsList = selectedStandards ?? standards ?? [];
 
+    // RAG memory (dim 7): retrieve relevant past experiences for this agent + task and inject them
+    // into the system instruction. Flag-gated (HARNESS_MEMORY_ENABLED); returns '' when disabled.
+    const agentRoleForRun = task.assignedTo || 'Implementation Agent';
+    const memoryContext = await agentMemory.retrieveRelevantMemory(
+      agentRoleForRun,
+      task.description || task.title
+    );
+    const systemInstruction = `You are executing a task: ${task.title}${memoryContext}`;
+
     const result = await llmRouter.executeWithFallback({
       prompt: task.description || task.title,
       context: {
-        agentRole: task.assignedTo || 'Implementation Agent',
+        agentRole: agentRoleForRun,
         taskType: 'code-generation',
         tools: tools.length > 0 ? tools : undefined,
-        systemInstruction: `You are executing a task: ${task.title}`
+        systemInstruction,
       },
       routingContext: {
         userId: (req as any).user?.id,
-        projectId: projectState?.id
+        projectId: projectState?.id,
       },
       requestType: 'task-execution',
       contextType: 'workspace',
-      useInternet: useInternet || false
+      useInternet: useInternet || false,
     });
 
     // Process function calls if present
     const responseWithFunctionCalls = result as LLMResponseWithFunctionCalls;
-    if (responseWithFunctionCalls.functionCalls && responseWithFunctionCalls.functionCalls.length > 0) {
+    if (
+      responseWithFunctionCalls.functionCalls &&
+      responseWithFunctionCalls.functionCalls.length > 0
+    ) {
       const processedResult = await functionCallProcessor.processWithFunctionCalls(
         responseWithFunctionCalls,
         task.description || task.title,
         tools,
-        `You are executing a task: ${task.title}`,
-        task.assignedTo || 'Implementation Agent',
+        systemInstruction,
+        agentRoleForRun,
         projectState?.id,
         task.id
       );
@@ -500,7 +542,7 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
         resources: result.resources || [], // URLs from Google Search grounding
         functionCalls: processedResult.functionCallsExecuted,
         modelUsed: processedResult.modelUsed,
-        provider: processedResult.provider
+        provider: processedResult.provider,
       });
       return;
     }
@@ -520,9 +562,11 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
           agentRole: task.assignedTo || 'Implementation Agent',
           output: outputText,
           standards: standardsList,
-          projectContext: projectState?.description || projectContext || ''
+          projectContext: projectState?.description || projectContext || '',
         });
-        logger.info(`[LLMRouter] Evaluation completed for task "${task.title}" - Score: ${evaluation.score}/100`);
+        logger.info(
+          `[LLMRouter] Evaluation completed for task "${task.title}" - Score: ${evaluation.score}/100`
+        );
       } catch (evalError: any) {
         logger.warn('[LLMRouter] Evaluation failed, using quick evaluate:', evalError);
         try {
@@ -532,9 +576,10 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
           // Return pending evaluation if both fail
           evaluation = {
             score: 0,
-            reasoning: 'Evaluation service encountered an error. Quality score will be calculated on retry.',
+            reasoning:
+              'Evaluation service encountered an error. Quality score will be calculated on retry.',
             criteria: ['Evaluation Error'],
-            timestamp: Date.now()
+            timestamp: Date.now(),
           };
         }
       }
@@ -542,16 +587,27 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
       // Output too short - return pending evaluation
       evaluation = {
         score: 0,
-        reasoning: 'Output is too short to evaluate meaningfully. Please provide more substantial output.',
+        reasoning:
+          'Output is too short to evaluate meaningfully. Please provide more substantial output.',
         criteria: ['Output Length'],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
+
+    // RAG memory (dim 7): record this task's outcome so future runs of this agent can retrieve it.
+    void agentMemory.recordExperience({
+      agentRole: agentRoleForRun,
+      taskTitle: task.title || 'Untitled Task',
+      output: outputText,
+      score: evaluation?.score,
+      projectId: projectState?.id,
+    });
 
     if (outputText && projectState?.id && (req as any).user?.id) {
       try {
         const { issueParserService } = await import('../services/issueParser.service.js');
-        const { issueTaskCreationService } = await import('../services/issueTaskCreation.service.js');
+        const { issueTaskCreationService } =
+          await import('../services/issueTaskCreation.service.js');
 
         // Parse issues from agent output
         const detectedIssues = issueParserService.parseIssuesFromOutput(
@@ -595,7 +651,7 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
         usage: result.usage,
         modelUsed: result.modelUsed,
         provider: result.provider,
-        createdTasks: createdTasks.length > 0 ? createdTasks : undefined
+        createdTasks: createdTasks.length > 0 ? createdTasks : undefined,
       },
       // Also include at top level for backward compatibility
       output: outputText,
@@ -603,7 +659,7 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
       resources: result.resources || [], // URLs from Google Search grounding
       usage: result.usage,
       modelUsed: result.modelUsed,
-      provider: result.provider
+      provider: result.provider,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -611,7 +667,7 @@ router.post('/execute-task', routeTimeout(300000), async (req: AuthRequest, res,
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Task execution failed',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -626,7 +682,7 @@ router.post('/generate-agent-profile', async (req: AuthRequest, res, _next) => {
     if (!role || !projectContext) {
       res.status(400).json({
         success: false,
-        message: 'role and context are required'
+        message: 'role and context are required',
       });
       return;
     }
@@ -651,9 +707,9 @@ Be specific to the project context and role.`;
         role: { type: Type.STRING },
         description: { type: Type.STRING },
         goal: { type: Type.STRING },
-        backstory: { type: Type.STRING }
+        backstory: { type: Type.STRING },
       },
-      required: ['name', 'role', 'description', 'goal', 'backstory']
+      required: ['name', 'role', 'description', 'goal', 'backstory'],
     };
 
     const startTime = Date.now();
@@ -665,13 +721,13 @@ Be specific to the project context and role.`;
       context: {
         agentRole: 'Orchestrator',
         taskType: 'structured',
-        model: 'gemini-2.5-pro' // Use model that supports structured output
+        model: 'gemini-2.5-pro', // Use model that supports structured output
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'agent-profile-generation',
-      contextType: 'other'
+      contextType: 'other',
     });
 
     // Parse structured output from text response
@@ -694,9 +750,9 @@ Be specific to the project context and role.`;
       role: agentProfile.role || role,
       mode: 'deterministic',
       avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${role}`,
-      description: agentProfile.description || "Specialist Agent",
-      goal: agentProfile.goal || "Execute tasks efficiently.",
-      backstory: agentProfile.backstory || "Experienced AI agent."
+      description: agentProfile.description || 'Specialist Agent',
+      goal: agentProfile.goal || 'Execute tasks efficiently.',
+      backstory: agentProfile.backstory || 'Experienced AI agent.',
     };
 
     const latency = Date.now() - startTime;
@@ -707,7 +763,7 @@ Be specific to the project context and role.`;
       data: finalProfile,
       latency: latency,
       modelUsed: result.modelUsed,
-      provider: result.provider
+      provider: result.provider,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -715,7 +771,7 @@ Be specific to the project context and role.`;
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Failed to generate agent profile',
-      error: { message: apiError.message || 'Unknown error' }
+      error: { message: apiError.message || 'Unknown error' },
     });
   }
 });
@@ -730,7 +786,7 @@ router.post('/quick-suggestions', async (req: AuthRequest, res, _next) => {
     if (!input || input.trim().length < 3) {
       res.json({
         success: true,
-        data: []
+        data: [],
       });
       return;
     }
@@ -744,13 +800,13 @@ router.post('/quick-suggestions', async (req: AuthRequest, res, _next) => {
             type: Type.OBJECT,
             properties: {
               label: { type: Type.STRING },
-              prompt: { type: Type.STRING }
+              prompt: { type: Type.STRING },
             },
-            required: ['label', 'prompt']
-          }
-        }
+            required: ['label', 'prompt'],
+          },
+        },
       },
-      required: ['suggestions']
+      required: ['suggestions'],
     };
 
     const conversationText = (history || [])
@@ -761,7 +817,7 @@ router.post('/quick-suggestions', async (req: AuthRequest, res, _next) => {
 
     const prompt = `You are an AI assistant helping a user refine their project idea. The user has typed: "${input}"
 
-${conversationText ? `Previous conversation context:\n${conversationText}\n\n` : ""}Your task is to generate 3-5 ENHANCED and RELEVANT versions of their project idea. Each suggestion must:
+${conversationText ? `Previous conversation context:\n${conversationText}\n\n` : ''}Your task is to generate 3-5 ENHANCED and RELEVANT versions of their project idea. Each suggestion must:
 
 1. **Build directly on their input** - Don't create unrelated ideas. Enhance what they wrote, don't replace it.
 2. **Add relevant specifics** - Include:
@@ -788,13 +844,13 @@ Return a JSON array with label (short 2-4 words) and prompt (enhanced descriptio
       context: {
         agentRole: 'Orchestrator',
         taskType: 'structured',
-        model: 'gemini-2.5-pro' // Use model that supports structured output
+        model: 'gemini-2.5-pro', // Use model that supports structured output
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'quick-suggestions',
-      contextType: 'wizard'
+      contextType: 'wizard',
     });
 
     // Parse structured output
@@ -825,7 +881,7 @@ Return a JSON array with label (short 2-4 words) and prompt (enhanced descriptio
         requestType: 'quick-suggestions',
         context: 'wizard',
         success: true,
-        latencyMs: latency
+        latencyMs: latency,
       });
     } catch (trackError) {
       logger.error('Failed to track usage for quick suggestions:', trackError);
@@ -834,7 +890,7 @@ Return a JSON array with label (short 2-4 words) and prompt (enhanced descriptio
     res.json({
       success: true,
       data: suggestions,
-      latency: latency
+      latency: latency,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -843,7 +899,7 @@ Return a JSON array with label (short 2-4 words) and prompt (enhanced descriptio
     res.json({
       success: true,
       data: [],
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -858,7 +914,7 @@ router.post('/generate-theme', async (req: AuthRequest, res, _next) => {
     if (!description || !description.trim()) {
       res.status(400).json({
         success: false,
-        message: 'description is required'
+        message: 'description is required',
       });
       return;
     }
@@ -899,13 +955,13 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
       context: {
         agentRole: 'UX Designer',
         taskType: 'structured',
-        model: 'gemini-2.0-flash-exp' // Use model that supports structured output
+        model: 'gemini-2.0-flash-exp', // Use model that supports structured output
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'theme-generation',
-      contextType: 'other'
+      contextType: 'other',
     });
 
     // Parse structured output with robust cleaning
@@ -953,7 +1009,7 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
           secondary: '#8b5cf6',
           accent: '#ec4899',
           background: '#f8fafc',
-          textColor: '#1e293b'
+          textColor: '#1e293b',
         };
         logger.warn('[LLMRouter] Using fallback theme due to JSON parse failure');
       }
@@ -974,16 +1030,20 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
       themeCss: theme.themeCss || '',
       assetDescription: theme.assetDescription || '',
       characterDesigns: Array.isArray(theme.characterDesigns) ? theme.characterDesigns : [],
-      gameMechanics: theme.gameMechanics || (isGame ? {
-        movement: 'Platformer movement with arrow keys/WASD',
-        controls: 'Keyboard and touch controls',
-        physics: 'Gravity-based physics with collision detection',
-        gameplay: 'Collect items, avoid enemies, reach goal',
-        progression: 'Score-based progression with level completion',
-        interactions: 'Jump, collect, defeat enemies',
-        code: '// Game mechanics code will be in wireframeHtml'
-      } : null),
-      uiAssets: Array.isArray(theme.uiAssets) ? theme.uiAssets : []
+      gameMechanics:
+        theme.gameMechanics ||
+        (isGame
+          ? {
+              movement: 'Platformer movement with arrow keys/WASD',
+              controls: 'Keyboard and touch controls',
+              physics: 'Gravity-based physics with collision detection',
+              gameplay: 'Collect items, avoid enemies, reach goal',
+              progression: 'Score-based progression with level completion',
+              interactions: 'Jump, collect, defeat enemies',
+              code: '// Game mechanics code will be in wireframeHtml',
+            }
+          : null),
+      uiAssets: Array.isArray(theme.uiAssets) ? theme.uiAssets : [],
     };
 
     const latency = Date.now() - startTime;
@@ -992,7 +1052,7 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
     res.json({
       success: true,
       data: finalTheme,
-      latency: latency
+      latency: latency,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -1000,7 +1060,7 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Failed to generate theme',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -1010,20 +1070,27 @@ Be creative, immersive, and ensure ALL elements work together cohesively!`;
  */
 router.post('/orchestrate', async (req: AuthRequest, res, _next) => {
   try {
-    const { phase, description, completedTasks, useInternet, mcpServers, maxTasks, agents } = req.body;
+    const { phase, description, completedTasks, useInternet, mcpServers, maxTasks, agents } =
+      req.body;
 
     if (!phase || !description || !agents) {
-      res.status(400).json({ success: false, message: 'phase, description, and agents are required' });
+      res
+        .status(400)
+        .json({ success: false, message: 'phase, description, and agents are required' });
       return;
     }
 
-    logger.info(`[LLMRouter] Orchestrating tasks for phase: ${phase}${useInternet ? ' (with internet research)' : ''}`);
+    logger.info(
+      `[LLMRouter] Orchestrating tasks for phase: ${phase}${useInternet ? ' (with internet research)' : ''}`
+    );
 
     // RESEARCH-BASED: Perform online research if internet is enabled
     let researchContext = '';
     if (useInternet) {
       try {
-        logger.info(`[Orchestration] Performing online research for project: ${description.substring(0, 100)}...`);
+        logger.info(
+          `[Orchestration] Performing online research for project: ${description.substring(0, 100)}...`
+        );
 
         const projectKeywords = description
           .split(/\s+/)
@@ -1050,14 +1117,14 @@ Keep the research concise and focused on actionable insights for task generation
           prompt: researchPrompt,
           context: {
             agentRole: 'Research Agent',
-            taskType: 'research'
+            taskType: 'research',
           },
           routingContext: {
-            userId: (req as any).user?.id
+            userId: (req as any).user?.id,
           },
           requestType: 'research',
           contextType: 'workspace',
-          useInternet: true
+          useInternet: true,
         });
 
         researchContext = researchResult.text || '';
@@ -1066,7 +1133,9 @@ Keep the research concise and focused on actionable insights for task generation
         }
         logger.info(`[Orchestration] Research completed: ${researchContext.length} characters`);
       } catch (researchError: any) {
-        logger.warn(`[Orchestration] Research failed, continuing without it: ${researchError.message}`);
+        logger.warn(
+          `[Orchestration] Research failed, continuing without it: ${researchError.message}`
+        );
       }
     }
 
@@ -1097,13 +1166,13 @@ Keep the research concise and focused on actionable insights for task generation
               description: { type: Type.STRING },
               assignedTo: { type: Type.STRING },
               dependencies: { type: Type.ARRAY, items: { type: Type.STRING } },
-              traceRefs: { type: Type.ARRAY, items: { type: Type.STRING } }
+              traceRefs: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
-            required: ["title", "description", "assignedTo"]
-          }
-        }
+            required: ['title', 'description', 'assignedTo'],
+          },
+        },
       },
-      required: ["tasks"]
+      required: ['tasks'],
     };
 
     // Smart model selection based on complexity
@@ -1127,13 +1196,13 @@ Keep the research concise and focused on actionable insights for task generation
           context: {
             agentRole: 'Orchestrator',
             taskType: 'structured',
-            model: modelUsed
+            model: modelUsed,
           },
           routingContext: {
-            userId: (req as any).user?.id
+            userId: (req as any).user?.id,
           },
           requestType: 'orchestration',
-          contextType: 'workspace'
+          contextType: 'workspace',
         });
 
         // Parse structured output
@@ -1173,27 +1242,31 @@ Keep the research concise and focused on actionable insights for task generation
     const latency = Date.now() - startTime;
     const taskCount = result.tasks?.length || 0;
 
-    logger.info(`[LLMRouter] Orchestration completed in ${latency}ms using ${modelUsed}, generated ${taskCount} tasks`);
+    logger.info(
+      `[LLMRouter] Orchestration completed in ${latency}ms using ${modelUsed}, generated ${taskCount} tasks`
+    );
 
     // Track usage
     try {
       const userId = (req as AuthRequest).user?.id;
       if (userId) {
-        usageTracker.trackUsage({
-          userId,
-          modelId: modelUsed,
-          provider: 'gemini',
-          modelIdentifier: modelUsed,
-          inputTokens: 0, // Will be tracked by LLM router
-          outputTokens: 0,
-          requestType: 'orchestration',
-          context: 'workspace',
-          success: true,
-          latencyMs: latency,
-          metadata: { phase, tasksGenerated: taskCount }
-        }).catch((trackErr) => {
-          logger.debug('Usage tracking failed (non-critical):', trackErr);
-        });
+        usageTracker
+          .trackUsage({
+            userId,
+            modelId: modelUsed,
+            provider: 'gemini',
+            modelIdentifier: modelUsed,
+            inputTokens: 0, // Will be tracked by LLM router
+            outputTokens: 0,
+            requestType: 'orchestration',
+            context: 'workspace',
+            success: true,
+            latencyMs: latency,
+            metadata: { phase, tasksGenerated: taskCount },
+          })
+          .catch(trackErr => {
+            logger.debug('Usage tracking failed (non-critical):', trackErr);
+          });
       }
     } catch (trackErr) {
       logger.debug('Usage tracking setup failed (non-critical):', trackErr);
@@ -1208,8 +1281,8 @@ Keep the research concise and focused on actionable insights for task generation
         tasksGenerated: taskCount,
         phase,
         modelUsed,
-        attempt: attempt + 1
-      }
+        attempt: attempt + 1,
+      },
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -1224,7 +1297,7 @@ Keep the research concise and focused on actionable insights for task generation
     res.status(apiError.statusCode || 500).json({
       success: false,
       message: userMessage,
-      error: isDev ? { message: errorMessage, stack: apiError.stack } : { message: errorMessage }
+      error: isDev ? { message: errorMessage, stack: apiError.stack } : { message: errorMessage },
     });
   }
 });
@@ -1242,7 +1315,7 @@ router.post('/interrogate', async (req: AuthRequest, res, _next) => {
     if (!agentRole || !question) {
       res.status(400).json({
         success: false,
-        message: 'agentRole and question are required'
+        message: 'agentRole and question are required',
       });
       return;
     }
@@ -1261,27 +1334,27 @@ Provide a clear, concise answer based on your role and expertise.`;
       prompt,
       context: {
         agentRole,
-        taskType: 'chat'
+        taskType: 'chat',
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'agent-interrogation',
-      contextType: 'other'
+      contextType: 'other',
     });
 
     res.json({
       success: true,
       data: {
-        text: result.text
-      }
+        text: result.text,
+      },
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
     logger.error('Failed to interrogate agent:', apiError);
     res.status(apiError.statusCode).json({
       success: false,
-      message: apiError.message || 'Failed to interrogate agent'
+      message: apiError.message || 'Failed to interrogate agent',
     });
   }
 });
@@ -1296,7 +1369,7 @@ router.post('/modify-task', async (req: AuthRequest, res, _next) => {
     if (!task || !instruction) {
       res.status(400).json({
         success: false,
-        message: 'task and instruction are required'
+        message: 'task and instruction are required',
       });
       return;
     }
@@ -1331,21 +1404,21 @@ Only include fields that should be modified. Keep other fields unchanged.`;
         description: { type: Type.STRING },
         assignedTo: { type: Type.STRING },
         phase: { type: Type.STRING },
-        dependencies: { type: Type.ARRAY, items: { type: Type.STRING } }
-      }
+        dependencies: { type: Type.ARRAY, items: { type: Type.STRING } },
+      },
     };
 
     const result = await llmRouter.executeWithFallback({
       prompt,
       context: {
         agentRole: 'Orchestrator',
-        taskType: 'structured'
+        taskType: 'structured',
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'task-modification',
-      contextType: 'workspace'
+      contextType: 'workspace',
     });
 
     // Parse structured output
@@ -1366,21 +1439,21 @@ Only include fields that should be modified. Keep other fields unchanged.`;
     // Merge modifications with original task
     const modifiedTask = {
       ...task,
-      ...modifications
+      ...modifications,
     };
 
     res.json({
       success: true,
       data: {
-        task: modifiedTask
-      }
+        task: modifiedTask,
+      },
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
     logger.error('Failed to modify task:', apiError);
     res.status(apiError.statusCode).json({
       success: false,
-      message: apiError.message || 'Failed to modify task'
+      message: apiError.message || 'Failed to modify task',
     });
   }
 });
@@ -1508,11 +1581,11 @@ router.post('/generate-research', async (req: AuthRequest, res) => {
       prompt,
       context: {
         agentRole: 'Business Analyst',
-        taskType: 'analysis'
+        taskType: 'analysis',
       },
       routingContext: { userId: req.user?.id },
       requestType: 'research',
-      contextType: 'other'
+      contextType: 'other',
     });
 
     let researchData;
@@ -1521,29 +1594,39 @@ router.post('/generate-research', async (req: AuthRequest, res) => {
       const cleanJson = result.text.replace(/```json\n?|\n?```/g, '').trim();
       researchData = JSON.parse(cleanJson);
     } catch (parseError) {
-      logger.warn('[Research] Failed to parse JSON, returning structure with text content', parseError);
+      logger.warn(
+        '[Research] Failed to parse JSON, returning structure with text content',
+        parseError
+      );
       // Fallback structure
       researchData = {
         executiveSummary: result.text.substring(0, 500) + '...',
-        feasibility: { technical: 'Analysis included in full report.', financial: 'Analysis included in full report.', operational: 'Analysis included in full report.' },
-        marketAnalysis: { targetAudience: 'Analysis included in full report.', marketSize: 'Analysis included in full report.', trends: [] },
+        feasibility: {
+          technical: 'Analysis included in full report.',
+          financial: 'Analysis included in full report.',
+          operational: 'Analysis included in full report.',
+        },
+        marketAnalysis: {
+          targetAudience: 'Analysis included in full report.',
+          marketSize: 'Analysis included in full report.',
+          trends: [],
+        },
         competitors: [],
-        challenges: []
+        challenges: [],
       };
     }
 
     res.json({
       success: true,
-      data: researchData
+      data: researchData,
     });
-
   } catch (error: unknown) {
     const apiError = toApiError(error);
     logger.error('Error generating research:', apiError);
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Failed to generate research',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -1555,7 +1638,7 @@ router.post('/deep-research', async (req: AuthRequest, res, _next) => {
     if (!query || typeof query !== 'string') {
       res.status(400).json({
         success: false,
-        message: 'query is required and must be a string'
+        message: 'query is required and must be a string',
       });
       return;
     }
@@ -1601,14 +1684,14 @@ Use clear, professional technical language. Include specific technologies with v
       prompt: researchPrompt,
       context: {
         agentRole: 'Research Agent',
-        taskType: 'research'
+        taskType: 'research',
       },
       routingContext: {
-        userId: (req as any).user?.id
+        userId: (req as any).user?.id,
       },
       requestType: 'deep-research',
       contextType: 'other',
-      useInternet: true // Enable internet search for comprehensive research
+      useInternet: true, // Enable internet search for comprehensive research
     });
 
     const latency = Date.now() - startTime;
@@ -1625,7 +1708,7 @@ Use clear, professional technical language. Include specific technologies with v
         outputTokens: result.usage?.candidatesTokens || result.usage?.candidatesTokenCount || 0,
         requestType: 'deep-research',
         success: true,
-        latencyMs: latency
+        latencyMs: latency,
       });
     } catch (trackError) {
       logger.error('Failed to track usage for deep-research:', trackError);
@@ -1634,9 +1717,9 @@ Use clear, professional technical language. Include specific technologies with v
     res.json({
       success: true,
       data: {
-        research: result.text || ''
+        research: result.text || '',
       },
-      latency: latency
+      latency: latency,
     });
   } catch (error: unknown) {
     const apiError = toApiError(error);
@@ -1644,7 +1727,7 @@ Use clear, professional technical language. Include specific technologies with v
     res.status(apiError.statusCode).json({
       success: false,
       message: 'Failed to perform deep research',
-      error: apiError.message
+      error: apiError.message,
     });
   }
 });
@@ -1653,55 +1736,55 @@ Use clear, professional technical language. Include specific technologies with v
  * Full Project Architecture Analysis
  * Analyzes project requirements and identifies all necessary components for a complete project
  */
-router.post('/full-architecture-analysis', routeTimeout(120000), async (req: AuthRequest, res, _next) => {
-  try {
-    const { projectDescription, researchFindings, userRequirements, projectType } = req.body;
+router.post(
+  '/full-architecture-analysis',
+  routeTimeout(120000),
+  async (req: AuthRequest, res, _next) => {
+    try {
+      const { projectDescription, researchFindings, userRequirements, projectType } = req.body;
 
-    if (!projectDescription || typeof projectDescription !== 'string') {
-      res.status(400).json({
-        success: false,
-        message: 'projectDescription is required and must be a string'
+      if (!projectDescription || typeof projectDescription !== 'string') {
+        res.status(400).json({
+          success: false,
+          message: 'projectDescription is required and must be a string',
+        });
+        return;
+      }
+
+      logger.info('[LLMRouter] Performing full project architecture analysis...');
+
+      const { fullProjectArchitectureAnalyzer } =
+        await import('../services/fullProjectArchitectureAnalyzer.service.js');
+
+      const startTime = Date.now();
+
+      const analysis = await fullProjectArchitectureAnalyzer.analyzeArchitecture({
+        projectDescription,
+        researchFindings,
+        userRequirements,
+        projectType,
       });
-      return;
+
+      const latency = Date.now() - startTime;
+      logger.info(`[LLMRouter] Full architecture analysis completed in ${latency}ms`);
+
+      res.json({
+        success: true,
+        data: {
+          analysis,
+        },
+        latency: latency,
+      });
+    } catch (error: unknown) {
+      const apiError = toApiError(error);
+      logger.error('[LLMRouter] Full architecture analysis failed:', apiError);
+      res.status(apiError.statusCode).json({
+        success: false,
+        message: 'Failed to perform full architecture analysis',
+        error: apiError.message,
+      });
     }
-
-    logger.info('[LLMRouter] Performing full project architecture analysis...');
-
-    const { fullProjectArchitectureAnalyzer } = await import('../services/fullProjectArchitectureAnalyzer.service.js');
-
-    const startTime = Date.now();
-
-    const analysis = await fullProjectArchitectureAnalyzer.analyzeArchitecture({
-      projectDescription,
-      researchFindings,
-      userRequirements,
-      projectType
-    });
-
-    const latency = Date.now() - startTime;
-    logger.info(`[LLMRouter] Full architecture analysis completed in ${latency}ms`);
-
-    res.json({
-      success: true,
-      data: {
-        analysis
-      },
-      latency: latency
-    });
-  } catch (error: unknown) {
-    const apiError = toApiError(error);
-    logger.error('[LLMRouter] Full architecture analysis failed:', apiError);
-    res.status(apiError.statusCode).json({
-      success: false,
-      message: 'Failed to perform full architecture analysis',
-      error: apiError.message
-    });
   }
-});
-
-
-
-
+);
 
 export default router;
-

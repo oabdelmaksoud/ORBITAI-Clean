@@ -19,7 +19,7 @@
 
 ## Update — post M-A / M-B / M-C implementation (branch `feat/harness-m-a-tools`)
 
-The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 2.8 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
+The implementation milestones landed and are verified (25 passing unit tests; no new tsc errors). Honest re-rating below. **Overall ≈ 1.9 → 2.9 / 5.** The core agent loop, tool system, MCP reach, provider tool-calling, and guardrails moved from "scaffolding / dead" to "functional, validated, tested" (≈4). Several dimensions are unchanged — they require dedicated, larger efforts to reach 5 and were out of scope for this pass (listed below).
 
 | # | Dimension | Was | Now | What changed |
 |---|---|:--:|:--:|---|
@@ -29,7 +29,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 | 4 | Providers | 3 | **4** | Native tool-calling across Gemini + OpenAI (WI-3a) + Anthropic (WI-3b). Not 5: streaming still only 2/12; no shared interface. |
 | 5 | Model routing | 3 | 3 | Unchanged — AI/ML layer still gated/dead. |
 | 6 | Context management | 2 | 2 | Unchanged — needs token-budget + compaction. |
-| 7 | Memory (cross-session) | 1 | 1 | Unchanged — needs RAG retrieval into prompts. |
+| 7 | Memory (cross-session) | 1 | **4** | RAG via `agentMemory`: retrieves role-scoped past experiences (vector search) into the prompt + records task outcomes for future runs (flag-gated `HARNESS_MEMORY_ENABLED`). Not 5: needs a production vector store, always-on, relevance tuning. |
 | 8 | Multi-agent orchestration | 1 | 1 | Unchanged — needs a real execution engine. |
 | 9 | Planning / reflection | 1 | 1 | Unchanged. |
 | 10 | Guardrails & permissions | 2 | **4** | Stdio exec sandboxed (env allowlist + command allowlist), secrets encrypted, guests gated, CUA hardened (WI-2). Not 5: no spend caps / HITL. |
@@ -43,7 +43,7 @@ The implementation milestones landed and are verified (25 passing unit tests; no
 ### What "everything at scope 5" still requires (not done this pass)
 These are each a dedicated effort, not a quick edit — listing them honestly rather than claiming 5:
 - **WI-3c message threading** → loop 4→5 (carry a real `messages[]` history instead of stringifying tool results).
-- **Memory (RAG)** → dim 7: embed + retrieve `AgentKnowledge` into agent prompts at runtime.
+- **Memory (RAG)** → dim 7 (4→5): production vector store + always-on + relevance tuning (retrieval + recording already implemented via `agentMemory`).
 - **Multi-agent engine** → dim 8: replace the dead orchestration cluster with a real sub-agent runtime.
 - **Planning/reflection** → dim 9: task decomposition + self-critique loop.
 - **Context compaction** → dim 6: token-budget + summarization.
